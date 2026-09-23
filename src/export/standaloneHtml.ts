@@ -21,14 +21,13 @@ export interface StandaloneOptions {
   colorScheme: ColorScheme;
   /**
    * `html`: a portable file saved next to the Markdown (relative URLs keep
-   * working, Mermaid comes from a CDN).
+   * working; Mermaid is inlined when used).
    * `pdf`: a temporary file printed by Chrome (relative URLs resolve against
    * `baseDir`, Mermaid is loaded from the extension).
    */
   target: 'html' | 'pdf';
   /** Directory of the Markdown file; used as `<base>` for PDF export. */
   baseDir: string;
-  mermaidVersion: string;
 }
 
 export function buildStandaloneHtml(options: StandaloneOptions): string {
@@ -49,11 +48,13 @@ export function buildStandaloneHtml(options: StandaloneOptions): string {
 
   let scripts = '';
   if (rendered.hasMermaid) {
-    const mermaidSrc =
+    // PDF: loaded from the extension. HTML: inlined, so the file works
+    // offline and never contacts a CDN.
+    const mermaidScript =
       options.target === 'pdf'
-        ? pathToFileURL(join(distDir, 'mermaid', 'mermaid.min.js')).toString()
-        : `https://cdn.jsdelivr.net/npm/mermaid@${options.mermaidVersion}/dist/mermaid.min.js`;
-    scripts = `<script nonce="${nonce}" src="${mermaidSrc}"></script>
+        ? `<script nonce="${nonce}" src="${pathToFileURL(join(distDir, 'mermaid', 'mermaid.min.js'))}"></script>`
+        : `<script nonce="${nonce}">${read('mermaid', 'mermaid.min.js').replace(/<\/script/gi, '<\\/script')}</script>`;
+    scripts = `${mermaidScript}
 <script nonce="${nonce}">
 mermaid.initialize({ startOnLoad: false, securityLevel: 'strict', theme: ${JSON.stringify(
       options.colorScheme === 'dark' ? 'dark' : 'default',

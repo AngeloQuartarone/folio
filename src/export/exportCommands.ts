@@ -17,9 +17,6 @@ import {
 import { findChrome, printToPdf } from './chrome';
 import { buildStandaloneHtml } from './standaloneHtml';
 
-/** Injected by scripts/build.mjs from node_modules/mermaid/package.json. */
-declare const MERMAID_VERSION: string;
-
 export type ExportTarget = 'html' | 'pdf';
 
 export async function exportDocument(
@@ -65,7 +62,6 @@ export async function exportDocument(
     colorScheme,
     target,
     baseDir,
-    mermaidVersion: MERMAID_VERSION,
   });
 
   const output = sourcePath.replace(/\.[^./\\]+$/, '') + (target === 'pdf' ? '.pdf' : '.html');
