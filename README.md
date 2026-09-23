@@ -106,6 +106,7 @@ selection. If the text is already in the target language a small
 | `markdownTranslate.breakOnSingleNewLine` | `false` | Render single line breaks as `<br>`. |
 | `markdownTranslate.math.enabled` | `true` | Render math with KaTeX. |
 | `markdownTranslate.mermaid.enabled` | `true` | Render Mermaid diagrams. |
+| `markdownTranslate.hideBuiltInPreviewButton` | `true` | Hide the built-in Markdown preview button so only this extension's button shows. |
 | `markdownTranslate.chromePath` | `""` | Browser used for PDF export; detected automatically when empty. |
 
 ## Installation

@@ -21,7 +21,9 @@
     "pdf"
   ],
   "main": "./dist/extension.js",
-  "activationEvents": [],
+  "activationEvents": [
+    "onLanguage:markdown"
+  ],
   "contributes": {
     "commands": [
       {
@@ -268,6 +270,11 @@
           "default": "",
           "scope": "machine",
           "description": "Path of Chrome, Chromium, Edge or Brave used for PDF export. Leave empty to detect it automatically."
+        },
+        "markdownTranslate.hideBuiltInPreviewButton": {
+          "type": "boolean",
+          "default": true,
+          "description": "Hide the preview buttons of VS Code's built-in Markdown preview (editor title bar, explorer and tab menus), so only this extension's button is shown."
         }
       }
     },

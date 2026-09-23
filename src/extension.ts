@@ -23,6 +23,23 @@ export function activate(context: vscode.ExtensionContext): ExtensionApi {
   const translation = new TranslationController(context, preview);
   context.subscriptions.push(preview, translation);
 
+  // VS Code's built-in Markdown extension hides its own preview buttons
+  // (editor title, explorer and tab context menus) when this is set.
+  const updateBuiltInPreviewButtons = () =>
+    vscode.commands.executeCommand(
+      'setContext',
+      'hasCustomMarkdownPreview',
+      vscode.workspace.getConfiguration(SECTION).get<boolean>('hideBuiltInPreviewButton', true),
+    );
+  void updateBuiltInPreviewButtons();
+  context.subscriptions.push(
+    vscode.workspace.onDidChangeConfiguration((event) => {
+      if (event.affectsConfiguration(`${SECTION}.hideBuiltInPreviewButton`)) {
+        void updateBuiltInPreviewButtons();
+      }
+    }),
+  );
+
   const command = (id: string, callback: (...args: any[]) => unknown) =>
     context.subscriptions.push(vscode.commands.registerCommand(`${SECTION}.${id}`, callback));
 
