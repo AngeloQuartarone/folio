@@ -19,7 +19,11 @@ import {
 import { HostMessage, WebviewMessage } from '../messages';
 import { MarkdownRenderer } from '../render/markdownRenderer';
 import { SlugRegistry } from '../render/slugify';
+import { languageName } from '../translation/languages';
+import { SUPPORTED_LANGUAGES } from '../translation/offline/registry';
 import {
+  PREVIEW_THEMES,
+  PREVIEW_THEME_LABELS,
   colorSchemeOfTheme,
   resolveCodeBlockTheme,
   resolvePreviewTheme,
@@ -168,6 +172,7 @@ export class PreviewManager implements vscode.Disposable {
       this.systemColorScheme,
     );
     const colorScheme = colorSchemeOfTheme(previewTheme, editorScheme);
+    const translation = getTranslationConfig();
     this.panel.title = `Preview ${path.basename(this.sourceUri.fsPath)}`;
     this.panel.webview.html = buildPreviewPage({
       webview: this.panel.webview,
@@ -179,7 +184,13 @@ export class PreviewManager implements vscode.Disposable {
       settings: {
         scrollSync: this.config.scrollSync,
         mermaidTheme: colorScheme === 'dark' ? 'dark' : 'default',
-        translationEnabled: getTranslationConfig().enabled,
+        translationEnabled: translation.enabled,
+        quickSettings: {
+          previewTheme: this.config.previewTheme,
+          themes: PREVIEW_THEMES.map((value) => ({ value, label: PREVIEW_THEME_LABELS[value] })),
+          targetLanguage: translation.targetLanguage,
+          languages: SUPPORTED_LANGUAGES.map((value) => ({ value, label: languageName(value) })),
+        },
       },
     });
   }

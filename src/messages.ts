@@ -4,7 +4,25 @@
  */
 
 /** Commands the webview may ask the host to run (nothing else is accepted). */
-export type WebviewCommand = 'downloadModels' | 'openTranslationSettings';
+export type WebviewCommand =
+  | 'downloadModels'
+  | 'openTranslationSettings'
+  | 'exportPdf'
+  | 'exportHtml'
+  | 'manageOfflineLanguages'
+  | 'openSettings';
+
+/** Settings the quick settings panel may change (validated by the host). */
+export type QuickSetting =
+  | { key: 'previewTheme'; value: string }
+  | { key: 'targetLanguage'; value: string }
+  | { key: 'enabled'; value: boolean }
+  | { key: 'scrollSync'; value: boolean };
+
+export interface Choice {
+  value: string;
+  label: string;
+}
 
 export type TranslationReply =
   | {
@@ -47,7 +65,8 @@ export type WebviewMessage =
   | { type: 'revealLine'; sourceUri: string; line: number }
   | { type: 'openLink'; sourceUri: string; href: string }
   | { type: 'translate'; id: number; text: string; context: string }
-  | { type: 'command'; command: WebviewCommand };
+  | { type: 'command'; command: WebviewCommand }
+  | ({ type: 'setSetting' } & QuickSetting);
 
 /** Settings the webview reads from `<meta id="preview-settings">`. */
 export interface WebviewSettings {
@@ -55,4 +74,11 @@ export interface WebviewSettings {
   mermaidTheme: 'default' | 'dark';
   mermaidScriptUri: string;
   translationEnabled: boolean;
+  /** Current values and choices for the quick settings panel. */
+  quickSettings: {
+    previewTheme: string;
+    themes: Choice[];
+    targetLanguage: string;
+    languages: Choice[];
+  };
 }

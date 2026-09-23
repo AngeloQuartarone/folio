@@ -58,6 +58,10 @@ MIT License, Copyright (c) 2012 Lea Verou. https://github.com/PrismJS/prism
 Several code block themes in \`styles/prism_theme\` are community Prism
 themes and keep their original author headers.
 
+## Material Icons (settings icon in src/webview/quickSettings.ts)
+
+Apache License 2.0, Copyright Google. https://github.com/google/material-design-icons
+
 ## Bergamot translator (dist/bergamot/, src/vendor/bergamot/translator.js)
 
 Mozilla Public License 2.0. Source code: https://github.com/browsermt/bergamot-translator

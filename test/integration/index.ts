@@ -93,6 +93,23 @@ function defineTests(): void {
       await config.update('previewTheme', undefined, vscode.ConfigurationTarget.Global);
     });
 
+    it('applies quick settings from the preview and rejects invalid ones', async () => {
+      const api = await activate();
+      const config = () => vscode.workspace.getConfiguration('markdownTranslate');
+      const send = (message: unknown) => (api.preview as any).onMessage(message);
+      try {
+        send({ type: 'setSetting', key: 'targetLanguage', value: 'de' });
+        send({ type: 'setSetting', key: 'previewTheme', value: '../../evil.css' });
+        send({ type: 'setSetting', key: 'chromePath', value: '/bin/sh' });
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        assert.equal(config().get('targetLanguage'), 'de');
+        assert.equal(config().get('previewTheme'), 'github-light.css');
+        assert.equal(config().get('chromePath'), '');
+      } finally {
+        await config().update('targetLanguage', undefined, vscode.ConfigurationTarget.Global);
+      }
+    });
+
     it('exports HTML next to the Markdown file', async () => {
       const output = fixture('sample.html').fsPath;
       rmSync(output, { force: true });

@@ -56,6 +56,12 @@ It is an independent, slimmed-down project derived from
 The preview button is also in the editor title bar, and the export commands in
 the editor context menu. Exports are written next to the Markdown file.
 
+**Quick settings in the preview**: move the mouse over the preview and a small
+gear appears in the top-right corner (it fades out again when the mouse is
+idle). It opens a panel to change the theme and the target language, turn
+translation and scroll sync on or off, export PDF/HTML, manage offline
+languages or open all settings.
+
 ## Translation
 
 Everything happens on your computer. The only time the extension uses the

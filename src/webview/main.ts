@@ -8,6 +8,7 @@
  */
 import DOMPurify from 'dompurify';
 import type { HostMessage, WebviewMessage, WebviewSettings } from '../messages';
+import { QuickSettings } from './quickSettings';
 import { TranslationTooltip } from './translationTooltip';
 
 declare function acquireVsCodeApi(): {
@@ -36,6 +37,7 @@ function post(message: WebviewMessage): void {
 }
 
 const tooltip = new TranslationTooltip(preview, post, settings.translationEnabled);
+const quickSettings = new QuickSettings(post, settings);
 
 // ---------------------------------------------------------------- rendering
 
@@ -301,6 +303,7 @@ window.addEventListener('message', (event: MessageEvent<HostMessage>) => {
       break;
     case 'translationSettings':
       tooltip.setEnabled(message.enabled);
+      quickSettings.setTranslationEnabled(message.enabled);
       break;
   }
 });

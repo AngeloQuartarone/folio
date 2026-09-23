@@ -11,4 +11,7 @@
   a worker thread, local language detection (eld), 11 languages, models
   downloaded once on request (or supplied in a folder), in-memory cache.
   No API keys and no cloud services.
+- Quick settings panel in the preview (discreet gear button): theme, target
+  language, translation and scroll sync toggles, exports.
+- The built-in Markdown preview button is hidden (configurable).
 - Export to PDF (local Chrome/Edge/Chromium/Brave) and self-contained HTML.

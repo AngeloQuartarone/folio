@@ -29,6 +29,27 @@ export const PREVIEW_THEMES = [
 
 export type PreviewTheme = (typeof PREVIEW_THEMES)[number];
 
+/** Names shown in the preview's quick settings. */
+export const PREVIEW_THEME_LABELS: Record<PreviewTheme, string> = {
+  'github-light.css': 'GitHub Light',
+  'github-dark.css': 'GitHub Dark',
+  'sepia.css': 'Sepia (reading)',
+  'newsprint.css': 'Newsprint',
+  'atom-light.css': 'Atom Light',
+  'atom-dark.css': 'Atom Dark',
+  'atom-material.css': 'Atom Material',
+  'one-light.css': 'One Light',
+  'one-dark.css': 'One Dark',
+  'solarized-light.css': 'Solarized Light',
+  'solarized-dark.css': 'Solarized Dark',
+  'gothic.css': 'Gothic',
+  'medium.css': 'Medium',
+  'monokai.css': 'Monokai',
+  'night.css': 'Night',
+  'vue.css': 'Vue',
+  'vscode.css': 'VS Code (editor colors)',
+};
+
 export const CODE_BLOCK_THEMES = [
   'auto.css',
   'atom-dark.css',

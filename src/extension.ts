@@ -8,7 +8,8 @@ import * as vscode from 'vscode';
 import { SECTION } from './config';
 import { exportDocument } from './export/exportCommands';
 import { PreviewManager, isMarkdownDocument } from './preview/previewManager';
-import { CODE_BLOCK_THEMES, PREVIEW_THEMES } from './themes';
+import { WebviewMessage } from './messages';
+import { CODE_BLOCK_THEMES, PREVIEW_THEMES, isPreviewTheme } from './themes';
 import { languageName } from './translation/languages';
 import { SUPPORTED_LANGUAGES } from './translation/offline/registry';
 import { TranslationController } from './translation/translationController';
@@ -107,7 +108,54 @@ export function activate(context: vscode.ExtensionContext): ExtensionApi {
     }
   });
 
+  preview.onDidReceiveMessage((message) => void onQuickSettings(message, context.extension.id));
+
   return { preview, translation };
+}
+
+/**
+ * Requests from the preview's quick settings panel. Only these keys and
+ * values are accepted; everything else is ignored.
+ */
+async function onQuickSettings(message: WebviewMessage, extensionId: string): Promise<void> {
+  const config = vscode.workspace.getConfiguration(SECTION);
+  const target = vscode.ConfigurationTarget.Global;
+  if (message.type === 'setSetting') {
+    switch (message.key) {
+      case 'previewTheme':
+        if (isPreviewTheme(message.value)) {
+          await config.update('previewTheme', message.value, target);
+        }
+        break;
+      case 'targetLanguage':
+        if (SUPPORTED_LANGUAGES.includes(message.value)) {
+          await config.update('targetLanguage', message.value, target);
+        }
+        break;
+      case 'enabled':
+      case 'scrollSync':
+        if (typeof message.value === 'boolean') {
+          await config.update(message.key, message.value, target);
+        }
+        break;
+    }
+    return;
+  }
+  if (message.type === 'command') {
+    switch (message.command) {
+      case 'exportPdf':
+      case 'exportHtml':
+      case 'manageOfflineLanguages':
+        await vscode.commands.executeCommand(`${SECTION}.${message.command}`);
+        break;
+      case 'openSettings':
+        await vscode.commands.executeCommand(
+          'workbench.action.openSettings',
+          `@ext:${extensionId}`,
+        );
+        break;
+    }
+  }
 }
 
 export function deactivate(): void {
