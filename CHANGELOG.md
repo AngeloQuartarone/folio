@@ -7,7 +7,8 @@
 - Preview with live update, scroll sync, 17 preview themes (new: Sepia) and
   24 code block themes.
 - KaTeX math, Mermaid diagrams, GitHub alerts, footnotes, emoji, task lists.
-- On-the-fly translation of selected text in a tooltip (DeepL Free/Pro and
-  LibreTranslate), with language detection from context, in-memory cache and
-  API keys in SecretStorage.
-- Export to PDF (local Chrome/Edge/Chromium/Brave) and standalone HTML.
+- Offline translation of selected text in a tooltip: Bergamot WASM engine in
+  a worker thread, local language detection (eld), 11 languages, models
+  downloaded once on request (or supplied in a folder), in-memory cache.
+  No API keys and no cloud services.
+- Export to PDF (local Chrome/Edge/Chromium/Brave) and self-contained HTML.

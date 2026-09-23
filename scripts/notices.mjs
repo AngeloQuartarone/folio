@@ -13,7 +13,6 @@ async function bundledPackages(entry, platform) {
     bundle: true,
     platform,
     external: ['vscode'],
-    define: { MERMAID_VERSION: '"x"' },
     write: false,
     metafile: true,
     logLevel: 'silent',
@@ -37,6 +36,7 @@ const packages = new Set([
   ...(await bundledPackages('src/extension.ts', 'node')),
   ...(await bundledPackages('src/webview/main.ts', 'browser')),
   'mermaid', // dist/mermaid/mermaid.min.js
+  '@browsermt/bergamot-translator', // dist/bergamot/ (worker + WASM)
 ]);
 
 let out = `# Third-party notices
@@ -57,6 +57,23 @@ MIT License, Copyright (c) 2012 Lea Verou. https://github.com/PrismJS/prism
 
 Several code block themes in \`styles/prism_theme\` are community Prism
 themes and keep their original author headers.
+
+## Bergamot translator (dist/bergamot/, src/vendor/bergamot/translator.js)
+
+Mozilla Public License 2.0. Source code: https://github.com/browsermt/bergamot-translator
+(npm package @browsermt/bergamot-translator 0.4.9). \`translator.js\` is
+included in modified form; the modifications are described in its header.
+License text: https://mozilla.org/MPL/2.0/
+
+## Translation models (not included)
+
+The offline translation models are not part of this extension. They are
+downloaded on request from the Bergamot project
+(https://github.com/browsermt/students) and are licensed under
+Creative Commons Attribution-ShareAlike 4.0
+(https://creativecommons.org/licenses/by-sa/4.0/). The model list in
+\`src/translation/offline/models.json\` comes from
+https://bergamot.s3.amazonaws.com/models/index.json.
 `;
 
 for (const name of [...packages].sort()) {

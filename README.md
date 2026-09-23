@@ -1,8 +1,9 @@
 # Markdown Translate Preview
 
 A lean Markdown preview for Visual Studio Code with carefully styled themes,
-editor ↔ preview scroll sync, PDF/HTML export and **on-the-fly translation**:
-select words in the preview and their translation appears right below.
+editor ↔ preview scroll sync, PDF/HTML export and **offline translation**:
+select words in the preview and their translation appears right below — no
+account, no API key, no cloud service.
 
 It is an independent, slimmed-down project derived from
 [Markdown Preview Enhanced](https://github.com/shd101wyy/vscode-markdown-preview-enhanced)
@@ -10,12 +11,13 @@ It is an independent, slimmed-down project derived from
 
 ## Features
 
-- **Translate a selection**: select one or more words in the preview with the
-  mouse and a tooltip shows the translation, labelled
-  *detected language → target language*. The source language is detected
-  automatically (using the surrounding sentence, so single words are detected
-  reliably); you choose the target language. Providers: **DeepL** (API Free and
-  Pro) and **LibreTranslate** (any server, API key optional).
+- **Translate a selection, offline**: select one or more words in the preview
+  and a tooltip shows the translation, labelled
+  *detected language → target language*. Translation runs on your computer
+  with the [Bergamot](https://browser.mt/) engine (the one behind Firefox's
+  offline translations); the language is detected locally from the
+  surrounding sentence. 11 languages: English, Italian, French, German,
+  Spanish, Portuguese, Russian, Ukrainian, Bulgarian, Czech, Estonian.
 - **Live preview** in a side panel that follows the active Markdown editor and
   updates as you type.
 - **Everything GitHub renders**: tables, task lists, fenced code with syntax
@@ -47,7 +49,7 @@ It is an independent, slimmed-down project derived from
 | Markdown Translate: Toggle Scroll Sync | |
 | Markdown Translate: Export PDF | |
 | Markdown Translate: Export HTML | |
-| Markdown Translate: Set API Key | |
+| Markdown Translate: Manage Offline Languages | |
 | Markdown Translate: Set Target Language | |
 | Markdown Translate: Toggle Translation Tooltips | |
 
@@ -56,41 +58,46 @@ the editor context menu. Exports are written next to the Markdown file.
 
 ## Translation
 
-1. Choose a provider with `markdownTranslate.provider` (`deepl` by default).
-2. Run **Markdown Translate: Set API Key** and paste your key.
-   - **DeepL**: create a free or paid key at <https://www.deepl.com/pro-api>.
-     Keys ending in `:fx` use the Free endpoint (`api-free.deepl.com`), all
-     others the Pro endpoint (`api.deepl.com`).
-   - **LibreTranslate**: set `markdownTranslate.libreTranslateUrl` to your
-     server (for example `http://localhost:5000` for a
-     [self-hosted](https://github.com/LibreTranslate/LibreTranslate) instance).
-     The key is optional; `libretranslate.com` requires one.
-3. Set the target language (`markdownTranslate.targetLanguage`, default `it`),
-   open a preview and select some text.
+Everything happens on your computer. The only time the extension uses the
+network is to download a language model, **once, and only when you ask**:
+
+1. Open a preview and select some text.
+2. The first time for a language pair the tooltip says the model is not
+   installed and offers **Download (22 MB)**. Click it: the model is
+   downloaded (SHA-256 verified) and the translation appears.
+3. From then on that pair works offline.
+
+You can also download or remove models in advance with
+**Markdown Translate: Manage Offline Languages**. Pairs without a direct model
+(e.g. German → Italian) go through English and need both models
+(German → English and English → Italian).
+
+**Never touch the network**: download the model files yourself (the URLs are
+in [`src/translation/offline/models.json`](src/translation/offline/models.json)),
+put them in a folder with one subfolder per pair — e.g. `enit/model.enit.intgemm.alphas.bin`,
+`enit/lex.50.50.enit.s2t.bin`, `enit/vocab.enit.spm` — and set
+`markdownTranslate.modelsPath` to that folder. The extension then only reads
+from it.
+
+How it works: the webview sends the selection to the extension; the
+Bergamot WASM engine runs in a worker thread of the extension host and
+answers in a few milliseconds (the first translation after start loads the
+model and takes about a quarter of a second). The engine is stopped after 5
+minutes of inactivity to free memory. Translations are cached in memory per
+text and target language.
 
 The tooltip closes when you click elsewhere, press <kbd>Esc</kbd> or make a new
-selection. If the text is already in the target language, a small
-"Already in …" note is shown instead.
-
-**Privacy and security.** API keys are stored with VS Code's SecretStorage
-(the OS keychain), never in `settings.json`. The preview webview never
-connects to the network: it sends the selection to the extension, which calls
-the provider and sends the result back. Only the selected text and its
-sentence are sent to the provider. Translations are cached in memory (per text
-and target language) until VS Code is restarted or the provider/key changes.
-
-**Errors** are shown in the tooltip: missing or rejected key (with a
-**Set API Key** button), network failures and timeouts, exhausted quota or rate
-limits, invalid target language.
+selection. If the text is already in the target language a small
+"Already in …" note is shown.
 
 ## Settings
 
 | Setting | Default | Description |
 | --- | --- | --- |
 | `markdownTranslate.enabled` | `true` | Show the translation tooltip on selection. |
-| `markdownTranslate.targetLanguage` | `it` | Language to translate into (`it`, `en`, `de`, `pt-BR`, `ja`, …). |
-| `markdownTranslate.provider` | `deepl` | `deepl` or `libretranslate`. |
-| `markdownTranslate.libreTranslateUrl` | `https://libretranslate.com` | LibreTranslate server URL. |
+| `markdownTranslate.targetLanguage` | `it` | Language to translate into (one of the 11 above). |
+| `markdownTranslate.sourceLanguage` | `auto` | Language of your documents, or `auto` to detect it from the sentence (falling back to the whole document). |
+| `markdownTranslate.modelsPath` | `""` | Folder with the models; empty = extension storage. |
 | `markdownTranslate.previewTheme` | `github-light.css` | Preview theme. |
 | `markdownTranslate.codeBlockTheme` | `auto.css` | Code block theme; `auto` matches the preview theme. |
 | `markdownTranslate.previewColorScheme` | `editorColorScheme` | Switch paired themes (github, atom, one, solarized) to light/dark following the editor (`editorColorScheme`), the OS (`systemColorScheme`), or never (`selectedPreviewTheme`). |
@@ -124,41 +131,46 @@ task rebuilds on change).
 ## Known limitations
 
 - Selections are limited to about 500 characters.
-- With DeepL, for selections of up to three words the surrounding sentence is
-  also sent for translation (to read its detected language), so it counts
-  toward your character quota. The `context` parameter itself is free.
-- LibreTranslate has no context parameter: the language is detected on the
-  sentence, then the selection is translated on its own, so word sense may be
-  less accurate than with DeepL.
-- Target language codes are passed to the provider as they are (DeepL:
-  `en` → `EN-US`, `pt` → `PT-PT`); unsupported codes produce an error in the
-  tooltip.
-- The in-memory cache is not persisted.
+- Offline models cover 11 languages; other languages show a clear message.
+  Quality is good for sentences and lower for isolated words, which the
+  engine translates without their context.
+- Language detection on a very short sentence can be wrong; set
+  `markdownTranslate.sourceLanguage` if your documents are always in the
+  same language.
+- The model list is the Bergamot registry of 2022 shipped with the
+  extension; newer or additional models are not picked up automatically.
+- Each model uses about 22 MB on disk and roughly 100 MB of memory while
+  the engine is running.
 - PDF export needs a Chromium-based browser installed locally. Page size
   follows the browser default (A4 or Letter depending on locale); margins are
   fixed. When the theme follows the editor/OS, exports use the light variant.
-- The HTML export loads Mermaid from the jsDelivr CDN when the document has
-  diagrams; everything else (styles, KaTeX fonts) is inlined.
+- The HTML export is a single self-contained file: styles, KaTeX fonts and,
+  when the document has diagrams, Mermaid are inlined (the file gets about
+  5 MB larger in that case).
 - Scripts inside the Markdown never run: the preview and the exports use a
   strict Content Security Policy, and raw HTML is sanitized in the preview.
 - Only one preview panel at a time (it follows the active Markdown editor).
 - Not available in VS Code for the Web.
 
-## Adding a translation provider
+## Adding a translation engine
 
-Implement `TranslationProvider` (`src/translation/types.ts`), register it in
-`src/translation/providers/index.ts` and add its id to the
-`markdownTranslate.provider` enum in `package.json`. Providers receive the
-text, its context sentence and the target language, and throw a
-`TranslationError` with a code (`missingKey`, `invalidKey`, `quota`,
-`network`, …) that the tooltip turns into a clear message.
+The tooltip talks to a `TranslationProvider` (`src/translation/types.ts`).
+The built-in one is `OfflineProvider`
+(`src/translation/offline/offlineProvider.ts`); another engine only needs to
+implement `translate()` and throw a `TranslationError` with a code
+(`modelMissing`, `unsupportedLanguage`, `undetected`, `engine`, …) that the
+tooltip turns into a clear message.
 
 ## Credits
 
 This project is based on **[Markdown Preview Enhanced](https://github.com/shd101wyy/vscode-markdown-preview-enhanced)**
 by **Yiyi Wang ([shd101wyy](https://github.com/shd101wyy))** and on its
 rendering engine **[crossnote](https://github.com/shd101wyy/crossnote)**, both
-released under the University of Illinois/NCSA Open Source License. The
+released under the University of Illinois/NCSA Open Source License.
+Offline translation uses the [Bergamot translator](https://github.com/browsermt/bergamot-translator)
+(MPL-2.0) and the Bergamot project's models (CC BY-SA 4.0), and
+[eld](https://github.com/nitotm/efficient-language-detector-js) (Apache-2.0)
+for language detection. The
 preview and code block themes, the scroll sync algorithm and parts of the
 Markdown pipeline come from those projects. Markdown Translate Preview is not
 affiliated with or endorsed by their author.
