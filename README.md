@@ -1,7 +1,8 @@
 # Markdown Translate Preview
 
 A lean Markdown preview for Visual Studio Code with carefully styled themes,
-editor ↔ preview scroll sync and PDF/HTML export.
+editor ↔ preview scroll sync, PDF/HTML export and **on-the-fly translation**:
+select words in the preview and their translation appears right below.
 
 It is an independent, slimmed-down project derived from
 [Markdown Preview Enhanced](https://github.com/shd101wyy/vscode-markdown-preview-enhanced)
@@ -9,6 +10,12 @@ It is an independent, slimmed-down project derived from
 
 ## Features
 
+- **Translate a selection**: select one or more words in the preview with the
+  mouse and a tooltip shows the translation, labelled
+  *detected language → target language*. The source language is detected
+  automatically (using the surrounding sentence, so single words are detected
+  reliably); you choose the target language. Providers: **DeepL** (API Free and
+  Pro) and **LibreTranslate** (any server, API key optional).
 - **Live preview** in a side panel that follows the active Markdown editor and
   updates as you type.
 - **Everything GitHub renders**: tables, task lists, fenced code with syntax
@@ -40,14 +47,50 @@ It is an independent, slimmed-down project derived from
 | Markdown Translate: Toggle Scroll Sync | |
 | Markdown Translate: Export PDF | |
 | Markdown Translate: Export HTML | |
+| Markdown Translate: Set API Key | |
+| Markdown Translate: Set Target Language | |
+| Markdown Translate: Toggle Translation Tooltips | |
 
 The preview button is also in the editor title bar, and the export commands in
 the editor context menu. Exports are written next to the Markdown file.
+
+## Translation
+
+1. Choose a provider with `markdownTranslate.provider` (`deepl` by default).
+2. Run **Markdown Translate: Set API Key** and paste your key.
+   - **DeepL**: create a free or paid key at <https://www.deepl.com/pro-api>.
+     Keys ending in `:fx` use the Free endpoint (`api-free.deepl.com`), all
+     others the Pro endpoint (`api.deepl.com`).
+   - **LibreTranslate**: set `markdownTranslate.libreTranslateUrl` to your
+     server (for example `http://localhost:5000` for a
+     [self-hosted](https://github.com/LibreTranslate/LibreTranslate) instance).
+     The key is optional; `libretranslate.com` requires one.
+3. Set the target language (`markdownTranslate.targetLanguage`, default `it`),
+   open a preview and select some text.
+
+The tooltip closes when you click elsewhere, press <kbd>Esc</kbd> or make a new
+selection. If the text is already in the target language, a small
+"Already in …" note is shown instead.
+
+**Privacy and security.** API keys are stored with VS Code's SecretStorage
+(the OS keychain), never in `settings.json`. The preview webview never
+connects to the network: it sends the selection to the extension, which calls
+the provider and sends the result back. Only the selected text and its
+sentence are sent to the provider. Translations are cached in memory (per text
+and target language) until VS Code is restarted or the provider/key changes.
+
+**Errors** are shown in the tooltip: missing or rejected key (with a
+**Set API Key** button), network failures and timeouts, exhausted quota or rate
+limits, invalid target language.
 
 ## Settings
 
 | Setting | Default | Description |
 | --- | --- | --- |
+| `markdownTranslate.enabled` | `true` | Show the translation tooltip on selection. |
+| `markdownTranslate.targetLanguage` | `it` | Language to translate into (`it`, `en`, `de`, `pt-BR`, `ja`, …). |
+| `markdownTranslate.provider` | `deepl` | `deepl` or `libretranslate`. |
+| `markdownTranslate.libreTranslateUrl` | `https://libretranslate.com` | LibreTranslate server URL. |
 | `markdownTranslate.previewTheme` | `github-light.css` | Preview theme. |
 | `markdownTranslate.codeBlockTheme` | `auto.css` | Code block theme; `auto` matches the preview theme. |
 | `markdownTranslate.previewColorScheme` | `editorColorScheme` | Switch paired themes (github, atom, one, solarized) to light/dark following the editor (`editorColorScheme`), the OS (`systemColorScheme`), or never (`selectedPreviewTheme`). |
@@ -80,6 +123,17 @@ task rebuilds on change).
 
 ## Known limitations
 
+- Selections are limited to about 500 characters.
+- With DeepL, for selections of up to three words the surrounding sentence is
+  also sent for translation (to read its detected language), so it counts
+  toward your character quota. The `context` parameter itself is free.
+- LibreTranslate has no context parameter: the language is detected on the
+  sentence, then the selection is translated on its own, so word sense may be
+  less accurate than with DeepL.
+- Target language codes are passed to the provider as they are (DeepL:
+  `en` → `EN-US`, `pt` → `PT-PT`); unsupported codes produce an error in the
+  tooltip.
+- The in-memory cache is not persisted.
 - PDF export needs a Chromium-based browser installed locally. Page size
   follows the browser default (A4 or Letter depending on locale); margins are
   fixed. When the theme follows the editor/OS, exports use the light variant.
@@ -89,6 +143,15 @@ task rebuilds on change).
   strict Content Security Policy, and raw HTML is sanitized in the preview.
 - Only one preview panel at a time (it follows the active Markdown editor).
 - Not available in VS Code for the Web.
+
+## Adding a translation provider
+
+Implement `TranslationProvider` (`src/translation/types.ts`), register it in
+`src/translation/providers/index.ts` and add its id to the
+`markdownTranslate.provider` enum in `package.json`. Providers receive the
+text, its context sentence and the target language, and throw a
+`TranslationError` with a code (`missingKey`, `invalidKey`, `quota`,
+`network`, …) that the tooltip turns into a clear message.
 
 ## Credits
 
