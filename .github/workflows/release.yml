@@ -1,0 +1,234 @@
+name: "Publish the extension"
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: "Version bump level"
+        required: true
+        default: "patch"
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+          - prerelease
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          # full history so we can push the release branch and tag
+          fetch-depth: 0
+
+      - name: Install nodejs
+        # Node 18: the runtime of the VS Code extension host this extension
+        # must load on (see the Runtime Support note in AGENTS.md). Read from
+        # .tool-versions to stay in sync with the nix dev shell.
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: .tool-versions
+
+      - name: Install pnpm
+        # v4 like test.yml: v6's self-installer needs `import.meta.resolve`
+        # (Node >= 20.6) but runs under the Node 18 pin above.
+        uses: pnpm/action-setup@v4
+        # The pnpm version is read from the packageManager field in package.json
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm run check:all
+
+      # Build before test, like test.yml: the native runtime compatibility
+      # test loads the bundle from out/native/.
+      - name: Build
+        run: pnpm run build
+
+      - name: Test
+        run: pnpm test
+
+      - name: Bump version
+        id: bump
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          NEW_VERSION=$(npm version ${{ inputs.bump }} --no-git-tag-version)
+          echo "new-version=${NEW_VERSION#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Update CHANGELOG.md
+        env:
+          NEW_VERSION: ${{ steps.bump.outputs.new-version }}
+        run: |
+          TODAY=$(date +%F)
+          # rename [Unreleased] to the new version and prepend a fresh [Unreleased] section
+          # Single quotes are required: in double quotes bash expands `$ENV` (undefined)
+          # to an empty string before perl ever sees the pattern — the identical bug
+          # failed crossnote's release workflow on its first real dispatch. TODAY must
+          # be exported for perl's %ENV.
+          export TODAY
+          perl -0pi -e 's/^## \[Unreleased\]\n/## [Unreleased]\n\n## [$ENV{NEW_VERSION}] - $ENV{TODAY}\n/m' CHANGELOG.md
+          grep -q "## \[$NEW_VERSION\] - $TODAY" CHANGELOG.md
+
+      - name: Get Changelog Entry
+        id: changelog_reader
+        uses: mindsers/changelog-reader-action@v2.0.0
+        with:
+          validation_level: warn
+          version: ${{ steps.bump.outputs.new-version }}
+          path: "CHANGELOG.md"
+
+      # vsce needs the Node 20 runtime (its bundled undici touches the `File`
+      # global at load — 2.32.0 crashes on Node 18 with "File is not defined"
+      # despite engines claiming >= 16 — and 3.x declares engines >= 20), so
+      # packaging and publishing run on Node 20. The lint/test/build steps
+      # above gated the extension itself on Node 18, the runtime of the
+      # VS Code extension host.
+      - name: Install nodejs 20 for vsce
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+
+      # Packaged once, published to both registries from the same file — byte
+      # identical on the Marketplace and Open VSX. vsce runs the
+      # `vscode:prepublish` script (frozen install + build) again here; that
+      # is slower but keeps packaging independent of the steps above.
+      - name: Package the extension
+        id: package
+        env:
+          NEW_VERSION: ${{ steps.bump.outputs.new-version }}
+        run: |
+          VSIX="markdown-preview-enhanced-${NEW_VERSION}.vsix"
+          # --no-dependencies: vsce's built-in dependency check runs
+          # `npm list`, which fails on pnpm's symlinked node_modules layout
+          # (same reason test.yml passes it). The extension is fully
+          # bundled by esbuild, so runtime dependencies don't need to be
+          # analyzed.
+          npx --yes @vscode/vsce@3.9.2 package --no-dependencies --out "$VSIX"
+          echo "vsixPath=$VSIX" >> "$GITHUB_OUTPUT"
+
+      # The gallery publish regularly times out inside vsce's ~3-minute
+      # request budget while the Marketplace's server-side validation step is
+      # slow (observed for hours on 2026-09-08). Retry the publish instead of
+      # failing once, and treat "version already exists" as success — a
+      # previous attempt may have completed server-side despite the client
+      # timeout, and recovery re-runs must stay green.
+      - name: Publish extension to Visual Studio Marketplace
+        id: marketplace_publish
+        continue-on-error: true
+        uses: nick-fields/retry@v3
+        env:
+          NEW_VERSION: ${{ steps.bump.outputs.new-version }}
+          VSIX: ${{ steps.package.outputs.vsixPath }}
+          VS_MARKETPLACE_TOKEN: ${{ secrets.VS_MARKETPLACE_TOKEN }}
+        with:
+          max_attempts: 3
+          timeout_minutes: 10
+          retry_wait_seconds: 90
+          command: |
+            if curl -sf -X POST 'https://marketplace.visualstudio.com/_apis/public/gallery/extensionquery' \
+                 -H 'Content-Type: application/json' \
+                 -H 'Accept: application/json;api-version=7.2-preview.1' \
+                 -d '{"filters":[{"criteria":[{"filterType":7,"value":"shd101wyy.markdown-preview-enhanced"}]}],"flags":215}' \
+                 | grep -q "\"version\":\"$NEW_VERSION\""; then
+              echo "$NEW_VERSION is already published to the Marketplace — skipping."
+              exit 0
+            fi
+            npx --yes @vscode/vsce@3.9.2 publish --packagePath "$VSIX" -p "$VS_MARKETPLACE_TOKEN"
+
+      - name: Publish extension to Open VSX
+        uses: HaaLeo/publish-vscode-extension@v1
+        with:
+          pat: ${{ secrets.OPEN_VSX_TOKEN }}
+          registryUrl: https://open-vsx.org
+          extensionFile: ${{ steps.package.outputs.vsixPath }}
+          dependencies: false
+          # Keeps workflow re-runs green when the version is already published.
+          skipDuplicate: true
+
+      # ::error (not ::warning) so a tolerated publish failure cannot hide in
+      # a green-looking run — continue-on-error marks the step itself green at
+      # the job level, the annotation is the only visible trace.
+      - name: Report Marketplace publish failure
+        if: steps.marketplace_publish.outcome == 'failure'
+        run: |
+          echo "::error::Publishing to the Visual Studio Marketplace failed after 3 attempts (usually the gallery's server-side validation timing out). Everything else succeeded — Open VSX and the GitHub Release are live."
+          echo "::error::To retry once the Marketplace recovers: re-run this workflow run. Already-published versions are detected and skipped, and re-runs stay green."
+
+      # Idempotent across re-runs: on a publish-retry re-run the tag (and the
+      # release branch/PR from the first attempt) already exist — skip the
+      # bookkeeping instead of failing on the existing tag.
+      - name: Commit, tag and push the release branch
+        id: release_branch
+        env:
+          NEW_VERSION: ${{ steps.bump.outputs.new-version }}
+        run: |
+          git add package.json CHANGELOG.md
+          git commit -m "$NEW_VERSION"
+          if git rev-parse -q --verify "refs/tags/$NEW_VERSION" >/dev/null; then
+            echo "tag $NEW_VERSION already exists — publish retry, skipping branch/tag push"
+            echo "first_run=false" >> "$GITHUB_OUTPUT"
+          else
+            # master is branch-protected and slated for deprecation — the
+            # release commit lives on release/v<version> and merges back to
+            # develop via the PR below; a direct push to master is both
+            # rejected (GH006) and unnecessary.
+            git tag "$NEW_VERSION"
+            git push origin "HEAD:refs/heads/release/v$NEW_VERSION"
+            git push origin "refs/tags/$NEW_VERSION"
+            echo "first_run=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Idempotent across workflow re-runs: an existing release is kept and
+      # only the vsix asset is (re-)uploaded, so retrying a marketplace
+      # publish stays green.
+      - name: Create or update GitHub Release
+        if: steps.package.outputs.vsixPath != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NEW_VERSION: ${{ steps.bump.outputs.new-version }}
+          VSIX_PATH: ${{ steps.package.outputs.vsixPath }}
+          RELEASE_NOTES: ${{ steps.changelog_reader.outputs.changes }}
+        run: |
+          echo "$RELEASE_NOTES" > "$RUNNER_TEMP/release-notes.md"
+          if gh release view "$NEW_VERSION" > /dev/null 2>&1; then
+            echo "Release $NEW_VERSION already exists, only (re-)uploading the vsix asset"
+          else
+            # The tag already points at the release commit — no --target needed.
+            gh release create "$NEW_VERSION" --title "$NEW_VERSION" --notes-file "$RUNNER_TEMP/release-notes.md"
+          fi
+          gh release upload "$NEW_VERSION" "$VSIX_PATH" --clobber
+
+      # Only on a first run: a publish-retry re-run reuses the tag, release
+      # and PR that the original attempt already created and merged.
+      - name: Open auto-merge PR back to develop
+        if: steps.release_branch.outputs.first_run == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NEW_VERSION: ${{ steps.bump.outputs.new-version }}
+        run: |
+          gh pr create \
+            --base develop \
+            --head "release/v$NEW_VERSION" \
+            --title "chore: release v$NEW_VERSION" \
+            --body "Automated version bump and changelog update for v$NEW_VERSION."
+
+      # develop requires 1 approving review; the bot can't approve its own PR,
+      # so RELEASE_TOKEN (a PAT of the maintainer) supplies the approval
+      - name: Approve and auto-merge the release PR
+        if: steps.release_branch.outputs.first_run == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+          NEW_VERSION: ${{ steps.bump.outputs.new-version }}
+        run: |
+          gh pr review "release/v$NEW_VERSION" --approve \
+            --body "Automated approval for release v$NEW_VERSION."
+          gh pr merge "release/v$NEW_VERSION" --auto --merge --delete-branch

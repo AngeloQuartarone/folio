@@ -1,0 +1,102 @@
+# Agent Instructions for vscode-markdown-preview-enhanced
+
+This file provides context for AI coding agents (GitHub Copilot, Claude, etc.) working in this repository.
+
+## Project Overview
+
+This is the **VS Code extension** for Markdown Preview Enhanced. It wraps the [crossnote](https://github.com/shd101wyy/crossnote) markdown rendering library and exposes it as a VS Code webview preview, custom editor, and notebook support.
+
+## Architecture
+
+- **`src/extension.ts`** — Extension entry point (Node.js / desktop VS Code)
+- **`src/extension-web.ts`** — Web extension entry point (VS Code for the Web / vscode.dev)
+- **`src/extension-common.ts`** — Shared activation logic used by both entry points
+- **`src/preview-provider.ts`** — Webview panel provider for the live markdown preview
+- **`src/notebooks-manager.ts`** — Manages per-workspace notebook instances
+- **`src/config.ts`** — Reads and writes VS Code settings, bridges to crossnote's `NotebookConfig`
+- **`src/backlinks-provider.ts`** — Provides backlink references in the editor
+- **`build.js`** — esbuild config: bundles `extension.ts` → `out/native/extension.js` and `extension-web.ts` → `out/web/extension.js`
+- **`gulpfile.js`** — Copies crossnote's `out/styles`, `out/webview`, and `out/dependencies` into `crossnote/` for packaging
+
+## Key Conventions
+
+### Code Style
+
+- **Single quotes** everywhere (Prettier-enforced)
+- **TypeScript**: `strict: true` — no implicit `any`
+- Package manager: **pnpm** (not npm or yarn), pinned via the `packageManager` field in `package.json`
+- **nix shell**: the dev environment (node, pnpm, vsce, playwright browsers) is provided by `flake.nix` → `shell.nix`. With direnv (`use flake` in `.envrc`) the tools are available automatically; otherwise prefix commands with `nix develop -c` (e.g. `nix develop -c pnpm build`).
+
+### Runtime Support
+
+- **`engines.vscode` floor is `^1.82.0`** (decided 2026-09-08, after [crossnote#493](https://github.com/shd101wyy/crossnote/issues/493) / [crossnote#494](https://github.com/shd101wyy/crossnote/pull/494)) — VS Code 1.82 is the first release whose extension host runs Node 18 (Electron 25 → Node 18.15.0). Older VS Codes run Node 16, where the bundled cheerio cannot load at all (`ReadableStream is not defined`). Use `^1.82.0`, not a higher floor such as `^1.86.0`: VS Code 1.82–1.85 sit below cheerio's declared Node minimum (18.17) but were verified working, and crossnote's full test suite passes on Node 18.15.0.
+- **cheerio must resolve to exactly `1.0.0`** — never widen crossnote's pin back to a `^` range. A floating `^1.0.0-rc.12` resolved to cheerio 1.2.0 (requires Node ≥ 20.18) in extension 0.8.32+ and crashed activation with `ReferenceError: File is not defined`. See crossnote's `AGENTS.md` → "Runtime Support" for the VS Code/Electron/Node mapping and the full evidence.
+- **Development and CI run Node 18** (decided 2026-09-09, mirroring [crossnote#495](https://github.com/shd101wyy/crossnote/pull/495)) — a green run on Node 20+ proves nothing for the VS Code versions the extension supports, whose extension host runs Node 18. `shell.nix` brings `nodejs_18` from a pinned nixpkgs-24.11 import (the rolling channel dropped EOL Node 18; derive the platform via `pkgs.system`, `builtins.currentSystem` is unavailable under pure eval) and both GitHub workflows install the version in [`.tool-versions`](.tool-versions) (18.17.1) — keep the two on the same major version. Dev-only tools must stay Node-18-loadable too: eslint is held at the 9.x line (10 requires Node ≥ 20.19) and lint-staged at 15.x (16 requires Node ≥ 20.17). The exception is `vsce`: every released line fails to load on Node 18 (its bundled undici references the `File` global at load — 2.32.0 crashes with `File is not defined` despite engines claiming `>= 16`; 3.x declares engines ≥ 20) — so CI runs the vsce packaging/publishing steps on Node 20 while everything gating the extension itself stays on 18.
+
+### Build & Lint
+
+- Build: `pnpm build`
+- Lint: `pnpm check:all` (ESLint + Prettier + tsc)
+- Fix: `pnpm fix:all`
+- Watch mode (for extension dev): `pnpm watch`
+
+### Working with Local crossnote
+
+The extension depends on `crossnote` as a local path dependency. When making changes to crossnote:
+
+1. In `~/Workspace/crossnote`: run `pnpm build`
+2. In this repo: run `pnpm add ../crossnote` to update `node_modules/crossnote` with the new build
+3. Then run `pnpm build` to rebundle the extension
+
+> **Note**: pnpm copies `file:` dependencies into its virtual store (`node_modules/.pnpm`) rather than symlinking the source directory, so you must re-run `pnpm add ../crossnote` after any crossnote build to pick up changes.
+
+> **Note**: pnpm 10 blocks dependency build scripts by default, so `pnpm install` warns about "Ignored build scripts" (esbuild, sharp, fsevents, …). This is expected — those packages work via prebuilt platform binaries, and playwright browsers are provided by the nix shell.
+
+## Extension Bundling Notes
+
+The native extension (`out/native/extension.js`) is bundled by esbuild with `platform: 'node'`. Some packages require special handling:
+
+- **`node-tikzjax`**: WASM data files (`tex.wasm.gz`, `core.dump.gz`, `tex_files.tar.gz`) are copied to `out/tex/` by `build.js` at build time, because `node-tikzjax` uses `__dirname`-relative paths to locate them.
+- **`markdown_yo`**: `markdown_yo_wasm_api.wasm` is copied to `out/native/` by `build.js` because the Emscripten module resolves it relative to `__dirname` at runtime.
+- **`jsdom`** (used by node-tikzjax): `xhr-sync-worker.js` is copied to `out/native/` because `jsdom` calls `require.resolve('./xhr-sync-worker.js')` at load time.
+- **`vscode`**: always marked as external (provided by the VS Code runtime).
+
+## Testing
+
+- Run tests: `pnpm test` (alias for `pnpm test:unit`, the mocha unit tests in `test/`)
+- For manual testing, press **F5** in VS Code to launch the Extension Development Host.
+- After making changes to `build.js` or `src/`, run `pnpm build` then reload the Extension Development Host (`Developer: Reload Window`).
+
+## Release Process
+
+Releases are automated via [`.github/workflows/release.yml`](.github/workflows/release.yml), triggered manually (**workflow_dispatch**) with a `bump` level of `patch` / `minor` / `major` / `prerelease`. Do **not** bump `package.json` or cut tags by hand.
+
+What the workflow does, in order:
+
+1. Runs `pnpm run check:all`, `pnpm test`, and `pnpm run build`
+2. Bumps `package.json` (`npm version <level>`)
+3. Rewrites `CHANGELOG.md`: renames `## [Unreleased]` to `## [X.Y.Z] - <today>` and prepends a fresh empty `## [Unreleased]` section — **write changelog entries under `[Unreleased]` before dispatching a release**
+4. Packages the `.vsix` once, then publishes it to the Visual Studio Marketplace (up to **3 attempts** around vsce's ~3-minute request timeout — the gallery's server-side validation step stalls for hours at a time; "version already exists" counts as success so recovery re-runs stay green; a failure after all attempts is **tolerated** and surfaces as an `::error` annotation, not a failed run) and Open VSX (`skipDuplicate` keeps re-runs safe). To retry a failed Marketplace publish once the gallery recovers: `gh run rerun <run-id>` — re-runs reuse the original ref and inputs (same version), skip already-published targets, and skip the tag/release/PR bookkeeping that the first attempt already completed. Do **not** dispatch a fresh run to retry a publish — it would bump a new version.
+5. Commits the bump + changelog on a `release/vX.Y.Z` branch, tags it, pushes the branch + tag (idempotent: skipped when the tag already exists), creates/updates the GitHub Release with the `.vsix` attached (master is deprecated and not pushed to)
+6. Opens a `release/vX.Y.Z` → `develop` PR, approves it via the `RELEASE_TOKEN` secret, and auto-merges it
+
+### Changelog content
+
+The extension's `CHANGELOG.md` should carry everything users of **this** extension experience — including the user-visible changes that ship inside [crossnote](https://github.com/shd101wyy/crossnote) releases:
+
+- When a crossnote release is picked up (dependency pin bump), copy its changelog entries into the extension's `[Unreleased]` **verbatim** — same bold lead, same body wording, same links — under an umbrella line naming the crossnote release (e.g. "The following entries are taken verbatim from crossnote X.Y.Z"). Do not rewrite or paraphrase them.
+- Remove duplicates: omit a crossnote entry whose content an extension-specific entry already covers, and keep extension-specific entries (new commands, settings, `engines.vscode` changes) separate and unique to this repo. Extension-only context (e.g. linking the extension issue a crossnote fix resolves) belongs in the umbrella line, not inside the copied entries.
+- Verbatim copying preserves the crossnote issue/PR links and contributor credits (`by @author` / `Reported by @author`) automatically — never strip them. Note the release tag has no `v` prefix: `…/crossnote/releases/tag/0.9.35`.
+
+### Branch protection on `develop`
+
+- Classic branch protection: requires a PR + **1 approving review** before merging; admins (the maintainer) may merge without waiting via "Merge without waiting for requirements"
+- No force pushes or deletions; conversation resolution required
+- The release PR satisfies the review requirement through the `RELEASE_TOKEN` secret — a fine-grained PAT of the maintainer (Contents + Pull requests: read/write on this repo only). If the token expires, the release PR will stall at the approval step; rotate it and re-run the failed job.
+
+## Adding New Settings
+
+1. Add the setting to `package.json` under `contributes.configuration`
+2. Add it to the `NotebookConfig` interface in crossnote if it's a rendering option
+3. Wire it up in `src/config.ts` where VS Code settings are mapped to crossnote config
+4. Document it in the CHANGELOG under `[Unreleased]`
