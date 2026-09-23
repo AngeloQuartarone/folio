@@ -66,11 +66,60 @@
         "command": "markdownTranslate.exportHtml",
         "title": "Export HTML",
         "category": "Markdown Translate"
+      },
+      {
+        "command": "markdownTranslate.setApiKey",
+        "title": "Set API Key",
+        "category": "Markdown Translate"
+      },
+      {
+        "command": "markdownTranslate.setTargetLanguage",
+        "title": "Set Target Language",
+        "category": "Markdown Translate"
+      },
+      {
+        "command": "markdownTranslate.toggleTranslation",
+        "title": "Toggle Translation Tooltips",
+        "category": "Markdown Translate"
       }
     ],
     "configuration": {
       "title": "Markdown Translate Preview",
       "properties": {
+        "markdownTranslate.enabled": {
+          "type": "boolean",
+          "default": true,
+          "order": 0,
+          "description": "Show a translation tooltip when you select text in the preview."
+        },
+        "markdownTranslate.targetLanguage": {
+          "type": "string",
+          "default": "it",
+          "order": 1,
+          "pattern": "^[A-Za-z]{2,3}([-_][A-Za-z0-9]{2,8})?$",
+          "patternErrorMessage": "Use a language code such as \"it\", \"en\", \"de\" or \"pt-BR\".",
+          "markdownDescription": "Language to translate into, as a code: `it`, `en`, `de`, `fr`, `es`, `pt-BR`, `ja`, `zh`… The source language is detected automatically."
+        },
+        "markdownTranslate.provider": {
+          "type": "string",
+          "enum": [
+            "deepl",
+            "libretranslate"
+          ],
+          "enumDescriptions": [
+            "DeepL API Free or Pro (the endpoint is chosen from the key).",
+            "LibreTranslate server (self-hosted or libretranslate.com)."
+          ],
+          "default": "deepl",
+          "order": 2,
+          "markdownDescription": "Translation service. Set its API key with the **Markdown Translate: Set API Key** command (stored in the OS keychain, not in settings)."
+        },
+        "markdownTranslate.libreTranslateUrl": {
+          "type": "string",
+          "default": "https://libretranslate.com",
+          "order": 3,
+          "markdownDescription": "Base URL of the LibreTranslate server, e.g. `http://localhost:5000`. The API key is optional and set with **Markdown Translate: Set API Key**."
+        },
         "markdownTranslate.previewTheme": {
           "type": "string",
           "enum": [

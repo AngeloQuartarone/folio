@@ -68,7 +68,7 @@ export function buildPreviewPage(options: PageOptions): string {
 <link rel="stylesheet" href="${asset('styles', 'style-template.css')}">
 <link rel="stylesheet" href="${asset('styles', 'preview.css')}">
 </head>
-<body class="preview-container" data-color-scheme="${options.colorScheme}">
+<body class="preview-container" data-color-scheme="${options.colorScheme}" data-preview-theme="${options.previewTheme.replace(/\.css$/, '')}">
 <div class="crossnote markdown-preview" data-for="preview" id="preview"></div>
 <script nonce="${nonce}" src="${asset('webview', 'preview.js')}"></script>
 </body>

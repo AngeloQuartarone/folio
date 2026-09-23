@@ -13,6 +13,34 @@ import {
 
 export const SECTION = 'markdownTranslate';
 
+/** Settings that require rebuilding the preview when they change. */
+export const PREVIEW_SETTINGS = [
+  'previewTheme',
+  'codeBlockTheme',
+  'previewColorScheme',
+  'scrollSync',
+  'breakOnSingleNewLine',
+  'math.enabled',
+  'mermaid.enabled',
+].map((key) => `${SECTION}.${key}`);
+
+export interface TranslationConfig {
+  enabled: boolean;
+  targetLanguage: string;
+  provider: string;
+  libreTranslateUrl: string;
+}
+
+export function getTranslationConfig(): TranslationConfig {
+  const c = vscode.workspace.getConfiguration(SECTION);
+  return {
+    enabled: c.get<boolean>('enabled', true),
+    targetLanguage: c.get<string>('targetLanguage', 'it').trim() || 'it',
+    provider: c.get<string>('provider', 'deepl'),
+    libreTranslateUrl: c.get<string>('libreTranslateUrl', 'https://libretranslate.com').trim(),
+  };
+}
+
 export interface PreviewConfig {
   previewTheme: PreviewTheme;
   codeBlockTheme: CodeBlockTheme;

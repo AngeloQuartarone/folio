@@ -8,6 +8,7 @@
  */
 import DOMPurify from 'dompurify';
 import type { HostMessage, WebviewMessage, WebviewSettings } from '../messages';
+import { TranslationTooltip } from './translationTooltip';
 
 declare function acquireVsCodeApi(): {
   postMessage(message: WebviewMessage): void;
@@ -33,6 +34,8 @@ let scrollTimeout: ReturnType<typeof setTimeout> | null = null;
 function post(message: WebviewMessage): void {
   vscode.postMessage(message);
 }
+
+const tooltip = new TranslationTooltip(preview, post, settings.translationEnabled);
 
 // ---------------------------------------------------------------- rendering
 
@@ -268,6 +271,9 @@ document.addEventListener('click', (event) => {
     return;
   }
   event.preventDefault();
+  if (!window.getSelection()?.isCollapsed) {
+    return; // the user is selecting the link text (e.g. to translate it)
+  }
   if (href.startsWith('#')) {
     const id = decodeURIComponent(href.slice(1));
     const target = document.getElementById(id) ?? document.getElementsByName(id)[0];
@@ -289,6 +295,12 @@ window.addEventListener('message', (event: MessageEvent<HostMessage>) => {
       if (settings.scrollSync) {
         scrollSyncToLine(message.line, message.topRatio);
       }
+      break;
+    case 'translation':
+      tooltip.onReply(message);
+      break;
+    case 'translationSettings':
+      tooltip.setEnabled(message.enabled);
       break;
   }
 });

@@ -8,7 +8,14 @@
  */
 import * as path from 'node:path';
 import * as vscode from 'vscode';
-import { PreviewConfig, SECTION, editorColorScheme, getPreviewConfig } from '../config';
+import {
+  PREVIEW_SETTINGS,
+  PreviewConfig,
+  SECTION,
+  editorColorScheme,
+  getPreviewConfig,
+  getTranslationConfig,
+} from '../config';
 import { HostMessage, WebviewMessage } from '../messages';
 import { MarkdownRenderer } from '../render/markdownRenderer';
 import { SlugRegistry } from '../render/slugify';
@@ -50,7 +57,7 @@ export class PreviewManager implements vscode.Disposable {
       vscode.window.onDidChangeActiveTextEditor((editor) => {
         if (editor && this.panel && isMarkdownDocument(editor.document)) {
           if (!this.isSource(editor.document.uri)) {
-            this.show(editor.document.uri, this.panel.viewColumn, true);
+            this.retarget(editor.document.uri);
           }
         }
       }),
@@ -61,8 +68,11 @@ export class PreviewManager implements vscode.Disposable {
         this.onEditorScroll(event.textEditor),
       ),
       vscode.workspace.onDidChangeConfiguration((event) => {
-        if (event.affectsConfiguration(SECTION)) {
-          this.config = getPreviewConfig();
+        if (!event.affectsConfiguration(SECTION)) {
+          return;
+        }
+        this.config = getPreviewConfig();
+        if (PREVIEW_SETTINGS.some((key) => event.affectsConfiguration(key))) {
           this.renderer = createRenderer(this.config);
           this.reload();
         }
@@ -90,7 +100,7 @@ export class PreviewManager implements vscode.Disposable {
     this.messageListeners.push(listener);
   }
 
-  postMessage(message: unknown): void {
+  postMessage(message: HostMessage): void {
     void this.panel?.webview.postMessage(message);
   }
 
@@ -120,13 +130,28 @@ export class PreviewManager implements vscode.Disposable {
         ),
         this.panel.onDidDispose(() => this.onPanelDisposed()),
       );
+      this.reload();
     } else {
-      this.panel.webview.options = {
-        ...this.panel.webview.options,
-        localResourceRoots: this.localResourceRoots(uri),
-      };
-      this.panel.reveal(column, preserveFocus);
+      // Keep the panel where the user put it.
+      this.panel.reveal(this.panel.viewColumn ?? column, preserveFocus);
+      this.retarget(uri);
     }
+  }
+
+  /**
+   * Follow another Markdown file without revealing the panel: when the
+   * preview shares the editor's group, revealing it would hide the editor
+   * the user just switched to.
+   */
+  private retarget(uri: vscode.Uri): void {
+    if (!this.panel) {
+      return;
+    }
+    this.sourceUri = uri;
+    this.panel.webview.options = {
+      ...this.panel.webview.options,
+      localResourceRoots: this.localResourceRoots(uri),
+    };
     this.reload();
   }
 
@@ -154,6 +179,7 @@ export class PreviewManager implements vscode.Disposable {
       settings: {
         scrollSync: this.config.scrollSync,
         mermaidTheme: colorScheme === 'dark' ? 'dark' : 'default',
+        translationEnabled: getTranslationConfig().enabled,
       },
     });
   }
