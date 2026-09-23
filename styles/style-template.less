@@ -1,0 +1,548 @@
+.markdown-preview {
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+
+  ul {
+    list-style: disc;
+  }
+
+  ul ul {
+    list-style: circle;
+  }
+
+  ul ul ul {
+    list-style: square;
+  }
+
+  ol {
+    list-style: decimal;
+  }
+
+  ol ol,
+  ul ol {
+    list-style-type: lower-roman;
+  }
+
+  ul ul ol,
+  ul ol ol,
+  ol ul ol,
+  ol ol ol {
+    list-style-type: lower-alpha;
+  }
+
+  .pagebreak,
+  .newpage {
+    page-break-before: always;
+  }
+
+  // code block line numbers
+  pre.line-numbers {
+    position: relative;
+    padding-left: 3.8em;
+    counter-reset: linenumber;
+
+    & > code {
+      position: relative;
+    }
+
+    .line-numbers-rows {
+      position: absolute;
+      pointer-events: none;
+      top: 1em;
+      font-size: 100%;
+      left: 0; //-3.8em;
+      width: 3em;
+      /* works for line-numbers below 1000 lines */
+      letter-spacing: -1px;
+      border-right: 1px solid #999;
+
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+      user-select: none;
+
+      & > span {
+        pointer-events: none;
+        display: block;
+        counter-increment: linenumber;
+      }
+
+      & > span:before {
+        content: counter(linenumber);
+        color: #999;
+        display: block;
+        padding-right: 0.8em;
+        text-align: right;
+      }
+    }
+  }
+
+  // Code block line highlighting ({highlight=...}).
+  //
+  // The only home of the structural rules: the wrapper and band are
+  // absolutely positioned over the code lines. Without them the appended
+  // divs render in flow *below* the code block, which is what every prism
+  // theme that only styles colors used to get (vscode-mpe#2379). Themes
+  // override the band color by setting --line-highlight-background on
+  // pre[data-line] (see prism_theme/vscode.css, github-dark.less) — a
+  // custom property, so theme rules win without a specificity fight.
+  pre[data-line] {
+    position: relative;
+    // !important: ebook export loads prism themes after this stylesheet,
+    // and their `pre[class*='language-'] { padding: 1em }` has equal
+    // specificity there; the 3em left padding leaves room for the
+    // line-number badge.
+    padding: 1em 0 1em 3em !important;
+
+    // The bands are an UNDERLAY. Positioned elements paint above in-flow
+    // content, so the code (and the line-number gutter) must be raised
+    // above the band: otherwise a translucent band washes out the token
+    // colors (vscode-mpe#2404) and an opaque one hides the lines
+    // entirely (vscode-mpe#2403). `> code` matches both the Prism
+    // output and the plain-text fallback — the code element itself never
+    // carries a `language-` class (only the pre does), so a selector
+    // like `pre[class*='language-'] > code[class*='language-']` never
+    // fires on crossnote markup.
+    > code {
+      position: relative;
+      z-index: 1;
+    }
+
+    .line-numbers-rows {
+      z-index: 1;
+    }
+
+    .line-highlight-wrapper {
+      position: absolute;
+      top: 0;
+      left: 0;
+      background-color: transparent;
+      // The wrapper is structural: its box spans the full width over the
+      // lines preceding the band, and its only content is the newlines
+      // that push the band down. It must never be a hit target — before,
+      // a mousedown on those lines anchored the selection on the
+      // wrapper's invisible newlines, so the code text there could not
+      // be selected at all (vscode-mpe#2409). `pointer-events` is
+      // inherited, so this also covers the band in every theme and
+      // export path.
+      pointer-events: none;
+      display: block;
+      width: 100%;
+    }
+
+    .line-highlight {
+      position: absolute;
+      left: 0;
+      right: 0;
+      padding: inherit 0;
+      margin-top: 1em;
+      // Translucent so the band tints the code instead of covering it
+      // (vscode-mpe#2378).
+      background: hsla(24, 20%, 50%, 0.08);
+      background: var(
+        --line-highlight-background,
+        linear-gradient(
+          to right,
+          hsla(24, 20%, 50%, 0.1) 70%,
+          hsla(24, 20%, 50%, 0)
+        )
+      );
+      line-height: inherit;
+      white-space: pre;
+    }
+
+    .line-highlight:before,
+    .line-highlight[data-end]:after {
+      content: attr(data-start);
+      position: absolute;
+      top: 0.4em;
+      left: 0.6em;
+      min-width: 1em;
+      padding: 0 0.5em;
+      background-color: hsla(24, 20%, 50%, 0.4);
+      color: hsl(24, 20%, 95%);
+      font: bold 65%/1.5 sans-serif;
+      text-align: center;
+      vertical-align: 0.3em;
+      border-radius: 999px;
+      text-shadow: none;
+    }
+
+    .line-highlight[data-end]:after {
+      content: attr(data-end);
+      top: auto;
+      bottom: 0.4em;
+    }
+  }
+
+  // MathJax
+  .mathjax-exps .MathJax_Display {
+    text-align: center !important;
+  }
+
+  &:not([data-for='preview']) {
+    .code-chunk {
+      .code-chunk-btn-group {
+        display: none;
+      }
+
+      .status {
+        display: none;
+      }
+
+      .output-div {
+        margin-bottom: 16px;
+      }
+    }
+  }
+
+  // TOC
+  .md-toc {
+    padding: 0;
+
+    .md-toc-details {
+      margin: 0;
+      padding: 0;
+      border: none;
+    }
+
+    // Ordered TOC (front matter `toc: ordered: true`): nesting comes
+    // from the <ol> structure and numbers from list markers.
+    ol.md-toc-ol {
+      margin: 0;
+      padding-left: 1.6em;
+    }
+
+    summary.md-toc-link-wrapper {
+      cursor: pointer;
+      list-style-position: outside;
+
+      &::marker {
+        font-size: 0.85em;
+      }
+    }
+
+    .md-toc-link-wrapper {
+      .md-toc-link {
+        display: inline;
+        padding: 0.25rem 0;
+
+        p,
+        div {
+          display: inline;
+        }
+      }
+
+      &.highlighted {
+        .md-toc-link {
+          font-weight: 800;
+        }
+      }
+
+      &[data-level='0'] {
+        margin-left: 12px;
+      }
+      &[data-level='1'] {
+        margin-left: 28px;
+      }
+      &[data-level='2'] {
+        margin-left: 44px;
+      }
+      &[data-level='3'] {
+        margin-left: 60px;
+      }
+      &[data-level='4'] {
+        margin-left: 76px;
+      }
+      &[data-level='5'] {
+        margin-left: 80px;
+      }
+    }
+  }
+
+  // Inline #tag styling (Obsidian-like).
+  //
+  // Tags render as <a class="tag" href="tag://…"> so the webview click
+  // handler can route them.  The selectors below cover both forms
+  // (anchor + legacy span) and explicitly reset per-theme anchor
+  // decorations (underline, text-shadow, box-shadow used by themes
+  // like medium/atom-dark) so the pill shape is consistent everywhere.
+  //
+  // Background + foreground prefer VS Code badge variables when
+  // available, otherwise fall back to neutral grey rgba that works on
+  // both light and dark theme backgrounds.
+  // The :not(.token) guard prevents the tag pill styling from
+  // overriding Prism syntax-highlighted XML/HTML `<span class="token tag">`
+  // elements inside code blocks (vscode-mpe#2295).
+  a.tag,
+  a.tag:link,
+  a.tag:visited,
+  a.tag:active,
+  span.tag:not(.token) {
+    display: inline-block;
+    background-color: var(--vscode-badge-background, rgba(127, 127, 127, 0.18));
+    color: var(--vscode-badge-foreground, currentColor);
+    border-radius: 2em;
+    font-size: 0.85em;
+    font-weight: 500;
+    padding: 0.05em 0.55em;
+    line-height: 1.5;
+    white-space: nowrap;
+    text-decoration: none;
+    text-shadow: none;
+    box-shadow: none;
+    transition:
+      background-color 0.12s ease,
+      opacity 0.12s ease;
+  }
+
+  a.tag {
+    cursor: pointer;
+  }
+
+  // Hover/focus: subtle darken/highlight that works in any theme,
+  // including VS Code where the badge variable is fixed.  Using opacity
+  // avoids needing a separate "hover" colour per theme.
+  a.tag:hover,
+  a.tag:focus {
+    background-color: var(--vscode-badge-background, rgba(127, 127, 127, 0.32));
+    color: var(--vscode-badge-foreground, currentColor);
+    opacity: 0.85;
+    text-decoration: none;
+    outline: none;
+  }
+
+  // Embedded wikilink note content
+  // Reuses blockquote theme variables for a consistent inset look.
+  .wikilink-embed-content {
+    border-left: 3px solid
+      var(--vscode-textBlockQuote-border, rgba(128, 128, 128, 0.3));
+    background: var(
+      --vscode-textBlockQuote-background,
+      rgba(128, 128, 128, 0.05)
+    );
+    margin: 0.5em 0;
+    padding: 0.5em 0.75em;
+    border-radius: 0 3px 3px 0;
+
+    &.wikilink-embed-error {
+      border-left-color: var(--vscode-errorForeground, #cf222e);
+      color: var(--vscode-errorForeground, #cf222e);
+      font-style: italic;
+      opacity: 0.8;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+      &:first-child {
+        margin-top: 0.25em;
+      }
+    }
+
+    // Nested embeds get progressively tighter
+    .wikilink-embed-content {
+      margin: 0.25em 0;
+      padding: 0.25em 0.5em;
+    }
+  }
+
+  // Block reference ID markers (hidden by default)
+  .block-id {
+    display: none;
+  }
+}
+
+.scrollbar-style {
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  &::-webkit-scrollbar-track {
+    border-radius: 10px;
+    background-color: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    border-radius: 5px;
+    background-color: var(
+      --vscode-scrollbarSlider-background,
+      rgba(150, 150, 150, 0.66)
+    );
+    border: 4px solid
+      var(--vscode-scrollbarSlider-background, rgba(150, 150, 150, 0.66));
+    background-clip: content-box;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background-color: var(
+      --vscode-scrollbarSlider-hoverBackground,
+      rgba(120, 120, 120, 0.66)
+    );
+  }
+}
+
+html body[for='html-export']:not([data-presentation-mode]) {
+  @sidebar-toc-width: 300px;
+
+  position: relative;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  margin: 0;
+  padding: 0; // <= this has to be zero; otherwise prince export will have issue.
+  overflow: auto;
+
+  .markdown-preview {
+    position: relative;
+    top: 0;
+    min-height: 100vh;
+
+    @media screen and (min-width: 914px) {
+      padding: 2em calc(~'50% - 457px + 2em');
+    }
+
+    @media screen and (max-width: 914px) {
+      padding: 2em;
+    }
+
+    // mobile
+    @media screen and (max-width: 450px) {
+      font-size: 14px !important; // <= this line is necessary. otherwise #sidebar-toc-btn position will be wrong.
+      padding: 1em;
+    }
+  }
+
+  @media print {
+    #sidebar-toc-btn {
+      display: none;
+    }
+  }
+
+  #sidebar-toc-btn {
+    // please note that this is different from the one in preview.less
+    position: fixed;
+    bottom: 8px;
+    left: 8px;
+    font-size: 28px;
+    cursor: pointer;
+    color: inherit;
+    z-index: 99;
+    width: 32px;
+    text-align: center;
+    opacity: 0.4;
+  }
+
+  &[html-show-sidebar-toc] {
+    #sidebar-toc-btn {
+      opacity: 1;
+    }
+
+    .md-sidebar-toc {
+      .scrollbar-style();
+
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: @sidebar-toc-width;
+      height: 100%;
+      padding: 32px 0 48px 0;
+      font-size: 14px;
+      box-shadow: 0 0 4px rgba(150, 150, 150, 0.33);
+      box-sizing: border-box;
+      overflow: auto;
+      background-color: inherit;
+
+      a {
+        text-decoration: none;
+      }
+
+      .md-toc {
+        padding: 0 16px;
+
+        .md-toc-details {
+          margin: 0;
+          padding: 0;
+          border: none;
+        }
+
+        // Ordered TOC (front matter `toc: ordered: true`): nesting comes
+        // from the <ol> structure and numbers from list markers.
+        ol.md-toc-ol {
+          margin: 0;
+          padding-left: 1.6em;
+        }
+
+        .md-toc-link-wrapper {
+          .md-toc-link {
+            display: inline;
+            padding: 0.25rem 0;
+
+            p,
+            div {
+              display: inline;
+            }
+          }
+
+          &.highlighted {
+            .md-toc-link {
+              font-weight: 800;
+            }
+          }
+
+          &[data-level='0'] {
+            padding-left: 0;
+          }
+          &[data-level='1'] {
+            padding-left: 16px;
+          }
+          &[data-level='2'] {
+            padding-left: 32px;
+          }
+          &[data-level='3'] {
+            padding-left: 48px;
+          }
+          &[data-level='4'] {
+            padding-left: 64px;
+          }
+          &[data-level='5'] {
+            padding-left: 80px;
+          }
+        }
+      }
+    }
+
+    .markdown-preview {
+      left: @sidebar-toc-width;
+      width: calc(~'100% - ' @sidebar-toc-width);
+      padding: 2em calc(~'50% - 457px - ' (@sidebar-toc-width / 2));
+      margin: 0;
+      box-sizing: border-box;
+
+      @media screen and (max-width: (914px+@sidebar-toc-width+60px)) {
+        padding: 2em;
+      }
+
+      // mobile
+      @media screen and (max-width: 450px) {
+        width: 100%;
+      }
+    }
+  }
+
+  &:not([html-show-sidebar-toc]) {
+    .markdown-preview {
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    .md-sidebar-toc {
+      display: none;
+    }
+  }
+}

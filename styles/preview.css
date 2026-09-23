@@ -1,0 +1,166 @@
+/*
+ * Webview layout for Markdown Translate Preview.
+ * Copyright (c) 2026 Angelo Quartarone.
+ * Scrollbar rules adapted from crossnote styles/preview.less
+ * (University of Illinois/NCSA License, Copyright (c) 2017 ~ 2023 Yiyi Wang).
+ */
+html,
+body {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+.preview-container {
+  box-sizing: border-box;
+}
+
+.crossnote[data-for='preview'] {
+  display: block;
+  position: relative;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 2em;
+}
+
+.crossnote ::-webkit-scrollbar,
+body::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+body::-webkit-scrollbar-track {
+  background-color: transparent;
+}
+
+body::-webkit-scrollbar-thumb {
+  border-radius: 5px;
+  background-color: var(
+    --vscode-scrollbarSlider-background,
+    rgba(150, 150, 150, 0.66)
+  );
+}
+
+body::-webkit-scrollbar-thumb:hover {
+  background-color: var(
+    --vscode-scrollbarSlider-hoverBackground,
+    rgba(120, 120, 120, 0.66)
+  );
+}
+
+/* Heading anchors: keep the target visible below the top edge. */
+.markdown-preview :is(h1, h2, h3, h4, h5, h6) {
+  scroll-margin-top: 1em;
+}
+
+/* Tables wider than the preview scroll horizontally. */
+.markdown-preview table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.markdown-preview img {
+  max-width: 100%;
+}
+
+/* Mermaid diagrams: centred, source hidden until rendered. */
+.markdown-preview .mermaid {
+  text-align: center;
+  margin: 1em 0;
+}
+
+.markdown-preview .mermaid:not([data-processed]) {
+  visibility: hidden;
+  min-height: 2em;
+}
+
+.markdown-preview .mermaid-error {
+  color: #c0392b;
+  white-space: pre-wrap;
+  font-family: Menlo, Monaco, Consolas, monospace;
+  font-size: 0.85em;
+}
+
+.markdown-preview .katex-display {
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+/* GitHub-style alerts: > [!NOTE], [!TIP], [!IMPORTANT], [!WARNING], [!CAUTION] */
+.markdown-preview .markdown-alert {
+  --alert-color: #0969da;
+  margin: 1em 0;
+  padding: 0.5em 1em;
+  border-left: 0.25em solid var(--alert-color);
+  color: inherit;
+  background: none;
+}
+
+.markdown-preview .markdown-alert > :last-child {
+  margin-bottom: 0;
+}
+
+.markdown-preview .markdown-alert-title {
+  display: flex;
+  align-items: center;
+  gap: 0.4em;
+  margin: 0 0 0.25em;
+  font-weight: 600;
+  color: var(--alert-color);
+}
+
+.markdown-preview .markdown-alert-note { --alert-color: #0969da; }
+.markdown-preview .markdown-alert-tip { --alert-color: #1a7f37; }
+.markdown-preview .markdown-alert-important { --alert-color: #8250df; }
+.markdown-preview .markdown-alert-warning { --alert-color: #9a6700; }
+.markdown-preview .markdown-alert-caution { --alert-color: #cf222e; }
+
+body[data-color-scheme='dark'] .markdown-alert-note { --alert-color: #4493f8; }
+body[data-color-scheme='dark'] .markdown-alert-tip { --alert-color: #3fb950; }
+body[data-color-scheme='dark'] .markdown-alert-important { --alert-color: #ab7df8; }
+body[data-color-scheme='dark'] .markdown-alert-warning { --alert-color: #d29922; }
+body[data-color-scheme='dark'] .markdown-alert-caution { --alert-color: #f85149; }
+
+.markdown-preview .footnotes {
+  font-size: 0.9em;
+}
+
+.markdown-preview .task-list-item {
+  list-style-type: none;
+}
+
+.markdown-preview .task-list-item-checkbox {
+  margin: 0 0.35em 0.25em -1.4em;
+  vertical-align: middle;
+}
+
+@media print {
+  html,
+  body {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .crossnote[data-for='preview'] {
+    padding: 0;
+  }
+
+  pre,
+  blockquote,
+  table,
+  img,
+  .mermaid,
+  .katex-display {
+    break-inside: avoid;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    break-after: avoid;
+  }
+}

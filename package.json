@@ -1,498 +1,111 @@
 {
-  "name": "markdown-preview-enhanced",
-  "displayName": "%displayName%",
-  "version": "0.8.36",
-  "description": "%description%",
+  "name": "markdown-translate-preview",
+  "displayName": "Markdown Translate Preview",
+  "description": "A lean Markdown preview with themes, scroll sync, PDF export and on-the-fly translation of selected text.",
+  "version": "0.1.0",
+  "publisher": "your-publisher-id",
+  "license": "SEE LICENSE IN LICENSE.md",
+  "private": true,
+  "engines": {
+    "vscode": "^1.85.0"
+  },
   "categories": [
     "Other"
   ],
   "keywords": [
-    "markdown"
+    "markdown",
+    "preview",
+    "translate",
+    "translation",
+    "pdf"
   ],
-  "bugs": {
-    "url": "https://github.com/shd101wyy/vscode-markdown-preview-enhanced/issues"
-  },
-  "repository": "https://github.com/shd101wyy/vscode-markdown-preview-enhanced",
-  "license": "NCSA",
-  "contributors": [
-    "shd101wyy",
-    "kachkaev",
-    "gabyx",
-    "mavaddat"
-  ],
-  "publisher": "shd101wyy",
-  "packageManager": "pnpm@10.28.0",
-  "main": "./out/native/extension.js",
-  "browser": "./out/web/extension.js",
-  "l10n": "l10n/bundle.l10n.json",
-  "scripts": {
-    "build": "gulp copy-files && gulp clean-out && node build.js",
-    "check:all": "pnpm check:eslint && pnpm check:prettier",
-    "check:eslint": "eslint \"**/*\"",
-    "check:prettier": "prettier --check \"**/*.*\"",
-    "fix:all": "pnpm fix:eslint && pnpm fix:prettier",
-    "fix:eslint": "eslint --fix \"**/*\"",
-    "fix:prettier": "prettier --write \"**/*.*\"",
-    "prepare": "husky",
-    "run-in-browser": "node build.js --web-dev && concurrently \"vscode-test-web --browser none --extensionDevelopmentPath=. ${SERVE_DIR:-.}\" \"npx http-server ./crossnote -p 6789 --cors\"",
-    "run-in-browser:watch": "node build.js --web-dev && concurrently \"vscode-test-web --browser none --extensionDevelopmentPath=. ${SERVE_DIR:-.}\" \"npx http-server ./crossnote -p 6789 --cors\" \"node build.js --watch\"",
-    "run-in-vscode-dev": "npx serve --cors -l 5000 --ssl-cert $HOME/certs/localhost.pem --ssl-key $HOME/certs/localhost-key.pem",
-    "test": "pnpm test:unit",
-    "test:unit": "mocha --ui tdd --reporter spec test/find-fragment-target-line.test.js test/block-id-helpers.test.js test/rank-by-closeness.test.js test/current-preview-source.test.js test/preview-source-integration.test.js test/l10n-bundles.test.js test/native-runtime-compat.test.js test/crossnote-serve-output.test.js test/filesystem-root-warning.test.js test/custom-editor-options.test.js",
-    "vscode:prepublish": "pnpm install --frozen-lockfile && pnpm build",
-    "watch": "gulp copy-files && gulp clean-out && node build.js --watch"
-  },
+  "main": "./dist/extension.js",
+  "activationEvents": [],
   "contributes": {
     "commands": [
       {
-        "command": "markdown-preview-enhanced.openGraphView",
-        "title": "%markdown-preview-enhanced.openGraphView.title%",
-        "icon": "$(type-hierarchy)"
-      },
-      {
-        "command": "markdown-preview-enhanced.openPreviewToTheSide",
-        "title": "%markdown-preview-enhanced.openPreviewToTheSide.title%",
+        "command": "markdownTranslate.openPreviewToTheSide",
+        "title": "Open Preview to the Side",
+        "category": "Markdown Translate",
         "icon": {
           "light": "./media/preview-right-light.svg",
           "dark": "./media/preview-right-dark.svg"
         }
       },
       {
-        "command": "markdown-preview-enhanced.openPreview",
-        "title": "%markdown-preview-enhanced.openPreview.title%",
-        "icon": {
-          "light": "./media/preview-right-light.svg",
-          "dark": "./media/preview-right-dark.svg"
-        }
+        "command": "markdownTranslate.openPreview",
+        "title": "Open Preview",
+        "category": "Markdown Translate"
       },
       {
-        "command": "markdown-preview-enhanced.openLockedPreviewToTheSide",
-        "title": "%markdown-preview-enhanced.openLockedPreviewToTheSide.title%"
+        "command": "markdownTranslate.syncPreview",
+        "title": "Sync Preview to Cursor",
+        "category": "Markdown Translate"
       },
       {
-        "command": "markdown-preview-enhanced.togglePreviewLock",
-        "title": "%markdown-preview-enhanced.togglePreviewLock.title%"
+        "command": "markdownTranslate.toggleScrollSync",
+        "title": "Toggle Scroll Sync",
+        "category": "Markdown Translate"
       },
       {
-        "command": "markdown-preview-enhanced.copyBlockReference",
-        "title": "%markdown-preview-enhanced.copyBlockReference.title%"
+        "command": "markdownTranslate.selectPreviewTheme",
+        "title": "Select Preview Theme",
+        "category": "Markdown Translate"
       },
       {
-        "command": "markdown-preview-enhanced.copyCurrentSourceRelativePath",
-        "title": "%markdown-preview-enhanced.copyCurrentSourceRelativePath.title%"
+        "command": "markdownTranslate.selectCodeBlockTheme",
+        "title": "Select Code Block Theme",
+        "category": "Markdown Translate"
       },
       {
-        "command": "markdown-preview-enhanced.copyCurrentSourcePath",
-        "title": "%markdown-preview-enhanced.copyCurrentSourcePath.title%"
+        "command": "markdownTranslate.exportPdf",
+        "title": "Export PDF",
+        "category": "Markdown Translate"
       },
       {
-        "command": "markdown-preview-enhanced.openCurrentSourceInEditor",
-        "title": "%markdown-preview-enhanced.openCurrentSourceInEditor.title%"
-      },
-      {
-        "command": "markdown-preview-enhanced.openCurrentSourceInEditorAndClosePreview",
-        "title": "%markdown-preview-enhanced.openCurrentSourceInEditorAndClosePreview.title%"
-      },
-      {
-        "command": "markdown-preview-enhanced.toggleScrollSync",
-        "title": "%markdown-preview-enhanced.toggleScrollSync.title%"
-      },
-      {
-        "command": "markdown-preview-enhanced.toggleLiveUpdate",
-        "title": "%markdown-preview-enhanced.toggleLiveUpdate.title%"
-      },
-      {
-        "command": "markdown-preview-enhanced.toggleBreakOnSingleNewLine",
-        "title": "%markdown-preview-enhanced.toggleBreakOnSingleNewLine.title%"
-      },
-      {
-        "command": "markdown-preview-enhanced.openImageHelper",
-        "title": "%markdown-preview-enhanced.openImageHelper.title%"
-      },
-      {
-        "command": "markdown-preview-enhanced.runAllCodeChunks",
-        "title": "%markdown-preview-enhanced.runAllCodeChunks.title%"
-      },
-      {
-        "command": "markdown-preview-enhanced.runCodeChunk",
-        "title": "%markdown-preview-enhanced.runCodeChunk.title%"
-      },
-      {
-        "command": "markdown-preview-enhanced.syncPreview",
-        "title": "%markdown-preview-enhanced.syncPreview.title%"
-      },
-      {
-        "command": "markdown-preview-enhanced.customizeCss",
-        "title": "%markdown-preview-enhanced.customizeCss.title%",
-        "enablement": "!isWeb"
-      },
-      {
-        "command": "markdown-preview-enhanced.customizeCssInWorkspace",
-        "title": "%markdown-preview-enhanced.customizeCssInWorkspace.title%"
-      },
-      {
-        "command": "markdown-preview-enhanced.insertNewSlide",
-        "title": "%markdown-preview-enhanced.insertNewSlide.title%"
-      },
-      {
-        "command": "markdown-preview-enhanced.insertTable",
-        "title": "%markdown-preview-enhanced.insertTable.title%"
-      },
-      {
-        "command": "markdown-preview-enhanced.insertPagebreak",
-        "title": "%markdown-preview-enhanced.insertPagebreak.title%"
-      },
-      {
-        "command": "markdown-preview-enhanced.createTOC",
-        "title": "%markdown-preview-enhanced.createTOC.title%",
-        "enablement": "!isWeb"
-      },
-      {
-        "command": "markdown-preview-enhanced.openConfigScript",
-        "title": "%markdown-preview-enhanced.openConfigScript.title%",
-        "enablement": "!isWeb"
-      },
-      {
-        "command": "markdown-preview-enhanced.extendParser",
-        "title": "%markdown-preview-enhanced.extendParser.title%",
-        "enablement": "!isWeb"
-      },
-      {
-        "command": "markdown-preview-enhanced.customizePreviewHtmlHead",
-        "title": "%markdown-preview-enhanced.customizePreviewHtmlHead.title%",
-        "enablement": "!isWeb"
-      },
-      {
-        "command": "markdown-preview-enhanced.openConfigScriptInWorkspace",
-        "title": "%markdown-preview-enhanced.openConfigScriptInWorkspace.title%"
-      },
-      {
-        "command": "markdown-preview-enhanced.extendParserInWorkspace",
-        "title": "%markdown-preview-enhanced.extendParserInWorkspace.title%"
-      },
-      {
-        "command": "markdown-preview-enhanced.customizePreviewHtmlHeadInWorkspace",
-        "title": "%markdown-preview-enhanced.customizePreviewHtmlHeadInWorkspace.title%"
-      },
-      {
-        "command": "markdown-preview-enhanced.showUploadedImages",
-        "title": "%markdown-preview-enhanced.showUploadedImages.title%",
-        "enablement": "!isWeb"
-      },
-      {
-        "command": "markdown-preview-enhanced.setAiTranslationApiKey",
-        "title": "%markdown-preview-enhanced.setAiTranslationApiKey.title%"
-      },
-      {
-        "command": "markdown-preview-enhanced.translateNow",
-        "title": "%markdown-preview-enhanced.translateNow.title%"
-      },
-      {
-        "command": "markdown-preview-enhanced.showOriginalTranslation",
-        "title": "%markdown-preview-enhanced.showOriginalTranslation.title%"
-      },
-      {
-        "command": "markdown-preview-enhanced.startCrossnoteServer",
-        "title": "%markdown-preview-enhanced.startCrossnoteServer.title%",
-        "enablement": "!isWeb"
-      },
-      {
-        "command": "markdown-preview-enhanced.stopCrossnoteServer",
-        "title": "%markdown-preview-enhanced.stopCrossnoteServer.title%",
-        "enablement": "markdown-preview-enhanced.crossnoteServerRunning && !isWeb"
-      },
-      {
-        "command": "markdown-preview-enhanced.buildStandaloneWiki",
-        "title": "%markdown-preview-enhanced.buildStandaloneWiki.title%",
-        "enablement": "!isWeb"
+        "command": "markdownTranslate.exportHtml",
+        "title": "Export HTML",
+        "category": "Markdown Translate"
       }
     ],
     "configuration": {
-      "type": "object",
-      "title": "Markdown Preview Enhanced",
+      "title": "Markdown Translate Preview",
       "properties": {
-        "markdown-preview-enhanced.crossnoteServePort": {
-          "description": "%markdown-preview-enhanced.crossnoteServePort.description%",
-          "default": 3000,
-          "type": "number",
-          "minimum": 0,
-          "maximum": 65535
-        },
-        "markdown-preview-enhanced.configPath": {
-          "markdownDescription": "%markdown-preview-enhanced.configPath.markdownDescription%",
-          "default": "",
-          "type": "string"
-        },
-        "markdown-preview-enhanced.markdownParser": {
-          "description": "%markdown-preview-enhanced.markdownParser.description%",
-          "default": "markdown-it",
+        "markdownTranslate.previewTheme": {
           "type": "string",
           "enum": [
-            "markdown-it",
-            "pandoc",
-            "markdown_yo"
+            "github-light.css",
+            "github-dark.css",
+            "sepia.css",
+            "newsprint.css",
+            "atom-light.css",
+            "atom-dark.css",
+            "atom-material.css",
+            "one-light.css",
+            "one-dark.css",
+            "solarized-light.css",
+            "solarized-dark.css",
+            "gothic.css",
+            "medium.css",
+            "monokai.css",
+            "night.css",
+            "vue.css",
+            "vscode.css"
           ],
-          "enumDescriptions": [
-            "%markdown-preview-enhanced.markdownParser.enumDescriptions.0%",
-            "%markdown-preview-enhanced.markdownParser.enumDescriptions.1%",
-            "%markdown-preview-enhanced.markdownParser.enumDescriptions.2%"
-          ]
+          "default": "github-light.css",
+          "description": "Theme of the preview. \"sepia\" is a warm reading theme; \"vscode\" follows the editor colors."
         },
-        "markdown-preview-enhanced.breakOnSingleNewLine": {
-          "description": "%markdown-preview-enhanced.breakOnSingleNewLine.description%",
-          "default": true,
-          "type": "boolean"
-        },
-        "markdown-preview-enhanced.scrollSync": {
-          "description": "%markdown-preview-enhanced.scrollSync.description%",
-          "default": true,
-          "type": "boolean"
-        },
-        "markdown-preview-enhanced.liveUpdate": {
-          "description": "%markdown-preview-enhanced.liveUpdate.description%",
-          "default": true,
-          "type": "boolean"
-        },
-        "markdown-preview-enhanced.liveUpdateDebounceMs": {
-          "description": "%markdown-preview-enhanced.liveUpdateDebounceMs.description%",
-          "default": 300,
-          "type": "number",
-          "minimum": 0,
-          "maximum": 5000
-        },
-        "markdown-preview-enhanced.previewMode": {
-          "markdownDescription": "%markdown-preview-enhanced.previewMode.markdownDescription%",
-          "type": "string",
-          "enum": [
-            "Single Preview",
-            "Multiple Previews",
-            "Previews Only"
-          ],
-          "default": "Single Preview"
-        },
-        "markdown-preview-enhanced.automaticallyShowPreviewOfMarkdownBeingEdited": {
-          "description": "%markdown-preview-enhanced.automaticallyShowPreviewOfMarkdownBeingEdited.description%",
-          "default": false,
-          "type": "boolean"
-        },
-        "markdown-preview-enhanced.disableAutoPreviewForUriSchemes": {
-          "markdownDescription": "%markdown-preview-enhanced.disableAutoPreviewForUriSchemes.markdownDescription%",
-          "default": [
-            "vscode-notebook-cell"
-          ],
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "markdown-preview-enhanced.disableAutoPreviewForFilePatterns": {
-          "markdownDescription": "%markdown-preview-enhanced.disableAutoPreviewForFilePatterns.markdownDescription%",
-          "default": [],
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "markdown-preview-enhanced.previewColorScheme": {
-          "type": "string",
-          "enum": [
-            "selectedPreviewTheme",
-            "systemColorScheme",
-            "editorColorScheme"
-          ],
-          "default": "selectedPreviewTheme",
-          "markdownEnumDescriptions": [
-            "%markdown-preview-enhanced.previewColorScheme.markdownEnumDescriptions.0%",
-            "%markdown-preview-enhanced.previewColorScheme.markdownEnumDescriptions.1%",
-            "%markdown-preview-enhanced.previewColorScheme.markdownEnumDescriptions.2%"
-          ]
-        },
-        "markdown-preview-enhanced.enableTypographer": {
-          "description": "%markdown-preview-enhanced.enableTypographer.description%",
-          "default": false,
-          "type": "boolean"
-        },
-        "markdown-preview-enhanced.mathRenderingOption": {
-          "description": "%markdown-preview-enhanced.mathRenderingOption.description%",
-          "default": "KaTeX",
-          "type": "string",
-          "enum": [
-            "KaTeX",
-            "MathJax",
-            "None"
-          ]
-        },
-        "markdown-preview-enhanced.mathInlineDelimiters": {
-          "description": "%markdown-preview-enhanced.mathInlineDelimiters.description%",
-          "default": [
-            [
-              "$",
-              "$"
-            ],
-            [
-              "\\(",
-              "\\)"
-            ]
-          ],
-          "type": "array"
-        },
-        "markdown-preview-enhanced.mathBlockDelimiters": {
-          "description": "%markdown-preview-enhanced.mathBlockDelimiters.description%",
-          "default": [
-            [
-              "$$",
-              "$$"
-            ],
-            [
-              "\\[",
-              "\\]"
-            ]
-          ],
-          "type": "array"
-        },
-        "markdown-preview-enhanced.mathRenderingOnlineService": {
-          "description": "%markdown-preview-enhanced.mathRenderingOnlineService.description%",
-          "default": "https://latex.codecogs.com/gif.latex",
-          "type": "string",
-          "enum": [
-            "https://latex.codecogs.com/gif.latex",
-            "https://latex.codecogs.com/svg.latex",
-            "https://latex.codecogs.com/png.latex"
-          ]
-        },
-        "markdown-preview-enhanced.mathjaxScriptSrc": {
-          "description": "%markdown-preview-enhanced.mathjaxScriptSrc.description%",
-          "default": "https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js",
-          "type": "string"
-        },
-        "markdown-preview-enhanced.mathjaxV3ScriptSrc": {
-          "markdownDeprecationMessage": "This setting has been renamed to `#markdown-preview-enhanced.mathjaxScriptSrc#` and the default now loads MathJax v4. Please move your value to the new setting.",
-          "deprecationMessage": "This setting has been renamed to markdown-preview-enhanced.mathjaxScriptSrc and the default now loads MathJax v4. Please move your value to the new setting.",
-          "type": "string"
-        },
-        "markdown-preview-enhanced.enableWikiLinkSyntax": {
-          "description": "%markdown-preview-enhanced.enableWikiLinkSyntax.description%",
-          "default": true,
-          "type": "boolean"
-        },
-        "markdown-preview-enhanced.enableLinkify": {
-          "description": "%markdown-preview-enhanced.enableLinkify.description%",
-          "default": true,
-          "type": "boolean"
-        },
-        "markdown-preview-enhanced.useGitHubStylePipedLink": {
-          "description": "%markdown-preview-enhanced.useGitHubStylePipedLink.description%",
-          "default": false,
-          "type": "boolean"
-        },
-        "markdown-preview-enhanced.enableEmojiSyntax": {
-          "description": "%markdown-preview-enhanced.enableEmojiSyntax.description%",
-          "default": true,
-          "type": "boolean"
-        },
-        "markdown-preview-enhanced.enableExtendedTableSyntax": {
-          "description": "%markdown-preview-enhanced.enableExtendedTableSyntax.description%",
-          "default": false,
-          "type": "boolean"
-        },
-        "markdown-preview-enhanced.enableCriticMarkupSyntax": {
-          "description": "%markdown-preview-enhanced.enableCriticMarkupSyntax.description%",
-          "default": false,
-          "type": "boolean"
-        },
-        "markdown-preview-enhanced.enableTagSyntax": {
-          "description": "%markdown-preview-enhanced.enableTagSyntax.description%",
-          "default": true,
-          "type": "boolean"
-        },
-        "markdown-preview-enhanced.maxNoteFileSize": {
-          "markdownDescription": "%markdown-preview-enhanced.maxNoteFileSize.markdownDescription%",
-          "default": 5242880,
-          "type": "number",
-          "minimum": 0
-        },
-        "markdown-preview-enhanced.wikiLinkTargetFileExtension": {
-          "markdownDescription": "%markdown-preview-enhanced.wikiLinkTargetFileExtension.markdownDescription%",
-          "default": ".md",
-          "type": "string"
-        },
-        "markdown-preview-enhanced.wikiLinkResolution": {
-          "markdownDescription": "%markdown-preview-enhanced.wikiLinkResolution.markdownDescription%",
-          "default": "relative",
-          "type": "string",
-          "enum": [
-            "relative",
-            "shortest",
-            "absolute"
-          ],
-          "enumDescriptions": [
-            "%markdown-preview-enhanced.wikiLinkResolution.enumDescriptions.0%",
-            "%markdown-preview-enhanced.wikiLinkResolution.enumDescriptions.1%",
-            "%markdown-preview-enhanced.wikiLinkResolution.enumDescriptions.2%"
-          ]
-        },
-        "markdown-preview-enhanced.wikiLinkTargetFileNameChangeCase": {
-          "markdownDescription": "%markdown-preview-enhanced.wikiLinkTargetFileNameChangeCase.markdownDescription%",
-          "default": "none",
-          "type": "string",
-          "enum": [
-            "none",
-            "camelCase",
-            "pascalCase",
-            "kebabCase",
-            "snakeCase",
-            "constantCase",
-            "trainCase",
-            "adaCase",
-            "cobolCase",
-            "dotNotation",
-            "pathCase",
-            "spaceCase",
-            "capitalCase",
-            "lowerCase",
-            "upperCase"
-          ]
-        },
-        "markdown-preview-enhanced.frontMatterRenderingOption": {
-          "description": "%markdown-preview-enhanced.frontMatterRenderingOption.description%",
-          "type": "string",
-          "enum": [
-            "none",
-            "table",
-            "vertical table",
-            "code block"
-          ],
-          "enumDescriptions": [
-            "%markdown-preview-enhanced.frontMatterRenderingOption.enumDescriptions.0%",
-            "%markdown-preview-enhanced.frontMatterRenderingOption.enumDescriptions.1%",
-            "%markdown-preview-enhanced.frontMatterRenderingOption.enumDescriptions.2%",
-            "%markdown-preview-enhanced.frontMatterRenderingOption.enumDescriptions.3%"
-          ],
-          "default": "none"
-        },
-        "markdown-preview-enhanced.mermaidTheme": {
-          "description": "%markdown-preview-enhanced.mermaidTheme.description%",
-          "default": "default",
-          "type": "string",
-          "enum": [
-            "default",
-            "dark",
-            "forest"
-          ]
-        },
-        "markdown-preview-enhanced.codeBlockTheme": {
-          "description": "%markdown-preview-enhanced.codeBlockTheme.description%",
-          "default": "auto.css",
+        "markdownTranslate.codeBlockTheme": {
           "type": "string",
           "enum": [
             "auto.css",
-            "default.css",
             "atom-dark.css",
             "atom-light.css",
             "atom-material.css",
             "coy.css",
             "darcula.css",
             "dark.css",
+            "default.css",
             "funky.css",
             "github.css",
             "github-dark.css",
@@ -506,540 +119,155 @@
             "solarized-dark.css",
             "solarized-light.css",
             "twilight.css",
-            "vscode.css",
             "vs.css",
+            "vscode.css",
             "vue.css",
             "xonokai.css"
-          ]
-        },
-        "markdown-preview-enhanced.previewTheme": {
-          "description": "%markdown-preview-enhanced.previewTheme.description%",
-          "default": "github-light.css",
-          "type": "string",
-          "enum": [
-            "atom-dark.css",
-            "atom-light.css",
-            "atom-material.css",
-            "github-dark.css",
-            "github-light.css",
-            "gothic.css",
-            "medium.css",
-            "monokai.css",
-            "newsprint.css",
-            "night.css",
-            "none.css",
-            "one-dark.css",
-            "one-light.css",
-            "solarized-dark.css",
-            "solarized-light.css",
-            "vscode.css",
-            "vue.css"
           ],
-          "markdownEnumDescriptions": [
-            "%markdown-preview-enhanced.previewTheme.markdownEnumDescriptions.0%",
-            "%markdown-preview-enhanced.previewTheme.markdownEnumDescriptions.1%",
-            "%markdown-preview-enhanced.previewTheme.markdownEnumDescriptions.2%",
-            "%markdown-preview-enhanced.previewTheme.markdownEnumDescriptions.3%",
-            "%markdown-preview-enhanced.previewTheme.markdownEnumDescriptions.4%",
-            "%markdown-preview-enhanced.previewTheme.markdownEnumDescriptions.5%",
-            "%markdown-preview-enhanced.previewTheme.markdownEnumDescriptions.6%",
-            "%markdown-preview-enhanced.previewTheme.markdownEnumDescriptions.7%",
-            "%markdown-preview-enhanced.previewTheme.markdownEnumDescriptions.8%",
-            "%markdown-preview-enhanced.previewTheme.markdownEnumDescriptions.9%",
-            "%markdown-preview-enhanced.previewTheme.markdownEnumDescriptions.10%",
-            "%markdown-preview-enhanced.previewTheme.markdownEnumDescriptions.11%",
-            "%markdown-preview-enhanced.previewTheme.markdownEnumDescriptions.12%",
-            "%markdown-preview-enhanced.previewTheme.markdownEnumDescriptions.13%",
-            "%markdown-preview-enhanced.previewTheme.markdownEnumDescriptions.14%",
-            "%markdown-preview-enhanced.previewTheme.markdownEnumDescriptions.15%",
-            "%markdown-preview-enhanced.previewTheme.markdownEnumDescriptions.16%"
-          ]
+          "default": "auto.css",
+          "description": "Syntax highlighting theme of code blocks. \"auto\" picks the one matching the preview theme."
         },
-        "markdown-preview-enhanced.revealjsTheme": {
-          "description": "%markdown-preview-enhanced.revealjsTheme.description%",
-          "default": "white.css",
+        "markdownTranslate.previewColorScheme": {
           "type": "string",
           "enum": [
-            "beige.css",
-            "black.css",
-            "blood.css",
-            "league.css",
-            "moon.css",
-            "night.css",
-            "serif.css",
-            "simple.css",
-            "sky.css",
-            "solarized.css",
-            "vscode.css",
-            "white.css",
-            "none.css"
-          ]
-        },
-        "markdown-preview-enhanced.protocolsWhiteList": {
-          "description": "%markdown-preview-enhanced.protocolsWhiteList.description%",
-          "default": "http://, https://, atom://, file://, mailto:, tel:",
-          "type": "string"
-        },
-        "markdown-preview-enhanced.imageFolderPath": {
-          "description": "%markdown-preview-enhanced.imageFolderPath.description%",
-          "default": "/assets",
-          "type": "string"
-        },
-        "markdown-preview-enhanced.imageUploader": {
-          "description": "%markdown-preview-enhanced.imageUploader.description%",
-          "default": "imgur",
-          "type": "string",
-          "enum": [
-            "imgur",
-            "sm.ms",
-            "qiniu"
-          ]
-        },
-        "markdown-preview-enhanced.qiniuAccessKey": {
-          "type": "string",
-          "default": "",
-          "description": "%markdown-preview-enhanced.qiniuAccessKey.description%"
-        },
-        "markdown-preview-enhanced.qiniuSecretKey": {
-          "type": "string",
-          "default": "",
-          "description": "%markdown-preview-enhanced.qiniuSecretKey.description%"
-        },
-        "markdown-preview-enhanced.qiniuBucket": {
-          "type": "string",
-          "default": "",
-          "description": "%markdown-preview-enhanced.qiniuBucket.description%"
-        },
-        "markdown-preview-enhanced.qiniuDomain": {
-          "type": "string",
-          "default": "http://",
-          "description": "%markdown-preview-enhanced.qiniuDomain.description%"
-        },
-        "markdown-preview-enhanced.printBackground": {
-          "description": "%markdown-preview-enhanced.printBackground.description%",
-          "default": false,
-          "type": "boolean"
-        },
-        "markdown-preview-enhanced.exportColorScheme": {
-          "type": "string",
-          "enum": [
-            "theme",
-            "auto"
+            "selectedPreviewTheme",
+            "editorColorScheme",
+            "systemColorScheme"
           ],
-          "default": "theme",
-          "markdownEnumDescriptions": [
-            "%markdown-preview-enhanced.exportColorScheme.markdownEnumDescriptions.0%",
-            "%markdown-preview-enhanced.exportColorScheme.markdownEnumDescriptions.1%"
-          ]
+          "enumDescriptions": [
+            "Always use the selected preview theme.",
+            "Switch paired themes (github, atom, one, solarized) to their light/dark variant following the editor theme.",
+            "Switch paired themes following the operating system appearance."
+          ],
+          "default": "editorColorScheme",
+          "description": "How light and dark variants of the preview theme are chosen."
         },
-        "markdown-preview-enhanced.chromePath": {
-          "description": "%markdown-preview-enhanced.chromePath.description%",
-          "default": "",
-          "type": "string",
-          "scope": "machine"
-        },
-        "markdown-preview-enhanced.imageMagickPath": {
-          "description": "%markdown-preview-enhanced.imageMagickPath.description%",
-          "default": "",
-          "type": "string",
-          "scope": "machine"
-        },
-        "markdown-preview-enhanced.pandocPath": {
-          "description": "%markdown-preview-enhanced.pandocPath.description%",
-          "default": "pandoc",
-          "type": "string",
-          "scope": "machine"
-        },
-        "markdown-preview-enhanced.markdownYoBinaryPath": {
-          "description": "%markdown-preview-enhanced.markdownYoBinaryPath.description%",
-          "default": "",
-          "type": "string",
-          "scope": "machine"
-        },
-        "markdown-preview-enhanced.pandocMarkdownFlavor": {
-          "description": "%markdown-preview-enhanced.pandocMarkdownFlavor.description%",
-          "default": "markdown-raw_tex+tex_math_single_backslash",
-          "type": "string"
-        },
-        "markdown-preview-enhanced.pandocArguments": {
-          "description": "%markdown-preview-enhanced.pandocArguments.description%",
-          "default": [],
-          "type": "array"
-        },
-        "markdown-preview-enhanced.latexEngine": {
-          "description": "%markdown-preview-enhanced.latexEngine.description%",
-          "default": "pdflatex",
-          "type": "string"
-        },
-        "markdown-preview-enhanced.enableScriptExecution": {
-          "description": "%markdown-preview-enhanced.enableScriptExecution.description%",
-          "default": false,
-          "type": "boolean"
-        },
-        "markdown-preview-enhanced.enablePreviewScripts": {
-          "description": "%markdown-preview-enhanced.enablePreviewScripts.description%",
-          "scope": "application",
-          "default": false,
-          "type": "boolean"
-        },
-        "markdown-preview-enhanced.enableHTML5Embed": {
-          "description": "%markdown-preview-enhanced.enableHTML5Embed.description%",
-          "default": false,
-          "type": "boolean"
-        },
-        "markdown-preview-enhanced.HTML5EmbedUseImageSyntax": {
-          "description": "%markdown-preview-enhanced.HTML5EmbedUseImageSyntax.description%",
+        "markdownTranslate.scrollSync": {
+          "type": "boolean",
           "default": true,
-          "type": "boolean"
+          "description": "Synchronize scrolling between the editor and the preview."
         },
-        "markdown-preview-enhanced.HTML5EmbedUseLinkSyntax": {
-          "description": "%markdown-preview-enhanced.HTML5EmbedUseLinkSyntax.description%",
-          "default": false,
-          "type": "boolean"
-        },
-        "markdown-preview-enhanced.HTML5EmbedIsAllowedHttp": {
-          "description": "%markdown-preview-enhanced.HTML5EmbedIsAllowedHttp.description%",
-          "default": false,
-          "type": "boolean"
-        },
-        "markdown-preview-enhanced.HTML5EmbedAudioAttributes": {
-          "description": "%markdown-preview-enhanced.HTML5EmbedAudioAttributes.description%",
-          "default": "controls preload=\"metadata\" width=\"320\"",
-          "type": "string"
-        },
-        "markdown-preview-enhanced.HTML5EmbedVideoAttributes": {
-          "description": "%markdown-preview-enhanced.HTML5EmbedVideoAttributes.description%",
-          "default": "controls preload=\"metadata\" width=\"320\" height=\"240\"",
-          "type": "string"
-        },
-        "markdown-preview-enhanced.puppeteerWaitForTimeout": {
-          "description": "%markdown-preview-enhanced.puppeteerWaitForTimeout.description%",
-          "default": 0,
-          "type": "number"
-        },
-        "markdown-preview-enhanced.puppeteerArgs": {
-          "description": "%markdown-preview-enhanced.puppeteerArgs.description%",
-          "default": [],
-          "type": "array"
-        },
-        "markdown-preview-enhanced.plantumlServer": {
-          "description": "%markdown-preview-enhanced.plantumlServer.description%",
-          "default": "",
-          "type": "string"
-        },
-        "markdown-preview-enhanced.hideDefaultVSCodeMarkdownPreviewButtons": {
-          "description": "%markdown-preview-enhanced.hideDefaultVSCodeMarkdownPreviewButtons.description%",
-          "default": true,
-          "type": "boolean"
-        },
-        "markdown-preview-enhanced.jsdelivrCdnHost": {
-          "markdownDescription": "%markdown-preview-enhanced.jsdelivrCdnHost.markdownDescription%",
-          "default": "cdn.jsdelivr.net",
-          "type": "string"
-        },
-        "markdown-preview-enhanced.plantumlJarPath": {
-          "description": "%markdown-preview-enhanced.plantumlJarPath.description%",
-          "default": "",
-          "type": "string"
-        },
-        "markdown-preview-enhanced.krokiServer": {
-          "description": "%markdown-preview-enhanced.krokiServer.description%",
-          "default": "https://kroki.io",
-          "type": "string"
-        },
-        "markdown-preview-enhanced.webSequenceDiagramsServer": {
-          "description": "%markdown-preview-enhanced.webSequenceDiagramsServer.description%",
-          "default": "https://www.websequencediagrams.com",
-          "type": "string"
-        },
-        "markdown-preview-enhanced.webSequenceDiagramsApiKey": {
-          "description": "%markdown-preview-enhanced.webSequenceDiagramsApiKey.description%",
-          "default": "",
-          "type": "string"
-        },
-        "markdown-preview-enhanced.d2Path": {
-          "description": "%markdown-preview-enhanced.d2Path.description%",
-          "default": "d2",
-          "type": "string",
-          "scope": "machine"
-        },
-        "markdown-preview-enhanced.d2Layout": {
-          "description": "%markdown-preview-enhanced.d2Layout.description%",
-          "default": "dagre",
-          "type": "string",
-          "enum": [
-            "dagre",
-            "elk",
-            "tala"
-          ]
-        },
-        "markdown-preview-enhanced.d2Theme": {
-          "description": "%markdown-preview-enhanced.d2Theme.description%",
-          "default": 0,
+        "markdownTranslate.liveUpdateDebounceMs": {
           "type": "number",
-          "enum": [
-            0,
-            1,
-            3,
-            4,
-            5,
-            6,
-            7,
-            8,
-            100,
-            101,
-            102,
-            103,
-            104,
-            105,
-            200,
-            201,
-            300,
-            301,
-            302,
-            303
-          ],
-          "enumItemLabels": [
-            "Neutral Default",
-            "Neutral Grey",
-            "Flagship Terrastruct",
-            "Cool Classics",
-            "Mixed Berry Blue",
-            "Grape Soda",
-            "Aubergine",
-            "Colorblind Clear",
-            "Vanilla Nitro Cola",
-            "Orange Creamsicle",
-            "Shirley Temple",
-            "Earth Tones",
-            "Everglade Green",
-            "Buttered Toast",
-            "Dark Mauve",
-            "Dark Flagship Terrastruct",
-            "Terminal",
-            "Terminal Grayscale",
-            "Origami",
-            "C4"
-          ]
+          "default": 300,
+          "minimum": 0,
+          "description": "Delay in milliseconds before the preview updates after an edit."
         },
-        "markdown-preview-enhanced.d2Sketch": {
-          "description": "%markdown-preview-enhanced.d2Sketch.description%",
+        "markdownTranslate.breakOnSingleNewLine": {
+          "type": "boolean",
           "default": false,
-          "type": "boolean"
+          "description": "Render a single line break as <br> (GitHub does not)."
         },
-        "markdown-preview-enhanced.markdownFileExtensions": {
-          "description": "%markdown-preview-enhanced.markdownFileExtensions.description%",
-          "default": [
-            ".md",
-            ".markdown",
-            ".mdown",
-            ".mkdn",
-            ".mkd",
-            ".rmd",
-            ".qmd",
-            ".mdx"
-          ],
-          "type": "array"
-        },
-        "markdown-preview-enhanced.alwaysShowBacklinksInPreview": {
-          "description": "%markdown-preview-enhanced.alwaysShowBacklinksInPreview.description%",
-          "default": false,
-          "type": "boolean"
-        },
-        "markdown-preview-enhanced.enablePreviewZenMode": {
-          "description": "%markdown-preview-enhanced.enablePreviewZenMode.description%",
+        "markdownTranslate.math.enabled": {
+          "type": "boolean",
           "default": true,
-          "type": "boolean"
+          "description": "Render $...$ and $$...$$ math with KaTeX."
         },
-        "markdown-preview-enhanced.useVSCodeThemeForContextMenu": {
-          "description": "%markdown-preview-enhanced.useVSCodeThemeForContextMenu.description%",
-          "default": false,
-          "type": "boolean"
-        },
-        "markdown-preview-enhanced.enablePreviewContextMenu": {
-          "description": "%markdown-preview-enhanced.enablePreviewContextMenu.description%",
+        "markdownTranslate.mermaid.enabled": {
+          "type": "boolean",
           "default": true,
-          "type": "boolean"
+          "description": "Render ```mermaid code blocks as diagrams."
         },
-        "markdown-preview-enhanced.enableImageLightbox": {
-          "description": "%markdown-preview-enhanced.enableImageLightbox.description%",
-          "default": true,
-          "type": "boolean"
-        },
-        "markdown-preview-enhanced.aiTranslationProvider": {
-          "description": "%markdown-preview-enhanced.aiTranslationProvider.description%",
+        "markdownTranslate.chromePath": {
+          "type": "string",
           "default": "",
-          "type": "string"
-        },
-        "markdown-preview-enhanced.aiTranslationModel": {
-          "description": "%markdown-preview-enhanced.aiTranslationModel.description%",
-          "default": "",
-          "type": "string"
-        },
-        "markdown-preview-enhanced.aiTranslationAutoUpdate": {
-          "description": "%markdown-preview-enhanced.aiTranslationAutoUpdate.description%",
-          "default": false,
-          "type": "boolean"
+          "scope": "machine",
+          "description": "Path of Chrome, Chromium, Edge or Brave used for PDF export. Leave empty to detect it automatically."
         }
       }
     },
-    "customEditors": [
-      {
-        "viewType": "markdown-preview-enhanced",
-        "displayName": "%customEditorPreviewDisplayName%",
-        "selector": [
-          {
-            "filenamePattern": "*.{md,markdown,mdown,mkdn,mkd,rmd,qmd}"
-          }
-        ],
-        "priority": "option"
-      }
-    ],
     "keybindings": [
       {
-        "command": "markdown-preview-enhanced.openPreviewToTheSide",
+        "command": "markdownTranslate.openPreviewToTheSide",
         "key": "ctrl+k v",
         "mac": "cmd+k v",
-        "when": "editorLangId =~ /^(markdown|quarto|prompt|instructions|chatagent|skill)$/"
+        "when": "editorLangId == markdown"
       },
       {
-        "command": "markdown-preview-enhanced.openPreview",
+        "command": "markdownTranslate.openPreview",
         "key": "ctrl+shift+v",
         "mac": "cmd+shift+v",
-        "when": "editorLangId =~ /^(markdown|quarto|prompt|instructions|chatagent|skill)$/"
-      },
-      {
-        "command": "markdown-preview-enhanced.openLockedPreviewToTheSide",
-        "key": "ctrl+k shift+l",
-        "mac": "cmd+k shift+l",
-        "when": "editorLangId =~ /^(markdown|quarto|prompt|instructions|chatagent|skill)$/"
-      },
-      {
-        "command": "markdown-preview-enhanced.togglePreviewLock",
-        "key": "ctrl+k ctrl+shift+l",
-        "mac": "cmd+k cmd+shift+l",
-        "when": "editorLangId =~ /^(markdown|quarto|prompt|instructions|chatagent|skill)$/"
-      },
-      {
-        "command": "markdown-preview-enhanced.runAllCodeChunks",
-        "key": "ctrl+shift+enter",
-        "when": "editorLangId =~ /^(markdown|quarto|prompt|instructions|chatagent|skill)$/"
-      },
-      {
-        "command": "markdown-preview-enhanced.runCodeChunk",
-        "key": "shift+enter",
-        "when": "editorLangId =~ /^(markdown|quarto|prompt|instructions|chatagent|skill)$/"
-      },
-      {
-        "command": "markdown-preview-enhanced.syncPreview",
-        "key": "ctrl+shift+s",
-        "when": "editorLangId =~ /^(markdown|quarto|prompt|instructions|chatagent|skill)$/"
+        "when": "editorLangId == markdown"
       }
     ],
     "menus": {
-      "explorer/context": [
+      "editor/title": [
         {
-          "command": "markdown-preview-enhanced.startCrossnoteServer",
-          "when": "resourceLangId =~ /^(markdown|quarto|prompt|instructions|chatagent|skill)$/ && !isWeb",
-          "group": "markdown-preview-enhanced"
-        },
-        {
-          "command": "markdown-preview-enhanced.stopCrossnoteServer",
-          "when": "resourceLangId =~ /^(markdown|quarto|prompt|instructions|chatagent|skill)$/ && markdown-preview-enhanced.crossnoteServerRunning && !isWeb",
-          "group": "markdown-preview-enhanced"
+          "command": "markdownTranslate.openPreviewToTheSide",
+          "when": "editorLangId == markdown",
+          "group": "navigation"
         }
       ],
       "editor/context": [
         {
-          "command": "markdown-preview-enhanced.openPreviewToTheSide",
-          "when": "editorLangId =~ /^(markdown|quarto|prompt|instructions|chatagent|skill)$/",
-          "group": "markdown-preview-enhanced"
+          "command": "markdownTranslate.openPreviewToTheSide",
+          "when": "editorLangId == markdown",
+          "group": "markdownTranslate@1"
         },
         {
-          "command": "markdown-preview-enhanced.openGraphView",
-          "when": "editorLangId =~ /^(markdown|quarto|prompt|instructions|chatagent|skill)$/",
-          "group": "markdown-preview-enhanced"
+          "command": "markdownTranslate.exportPdf",
+          "when": "editorLangId == markdown",
+          "group": "markdownTranslate@2"
         },
         {
-          "command": "markdown-preview-enhanced.startCrossnoteServer",
-          "when": "editorLangId =~ /^(markdown|quarto|prompt|instructions|chatagent|skill)$/ && !isWeb",
-          "group": "markdown-preview-enhanced"
-        },
-        {
-          "command": "markdown-preview-enhanced.stopCrossnoteServer",
-          "when": "editorLangId =~ /^(markdown|quarto|prompt|instructions|chatagent|skill)$/ && markdown-preview-enhanced.crossnoteServerRunning && !isWeb",
-          "group": "markdown-preview-enhanced"
+          "command": "markdownTranslate.exportHtml",
+          "when": "editorLangId == markdown",
+          "group": "markdownTranslate@3"
         }
       ],
-      "editor/title": [
+      "explorer/context": [
         {
-          "command": "markdown-preview-enhanced.openPreviewToTheSide",
-          "when": "editorLangId =~ /^(markdown|quarto|prompt|instructions|chatagent|skill)$/",
+          "command": "markdownTranslate.openPreviewToTheSide",
+          "when": "resourceLangId == markdown",
           "group": "navigation"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "markdownTranslate.openPreviewToTheSide",
+          "when": "editorLangId == markdown"
+        },
+        {
+          "command": "markdownTranslate.openPreview",
+          "when": "editorLangId == markdown"
         }
       ]
     }
   },
-  "activationEvents": [
-    "onStartupFinished",
-    "onLanguage:markdown",
-    "onLanguage:quarto",
-    "onLanguage:prompt",
-    "onLanguage:instructions",
-    "onLanguage:chatagent",
-    "onLanguage:skill"
-  ],
-  "husky": {
-    "hooks": {
-      "pre-commit": "lint-staged"
-    }
-  },
-  "lint-staged": {
-    "**/*.*": [
-      "eslint",
-      "prettier --write"
-    ]
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "watch": "node scripts/build.mjs --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "npm run typecheck && npm run test:unit",
+    "test:unit": "node scripts/build.mjs --tests && mocha \"out/test/unit/**/*.test.js\"",
+    "test:integration": "npm run build && node scripts/build.mjs --tests && node scripts/run-integration-tests.mjs",
+    "vscode:prepublish": "npm run build",
+    "package": "vsce package --no-dependencies --allow-missing-repository --no-rewrite-relative-links"
   },
   "dependencies": {
-    "@earendil-works/pi-ai": "^0.83.0",
-    "@types/crypto-js": "^4.1.2",
-    "@types/vfile": "^3.0.2",
-    "async-mutex": "^0.4.0",
-    "crossnote": "0.9.39",
-    "crypto-js": "^4.2.0"
+    "@vscode/markdown-it-katex": "^1.1.2",
+    "katex": "^0.18.7",
+    "markdown-it": "^15.0.2",
+    "markdown-it-abbr": "^2.0.0",
+    "markdown-it-deflist": "^4.0.0",
+    "markdown-it-emoji": "^3.1.0",
+    "markdown-it-footnote": "^4.0.0",
+    "markdown-it-mark": "^4.0.0",
+    "markdown-it-sub": "^2.0.0",
+    "markdown-it-sup": "^2.0.0",
+    "markdown-it-task-lists": "^2.1.1"
   },
   "devDependencies": {
-    "@eslint/js": "^9",
-    "@types/mocha": "^5.2.5",
-    "@types/node": "^25.6.0",
-    "@types/vscode": "1.82.0",
-    "@typescript-eslint/eslint-plugin": "^8",
-    "@typescript-eslint/parser": "^8",
-    "@vscode/test-web": "^0.0.80",
-    "concurrently": "^8.2.1",
-    "esbuild": "^0.25.0",
-    "esbuild-plugin-polyfill-node": "^0.3.0",
-    "eslint": "^9",
-    "gulp": "^4.0.2",
-    "http-server": "^14.1.1",
-    "husky": "^9.1.7",
-    "lint-staged": "^15.5.2",
-    "mocha": "^6.1.4",
-    "prettier": "^3",
-    "prettier-plugin-packagejson": "^3.0.2",
-    "ts-loader": "^9.4.4",
-    "typescript": "^5.2.2",
-    "typescript-eslint": "^8",
-    "webpack": "^5.104.1",
-    "webpack-cli": "^5.1.4"
-  },
-  "engines": {
-    "vscode": "^1.82.0"
-  },
-  "pnpm": {
-    "overrides": {
-      "less": "4.2.2"
-    }
-  },
-  "icon": "media/mpe.png"
+    "@types/mocha": "^10.0.10",
+    "@types/node": "^22.20.4",
+    "@types/vscode": "^1.85.0",
+    "@vscode/test-electron": "^3.1.0",
+    "@vscode/vsce": "^4.0.0",
+    "dompurify": "^3.4.15",
+    "esbuild": "^0.28.2",
+    "less": "^4.9.1",
+    "mermaid": "^12.0.0",
+    "mocha": "^12.0.2",
+    "typescript": "^7.0.2"
+  }
 }

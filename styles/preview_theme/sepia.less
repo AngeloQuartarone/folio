@@ -1,0 +1,51 @@
+// Sepia: a warm, low-contrast reading theme ("ingiallito" paper).
+// Copyright (c) 2026 Angelo Quartarone. Built on the github.less mixin
+// from crossnote (University of Illinois/NCSA License, Yiyi Wang).
+@import 'github.less';
+
+@paper: #f5ecd7;
+@ink: #4a3b2a;
+@link: #9a4e12;
+
+html {
+  .github(@ink, @paper, @link);
+
+  body {
+    font-family: Charter, 'Iowan Old Style', 'Palatino Linotype', Palatino,
+      Georgia, 'Times New Roman', serif;
+    font-size: 17px;
+    line-height: 1.7;
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+      font-family: inherit;
+      color: #3a2c1c;
+    }
+
+    h1,
+    h2 {
+      border-bottom: 1px solid #e0d3b4;
+    }
+
+    blockquote {
+      color: #6b5a44;
+      border-left-color: #d8c49a;
+    }
+
+    hr {
+      background-color: #e0d3b4;
+    }
+
+    table tr:nth-child(2n) {
+      background-color: #efe4c9;
+    }
+
+    ::selection {
+      background: #e8d29c;
+    }
+  }
+}
