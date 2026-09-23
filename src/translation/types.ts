@@ -2,9 +2,8 @@
  * Translation provider contract.
  * Copyright (c) 2026 Angelo Quartarone.
  *
- * To add a provider: implement `TranslationProvider`, register a factory in
- * providers/index.ts and add its id to the `markdownTranslate.provider` enum
- * in package.json.
+ * The built-in provider translates offline (offline/offlineProvider.ts).
+ * Another engine only needs to implement `TranslationProvider`.
  */
 
 export interface TranslationRequest {
@@ -17,6 +16,13 @@ export interface TranslationRequest {
   context?: string;
   /** Target language as configured by the user, e.g. "it", "en", "pt-BR". */
   targetLanguage: string;
+  /**
+   * Source language fixed by the user, or undefined to detect it. When
+   * detection on the context is unreliable, `fallbackText` (e.g. the whole
+   * document) is used.
+   */
+  sourceLanguage?: string;
+  fallbackText?: string;
 }
 
 export interface TranslationResult {
@@ -33,44 +39,37 @@ export interface TranslationResult {
 export interface TranslationProvider {
   readonly id: string;
   readonly displayName: string;
-  /** Whether requests fail without an API key. */
-  readonly requiresApiKey: boolean;
   translate(request: TranslationRequest, signal?: AbortSignal): Promise<TranslationResult>;
 }
 
 export type TranslationErrorCode =
-  | 'missingKey'
-  | 'invalidKey'
-  | 'quota'
-  | 'rateLimit'
-  | 'network'
-  | 'timeout'
+  /** The language models for this pair are not on disk yet. */
+  | 'modelMissing'
+  /** No offline model exists for the detected/target language. */
+  | 'unsupportedLanguage'
+  /** The source language could not be detected. */
+  | 'undetected'
   | 'badRequest'
-  /** Invalid or missing setting (server URL, target language). */
+  /** Invalid or missing setting (target language, models folder). */
   | 'config'
-  | 'server'
+  /** The translation engine failed. */
+  | 'engine'
   | 'cancelled';
 
 export class TranslationError extends Error {
   constructor(
     readonly code: TranslationErrorCode,
     message: string,
-    readonly status?: number,
+    /** For `modelMissing`: the model pairs to download, e.g. ["deen", "enit"]. */
+    readonly pairs?: string[],
   ) {
     super(message);
     this.name = 'TranslationError';
   }
 }
 
-/** The subset of `fetch` the providers use; injectable for tests. */
-export type FetchFn = (url: string, init: RequestInit) => Promise<Response>;
-
-export interface ProviderOptions {
-  apiKey?: string;
-  fetch: FetchFn;
-  /** Per-request timeout. */
-  timeoutMs: number;
-}
+/** The subset of `fetch` used to download models; injectable for tests. */
+export type FetchFn = (url: string, init?: RequestInit) => Promise<Response>;
 
 /** "EN-US" → "en", "pt-BR" → "pt", "zh-Hans" → "zh". */
 export function baseLanguage(code: string): string {

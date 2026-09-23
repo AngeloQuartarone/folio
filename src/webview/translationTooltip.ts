@@ -50,10 +50,17 @@ export class TranslationTooltip {
     this.action.type = 'button';
     this.action.className = 'mtp-tooltip-action';
     this.action.addEventListener('click', () => {
-      if (this.pendingAction) {
-        this.post(this.pendingAction);
+      const action = this.pendingAction;
+      if (!action) {
+        return;
       }
-      this.hide();
+      this.post(action);
+      if (action.type === 'command' && action.command === 'downloadModels') {
+        // The host retries the translation with the same id once done.
+        this.show('loading', 'Downloading language model…', '');
+      } else {
+        this.hide();
+      }
     });
     this.element.append(this.label, this.body, this.action);
     document.body.appendChild(this.element);

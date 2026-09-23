@@ -40,7 +40,6 @@ describe('TranslationService', () => {
     return {
       id: 'fake',
       displayName: 'Fake',
-      requiresApiKey: false,
       calls: 0,
       async translate(request) {
         this.calls++;
@@ -67,10 +66,9 @@ describe('TranslationService', () => {
     const service = new TranslationService(async () => ({
       id: 'flaky',
       displayName: 'Flaky',
-      requiresApiKey: false,
       async translate() {
         if (fail) {
-          throw new TranslationError('network', 'offline');
+          throw new TranslationError('engine', 'worker crashed');
         }
         return result('ok');
       },
@@ -91,7 +89,6 @@ describe('TranslationService', () => {
     const service = new TranslationService(async () => ({
       id: 'spy',
       displayName: 'Spy',
-      requiresApiKey: false,
       async translate(request) {
         seen = request.context ?? '';
         return result('x');

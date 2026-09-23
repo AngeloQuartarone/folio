@@ -4,8 +4,9 @@
  */
 import * as assert from 'node:assert/strict';
 import { existsSync, readFileSync, rmSync } from 'node:fs';
-import { createServer } from 'node:http';
-import type { AddressInfo } from 'node:net';
+import { mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import * as path from 'node:path';
 
 import Mocha from 'mocha';
 import * as vscode from 'vscode';
@@ -49,31 +50,6 @@ function previewTabs(): vscode.Tab[] {
         tab.input instanceof vscode.TabInputWebview &&
         tab.input.viewType.endsWith('markdownTranslate.preview'),
     );
-}
-
-/** Minimal LibreTranslate-compatible server. */
-async function fakeLibreTranslate(): Promise<{ url: string; requests: any[]; close(): void }> {
-  const requests: any[] = [];
-  const server = createServer((req, res) => {
-    let body = '';
-    req.on('data', (chunk) => (body += chunk));
-    req.on('end', () => {
-      const json = JSON.parse(body || '{}');
-      requests.push({ path: req.url, body: json });
-      res.setHeader('Content-Type', 'application/json');
-      if (req.url === '/detect') {
-        res.end(JSON.stringify([{ language: json.q.startsWith('Ciao') ? 'it' : 'en', confidence: 90 }]));
-      } else if (json.q === 'quota') {
-        res.statusCode = 429;
-        res.end(JSON.stringify({ error: 'Too many requests' }));
-      } else {
-        res.end(JSON.stringify({ translatedText: `[${json.target}] ${json.q}` }));
-      }
-    });
-  });
-  await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
-  const { port } = server.address() as AddressInfo;
-  return { url: `http://127.0.0.1:${port}`, requests, close: () => server.close() };
 }
 
 /** Feed a webview message to the controller and capture its reply. */
@@ -125,53 +101,58 @@ function defineTests(): void {
       const html = readFileSync(output, 'utf8');
       assert.match(html, /<h1 id="sample-document"/);
       assert.match(html, /class="katex"/);
-      assert.match(html, /mermaid\.min\.js/);
+      assert.match(html, /mermaid\.initialize/);
+      assert.doesNotMatch(html, /<script[^>]*\ssrc=/, 'no external scripts');
       assert.doesNotMatch(html, /title: Sample/);
       rmSync(output, { force: true });
     });
 
-    it('translates through the extension host (LibreTranslate)', async () => {
+    it('offers to download a missing model instead of using the network', async () => {
       const api = await activate();
-      const server = await fakeLibreTranslate();
+      const empty = mkdtempSync(path.join(tmpdir(), 'mtp-nomodels-'));
       const config = vscode.workspace.getConfiguration('markdownTranslate');
       try {
-        await config.update('provider', 'libretranslate', vscode.ConfigurationTarget.Global);
-        await config.update('libreTranslateUrl', server.url, vscode.ConfigurationTarget.Global);
-        await config.update('targetLanguage', 'it', vscode.ConfigurationTarget.Global);
-
-        const reply = await translateThroughHost(api, 'cat', 'The cat sleeps.');
-        assert.equal(reply.status, 'ok');
-        if (reply.status === 'ok') {
-          assert.equal(reply.text, '[it] cat');
-          assert.equal(reply.sourceLabel, 'English');
-          assert.equal(reply.targetLabel, 'Italian');
+        await config.update('modelsPath', empty, vscode.ConfigurationTarget.Global);
+        const reply = await translateThroughHost(api, 'cat', 'The cat sleeps on the sofa.');
+        assert.equal(reply.status, 'error');
+        if (reply.status === 'error') {
+          assert.match(reply.message, /English → Italian model is not installed/);
+          assert.equal(reply.action?.command, 'downloadModels');
+          assert.match(reply.action?.label ?? '', /Download \(\d+ MB\)/);
         }
-        assert.deepEqual(server.requests[0], { path: '/detect', body: { q: 'The cat sleeps.' } });
-
-        const cachedCount = server.requests.length;
-        await translateThroughHost(api, 'cat', 'The cat sleeps.');
-        assert.equal(server.requests.length, cachedCount, 'second lookup served from cache');
-
-        const same = await translateThroughHost(api, 'Ciao', 'Ciao a tutti.');
-        assert.equal(same.status === 'ok' && same.sameLanguage, true);
-
-        const quota = await translateThroughHost(api, 'quota', 'quota');
-        assert.equal(quota.status, 'error');
       } finally {
-        server.close();
-        for (const key of ['provider', 'libreTranslateUrl', 'targetLanguage']) {
-          await config.update(key, undefined, vscode.ConfigurationTarget.Global);
-        }
+        await config.update('modelsPath', undefined, vscode.ConfigurationTarget.Global);
+        rmSync(empty, { recursive: true, force: true });
       }
     });
 
-    it('offers "Set API Key" when the DeepL key is missing', async () => {
+    it('translates offline with the Bergamot engine', async function () {
+      // Needs models on disk (e.g. downloaded once with "Manage Offline Languages").
+      const modelsDir = process.env['MTP_MODELS_DIR'];
+      if (!modelsDir) {
+        this.skip();
+      }
       const api = await activate();
-      const reply = await translateThroughHost(api, 'hello', 'hello world');
-      assert.equal(reply.status, 'error');
-      if (reply.status === 'error') {
-        assert.match(reply.message, /No DeepL API key/);
-        assert.deepEqual(reply.action, { label: 'Set API Key', command: 'setApiKey' });
+      const config = vscode.workspace.getConfiguration('markdownTranslate');
+      try {
+        await config.update('modelsPath', modelsDir, vscode.ConfigurationTarget.Global);
+        await config.update('targetLanguage', 'it', vscode.ConfigurationTarget.Global);
+
+        const sentence = await translateThroughHost(api, 'The cat sleeps on the sofa.', 'The cat sleeps on the sofa.');
+        assert.deepEqual(
+          sentence.status === 'ok' && [sentence.text, sentence.sourceLabel, sentence.targetLabel],
+          ['Il gatto dorme sul divano.', 'English', 'Italian'],
+        );
+
+        const word = await translateThroughHost(api, 'Gift', 'Das ist ein Gift, trink es nicht.');
+        assert.equal(word.status === 'ok' && word.text, 'veleno');
+
+        const same = await translateThroughHost(api, 'gatto', 'Il gatto dorme sul divano.');
+        assert.equal(same.status === 'ok' && same.sameLanguage, true);
+      } finally {
+        for (const key of ['modelsPath', 'targetLanguage']) {
+          await config.update(key, undefined, vscode.ConfigurationTarget.Global);
+        }
       }
     });
 

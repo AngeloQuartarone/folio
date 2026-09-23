@@ -9,6 +9,8 @@ import { SECTION } from './config';
 import { exportDocument } from './export/exportCommands';
 import { PreviewManager, isMarkdownDocument } from './preview/previewManager';
 import { CODE_BLOCK_THEMES, PREVIEW_THEMES } from './themes';
+import { languageName } from './translation/languages';
+import { SUPPORTED_LANGUAGES } from './translation/offline/registry';
 import { TranslationController } from './translation/translationController';
 
 export interface ExtensionApi {
@@ -63,7 +65,7 @@ export function activate(context: vscode.ExtensionContext): ExtensionApi {
     exportDocument(context, markdownUri(uri, preview.activeSourceUri), 'html'),
   );
 
-  command('setApiKey', (provider?: string) => translation.setApiKey(provider));
+  command('manageOfflineLanguages', () => translation.manageLanguages());
 
   command('toggleTranslation', async () => {
     const config = vscode.workspace.getConfiguration(SECTION);
@@ -74,17 +76,17 @@ export function activate(context: vscode.ExtensionContext): ExtensionApi {
 
   command('setTargetLanguage', async () => {
     const config = vscode.workspace.getConfiguration(SECTION);
-    const value = await vscode.window.showInputBox({
-      title: 'Target language',
-      prompt: 'Language code to translate into, e.g. it, en, de, fr, es, pt-BR, ja, zh',
-      value: config.get<string>('targetLanguage', 'it'),
-      validateInput: (input) =>
-        /^[A-Za-z]{2,3}([-_][A-Za-z0-9]{2,8})?$/.test(input.trim())
-          ? undefined
-          : 'Use a language code such as "it" or "pt-BR".',
-    });
-    if (value) {
-      await config.update('targetLanguage', value.trim(), vscode.ConfigurationTarget.Global);
+    const current = config.get<string>('targetLanguage', 'it');
+    const picked = await vscode.window.showQuickPick(
+      SUPPORTED_LANGUAGES.map((code) => ({
+        label: languageName(code),
+        description: code === current ? `${code} (current)` : code,
+        code,
+      })),
+      { title: 'Translate into' },
+    );
+    if (picked) {
+      await config.update('targetLanguage', picked.code, vscode.ConfigurationTarget.Global);
     }
   });
 

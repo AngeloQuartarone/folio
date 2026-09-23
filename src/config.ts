@@ -27,8 +27,10 @@ export const PREVIEW_SETTINGS = [
 export interface TranslationConfig {
   enabled: boolean;
   targetLanguage: string;
-  provider: string;
-  libreTranslateUrl: string;
+  /** "auto" or a language code. */
+  sourceLanguage: string;
+  /** Folder with the offline models; empty = extension storage. */
+  modelsPath: string;
 }
 
 export function getTranslationConfig(): TranslationConfig {
@@ -36,8 +38,8 @@ export function getTranslationConfig(): TranslationConfig {
   return {
     enabled: c.get<boolean>('enabled', true),
     targetLanguage: c.get<string>('targetLanguage', 'it').trim() || 'it',
-    provider: c.get<string>('provider', 'deepl'),
-    libreTranslateUrl: c.get<string>('libreTranslateUrl', 'https://libretranslate.com').trim(),
+    sourceLanguage: c.get<string>('sourceLanguage', 'auto').trim() || 'auto',
+    modelsPath: c.get<string>('modelsPath', '').trim(),
   };
 }
 

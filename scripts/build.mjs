@@ -21,9 +21,6 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const dist = join(root, 'dist');
 const watch = process.argv.includes('--watch');
 const tests = process.argv.includes('--tests');
-const mermaidVersion = JSON.parse(
-  readFileSync(join(root, 'node_modules/mermaid/package.json'), 'utf8'),
-).version;
 
 /** @type {import('esbuild').BuildOptions} */
 const extensionConfig = {
@@ -34,7 +31,6 @@ const extensionConfig = {
   format: 'cjs',
   target: 'node18',
   external: ['vscode'],
-  define: { MERMAID_VERSION: JSON.stringify(mermaidVersion) },
   minify: !watch,
   sourcemap: watch,
   logLevel: 'info',
@@ -107,6 +103,17 @@ function copyVendorAssets() {
     if (font.endsWith('.woff2')) {
       cpSync(join(katex, 'fonts', font), join(dist, 'katex/fonts', font));
     }
+  }
+  // Bergamot translation engine (worker script + WASM), run in a
+  // worker_threads Worker by src/translation/offline/engine.ts.
+  const bergamot = join(root, 'node_modules/@browsermt/bergamot-translator/worker');
+  mkdirSync(join(dist, 'bergamot'), { recursive: true });
+  for (const file of [
+    'translator-worker.js',
+    'bergamot-translator-worker.js',
+    'bergamot-translator-worker.wasm',
+  ]) {
+    cpSync(join(bergamot, file), join(dist, 'bergamot', file));
   }
   mkdirSync(join(dist, 'mermaid'), { recursive: true });
   cpSync(

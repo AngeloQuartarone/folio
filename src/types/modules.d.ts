@@ -17,3 +17,28 @@ declare module '*/vendor/prism/prism.js' {
   };
   export = Prism;
 }
+
+declare module '*/vendor/bergamot/translator.js' {
+  export interface BergamotRegistryEntry {
+    from: string;
+    to: string;
+    files: Record<string, unknown>;
+  }
+  export class TranslatorBacking {
+    constructor(options?: Record<string, unknown>);
+    options: Record<string, unknown>;
+    onerror: (error: unknown) => void;
+    loadModelRegistery(): Promise<BergamotRegistryEntry[]>;
+    fetch(url: string, checksum?: string, extra?: { signal?: AbortSignal }): Promise<ArrayBuffer>;
+  }
+  export class LatencyOptimisedTranslator {
+    constructor(options: Record<string, unknown>, backing?: TranslatorBacking);
+    translate(
+      request: { from: string; to: string; text: string; html: boolean; qualityScores?: boolean },
+      options?: { signal?: AbortSignal },
+    ): Promise<{ target: { text: string } }>;
+    delete(): Promise<void>;
+  }
+  export class SupersededError extends Error {}
+  export class CancelledError extends Error {}
+}

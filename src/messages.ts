@@ -4,7 +4,7 @@
  */
 
 /** Commands the webview may ask the host to run (nothing else is accepted). */
-export type WebviewCommand = 'setApiKey' | 'openTranslationSettings';
+export type WebviewCommand = 'downloadModels' | 'openTranslationSettings';
 
 export type TranslationReply =
   | {

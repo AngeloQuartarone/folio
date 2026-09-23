@@ -1,7 +1,7 @@
 {
   "name": "markdown-translate-preview",
   "displayName": "Markdown Translate Preview",
-  "description": "A lean Markdown preview with themes, scroll sync, PDF export and on-the-fly translation of selected text.",
+  "description": "A lean Markdown preview with themes, scroll sync, PDF export and offline translation of selected text.",
   "version": "0.1.0",
   "publisher": "your-publisher-id",
   "license": "SEE LICENSE IN LICENSE.md",
@@ -17,6 +17,7 @@
     "preview",
     "translate",
     "translation",
+    "offline",
     "pdf"
   ],
   "main": "./dist/extension.js",
@@ -68,11 +69,6 @@
         "category": "Markdown Translate"
       },
       {
-        "command": "markdownTranslate.setApiKey",
-        "title": "Set API Key",
-        "category": "Markdown Translate"
-      },
-      {
         "command": "markdownTranslate.setTargetLanguage",
         "title": "Set Target Language",
         "category": "Markdown Translate"
@@ -80,6 +76,11 @@
       {
         "command": "markdownTranslate.toggleTranslation",
         "title": "Toggle Translation Tooltips",
+        "category": "Markdown Translate"
+      },
+      {
+        "command": "markdownTranslate.manageOfflineLanguages",
+        "title": "Manage Offline Languages",
         "category": "Markdown Translate"
       }
     ],
@@ -94,31 +95,76 @@
         },
         "markdownTranslate.targetLanguage": {
           "type": "string",
+          "enum": [
+            "bg",
+            "cs",
+            "de",
+            "en",
+            "es",
+            "et",
+            "fr",
+            "it",
+            "pt",
+            "ru",
+            "uk"
+          ],
+          "enumItemLabels": [
+            "Bulgarian (bg)",
+            "Czech (cs)",
+            "German (de)",
+            "English (en)",
+            "Spanish (es)",
+            "Estonian (et)",
+            "French (fr)",
+            "Italian (it)",
+            "Portuguese (pt)",
+            "Russian (ru)",
+            "Ukrainian (uk)"
+          ],
           "default": "it",
           "order": 1,
-          "pattern": "^[A-Za-z]{2,3}([-_][A-Za-z0-9]{2,8})?$",
-          "patternErrorMessage": "Use a language code such as \"it\", \"en\", \"de\" or \"pt-BR\".",
-          "markdownDescription": "Language to translate into, as a code: `it`, `en`, `de`, `fr`, `es`, `pt-BR`, `ja`, `zh`… The source language is detected automatically."
+          "markdownDescription": "Language to translate into. Translation runs offline; the model for each language pair (about 22 MB) is downloaded once, only when you click **Download** in the tooltip or run **Markdown Translate: Manage Offline Languages**."
         },
-        "markdownTranslate.provider": {
+        "markdownTranslate.sourceLanguage": {
           "type": "string",
           "enum": [
-            "deepl",
-            "libretranslate"
+            "auto",
+            "bg",
+            "cs",
+            "de",
+            "en",
+            "es",
+            "et",
+            "fr",
+            "it",
+            "pt",
+            "ru",
+            "uk"
           ],
-          "enumDescriptions": [
-            "DeepL API Free or Pro (the endpoint is chosen from the key).",
-            "LibreTranslate server (self-hosted or libretranslate.com)."
+          "enumItemLabels": [
+            "Detect automatically",
+            "Bulgarian (bg)",
+            "Czech (cs)",
+            "German (de)",
+            "English (en)",
+            "Spanish (es)",
+            "Estonian (et)",
+            "French (fr)",
+            "Italian (it)",
+            "Portuguese (pt)",
+            "Russian (ru)",
+            "Ukrainian (uk)"
           ],
-          "default": "deepl",
+          "default": "auto",
           "order": 2,
-          "markdownDescription": "Translation service. Set its API key with the **Markdown Translate: Set API Key** command (stored in the OS keychain, not in settings)."
+          "description": "Language of your documents. \"auto\" detects it from the selected sentence (falling back to the whole document)."
         },
-        "markdownTranslate.libreTranslateUrl": {
+        "markdownTranslate.modelsPath": {
           "type": "string",
-          "default": "https://libretranslate.com",
+          "default": "",
           "order": 3,
-          "markdownDescription": "Base URL of the LibreTranslate server, e.g. `http://localhost:5000`. The API key is optional and set with **Markdown Translate: Set API Key**."
+          "scope": "machine",
+          "markdownDescription": "Folder with the offline translation models, one subfolder per pair (e.g. `enit/`). Leave empty to use the extension storage. Copy the files here yourself if you never want the extension to download anything."
         },
         "markdownTranslate.previewTheme": {
           "type": "string",
@@ -295,6 +341,7 @@
   },
   "dependencies": {
     "@vscode/markdown-it-katex": "^1.1.2",
+    "eld": "^2.1.0",
     "katex": "^0.18.7",
     "markdown-it": "^15.0.2",
     "markdown-it-abbr": "^2.0.0",
@@ -307,6 +354,7 @@
     "markdown-it-task-lists": "^2.1.1"
   },
   "devDependencies": {
+    "@browsermt/bergamot-translator": "^0.4.9",
     "@types/mocha": "^10.0.10",
     "@types/node": "^22.20.4",
     "@types/vscode": "^1.85.0",
