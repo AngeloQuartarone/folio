@@ -268,8 +268,33 @@ first time Folio starts.
 
 ## Installation
 
-From a `.vsix` file: **Extensions** view → `…` menu → **Install from VSIX…**,
-or `code --install-extension folio-<version>.vsix`.
+Folio is distributed as a single file, `folio-<version>.vsix`
+(e.g. `folio-0.1.0.vsix`). You need VS Code 1.85 or later (1.101 or later
+for the **Other meanings** dictionary); nothing else.
+
+1. Save the `.vsix` file somewhere on your computer.
+2. In VS Code, open the **Extensions** view: click the Extensions icon in
+   the Activity Bar, or press <kbd>Ctrl+Shift+X</kbd> / <kbd>Cmd+Shift+X</kbd>.
+3. Click the **`…`** (Views and More Actions) button at the top right of the
+   Extensions view.
+4. Choose **Install from VSIX…** and pick the `.vsix` file.
+5. Wait for the "Completed installing extension" message. If VS Code asks
+   to reload the window, accept.
+
+To check that it works, open any `.md` file and press <kbd>Ctrl+K V</kbd> /
+<kbd>Cmd+K V</kbd>: the Folio preview opens beside the editor. Select a
+sentence in it: the first time, the tooltip offers to download the model for
+that language pair (see [Translation](#translation)).
+
+Folio takes over the <kbd>Ctrl+Shift+V</kbd> / <kbd>Cmd+Shift+V</kbd> and
+<kbd>Ctrl+K V</kbd> / <kbd>Cmd+K V</kbd> shortcuts in Markdown files; VS Code's
+built-in preview stays available from the Command Palette
+(**Markdown: Open Preview**).
+
+**Update**: install the new `.vsix` the same way; it replaces the old
+version and keeps your settings and downloaded models.
+**Uninstall**: find **Folio** in the Extensions view → gear icon →
+**Uninstall**.
 
 ### Build from source
 

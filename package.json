@@ -5,6 +5,14 @@
   "version": "0.1.0",
   "publisher": "your-publisher-id",
   "license": "SEE LICENSE IN LICENSE.md",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AngeloQuartarone/folio.git"
+  },
+  "bugs": {
+    "url": "https://github.com/AngeloQuartarone/folio/issues"
+  },
+  "homepage": "https://github.com/AngeloQuartarone/folio#readme",
   "icon": "media/icon.png",
   "galleryBanner": {
     "color": "#2b2621",
