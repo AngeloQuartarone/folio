@@ -305,6 +305,26 @@
           "default": true,
           "description": "Show the table of contents button, with the section you are reading highlighted."
         },
+        "folio.reading.outlineFit": {
+          "type": "string",
+          "enum": [
+            "once",
+            "always",
+            "never"
+          ],
+          "enumDescriptions": [
+            "The first time the table of contents opens in a preview too narrow for it, widen the preview; after that its width is up to you.",
+            "Every time it opens in a preview too narrow for it, widen the preview, and give the room back when it closes (unless the layout changed meanwhile).",
+            "Never resize the preview: in narrow previews the table of contents floats over the text."
+          ],
+          "default": "once",
+          "markdownDescription": "Make room for the table of contents beside the text by widening the preview, taking room from the editor next to it (which keeps at least 260 pixels)."
+        },
+        "folio.reading.outlineAutoClose": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "When the table of contents floats over the text (narrow previews), a click on the text closes it."
+        },
         "folio.reading.progress": {
           "type": "boolean",
           "default": true,

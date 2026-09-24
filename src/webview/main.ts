@@ -57,18 +57,15 @@ const notes = reading.notes
   ? new Notes(preview, post, () => sourceUri, (entries) => outline?.setNotes(entries))
   : undefined;
 const outline = reading.outline
-  ? new Outline(
-      preview,
-      reading,
-      state,
-      (id) => notes?.open(id),
-      (id) => notes?.delete(id),
-      () => {
+  ? new Outline(preview, reading, state, post, {
+      openNote: (id) => notes?.open(id),
+      deleteNote: (id) => notes?.delete(id),
+      copyNotes: () => {
         post({ type: 'command', command: 'copyNotesForAI' });
         toast('Notes copied — paste them into your AI chat');
       },
-      (change) => keepReadingPosition(change),
-    )
+      toggle: (change) => keepReadingPosition(change),
+    })
   : undefined;
 const progress = reading.progress ? new ReadingProgress(preview) : undefined;
 const focus = reading.focusMode ? new FocusMode(preview) : undefined;

@@ -43,9 +43,9 @@ function waitForMessage(
 }
 
 /** Wait until `condition` holds (host work is asynchronous). */
-async function until(condition: () => boolean, what = 'condition', timeoutMs = 10_000): Promise<void> {
+async function until(condition: () => boolean | Promise<boolean>, what = 'condition', timeoutMs = 10_000): Promise<void> {
   const end = Date.now() + timeoutMs;
-  while (!condition()) {
+  while (!(await condition())) {
     if (Date.now() > end) {
       throw new Error(`timed out waiting: ${what}`);
     }
@@ -443,6 +443,82 @@ function defineTests(): void {
       assert.equal(readFileSync(output).subarray(0, 5).toString(), '%PDF-');
       if (!process.env['KEEP_EXPORTS']) {
         rmSync(output, { force: true });
+      }
+    });
+
+    it('widens a narrow preview to fit the table of contents, and gives the room back', async () => {
+      const api = await activate();
+      const config = vscode.workspace.getConfiguration('folio');
+      const global = vscode.ConfigurationTarget.Global;
+      type Layout = { orientation: 0 | 1; groups: Array<{ size?: number }> };
+      const widths = async () =>
+        (await vscode.commands.executeCommand<Layout>('vscode.getEditorLayout')).groups.map((group) => group.size!);
+      // The preview gets a quarter of the editor area: too narrow.
+      const narrow = async () => {
+        await vscode.commands.executeCommand('vscode.setEditorLayout', { orientation: 0, groups: [{ size: 0.75 }, { size: 0.25 }] });
+        return (await widths())[1];
+      };
+      // What the preview asks for when its table of contents opens (see Outline.fit).
+      const fit = (width: number) =>
+        (api.preview as any).onMessage({ type: 'fitOutline', width, wanted: width + 200, needed: width + 100 });
+      const close = () => (api.preview as any).onMessage({ type: 'outlineClosed' });
+      const pause = () => new Promise((resolve) => setTimeout(resolve, 400));
+      let reloads = 0;
+      api.preview.onDidReceiveMessage((message) => {
+        if (message.type === 'ready') {
+          reloads++;
+        }
+      });
+      const uri = fixture('sample.md');
+      try {
+        await config.update('reading.outlineFit', 'once', global);
+        await vscode.commands.executeCommand('workbench.action.closeAllEditors');
+        await vscode.window.showTextDocument(uri, { viewColumn: vscode.ViewColumn.One });
+        const ready = waitForMessage(api, (message) => message.type === 'ready');
+        api.preview.show(uri, vscode.ViewColumn.Beside);
+        await ready;
+        reloads = 0;
+
+        const width = await narrow();
+        const [editor] = await widths();
+        fit(width);
+        await until(async () => (await widths())[1] >= width + 198, 'the preview is widened');
+        assert.ok((await widths())[0] <= editor - 198, 'the room comes from the editor beside it');
+        close();
+        await pause();
+        assert.ok((await widths())[1] >= width + 198, '"once" keeps the new width when the contents close');
+        const again = await narrow();
+        fit(again);
+        await pause();
+        assert.ok(Math.abs((await widths())[1] - again) <= 2, '"once" widens only the first time');
+        assert.equal(reloads, 0, 'resizing does not reload the preview');
+
+        const reloaded = waitForMessage(api, (message) => message.type === 'ready');
+        await config.update('reading.outlineFit', 'always', global);
+        await reloaded;
+        reloads = 0;
+        const start = await narrow();
+        fit(start);
+        await until(async () => (await widths())[1] >= start + 198, '"always" widens again');
+        close();
+        await until(async () => Math.abs((await widths())[1] - start) <= 2, 'and gives the room back');
+
+        fit(start);
+        await until(async () => (await widths())[1] >= start + 198, 'widened');
+        await vscode.commands.executeCommand('vscode.setEditorLayout', { orientation: 0, groups: [{ size: 0.5 }, { size: 0.5 }] });
+        const resized = (await widths())[1];
+        close();
+        await pause();
+        assert.ok(Math.abs((await widths())[1] - resized) <= 2, 'a layout changed meanwhile is left as it is');
+        assert.equal(reloads, 0);
+
+        await config.update('reading.outlineFit', 'never', global);
+        const last = await narrow();
+        fit(last);
+        await pause();
+        assert.ok(Math.abs((await widths())[1] - last) <= 2, '"never" never resizes');
+      } finally {
+        await config.update('reading.outlineFit', undefined, global);
       }
     });
   });

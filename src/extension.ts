@@ -9,6 +9,7 @@ import { SECTION } from './config';
 import { exportDocument } from './export/exportCommands';
 import { migrateLegacyModels, migrateLegacySettings } from './legacy';
 import { NotesController } from './notes/notesController';
+import { OutlineFit } from './preview/outlineFit';
 import { PreviewManager, isMarkdownDocument } from './preview/previewManager';
 import { WebviewMessage } from './messages';
 import { isKnownSetting, pathSetting, validSetting } from './settingsView';
@@ -29,6 +30,7 @@ export function activate(context: vscode.ExtensionContext): ExtensionApi {
   const preview = new PreviewManager(context.extensionUri, context.workspaceState);
   const translation = new TranslationController(context, preview);
   const notes = new NotesController(preview);
+  new OutlineFit(preview);
   context.subscriptions.push(preview, translation, notes);
 
   // VS Code's built-in Markdown extension hides its own preview buttons

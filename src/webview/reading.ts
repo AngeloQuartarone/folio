@@ -2,11 +2,19 @@
  * Reading aids: table of contents, reading time and progress, focus mode.
  * Copyright (c) 2026 Angelo Quartarone.
  */
-import type { NoteData, ReadingSettings } from '../messages';
+import type { NoteData, ReadingSettings, WebviewMessage } from '../messages';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const WORDS_PER_MINUTE = 230;
 const IDLE_MS = 2000;
+
+/**
+ * From this width (CSS pixels) the open table of contents sits beside the
+ * text, which moves over by DOCK_SIDEBAR; below it, it floats over the text.
+ * Keep both in sync with preview.css ("sidebar beside the text").
+ */
+export const DOCK_MIN_WIDTH = 840;
+export const DOCK_SIDEBAR = 274;
 
 // Outline "list" icon (24×24, stroked).
 const LIST_PATH = 'M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01';
@@ -31,6 +39,15 @@ function minutes(words: number): number {
 function scrollProgress(): number {
   const max = document.documentElement.scrollHeight - window.innerHeight;
   return max > 0 ? Math.min(1, Math.max(0, window.scrollY / max)) : 1;
+}
+
+export interface OutlineActions {
+  openNote(id: string): void;
+  deleteNote(id: string): void;
+  /** "Copy for AI": the notes as a message for an AI assistant. */
+  copyNotes(): void;
+  /** Runs `change`, which opens or closes the panel (in wide windows the text moves aside). */
+  toggle(change: () => void): void;
 }
 
 export interface NoteEntry {
@@ -61,12 +78,8 @@ export class Outline {
     private readonly root: HTMLElement,
     private readonly settings: ReadingSettings,
     private readonly state: StateStore,
-    private readonly openNote: (id: string) => void,
-    private readonly deleteNote: (id: string) => void,
-    /** "Copy for AI": the notes as a message for an AI assistant. */
-    private readonly copyNotes: () => void,
-    /** The panel moves the text aside in wide windows: `change` opens or closes it. */
-    private readonly onToggle: (change: () => void) => void = (change) => change(),
+    private readonly post: (message: WebviewMessage) => void,
+    private readonly actions: OutlineActions,
   ) {
     this.button = document.createElement('button');
     this.button.type = 'button';
@@ -109,8 +122,21 @@ export class Outline {
         this.setOpen(false);
       }
     });
+    // Floating over the text, the panel closes when the text is clicked.
+    document.addEventListener('pointerdown', (event) => {
+      const target = event.target;
+      if (
+        !this.panel.hidden &&
+        this.settings.outlineAutoClose &&
+        !this.docked() &&
+        target instanceof Node &&
+        (this.root.contains(target) || target === document.body)
+      ) {
+        this.setOpen(false);
+      }
+    });
     if (this.state.get<boolean>('outlineOpen')) {
-      this.setOpen(true);
+      this.setOpen(true, false);
     }
   }
 
@@ -151,17 +177,42 @@ export class Outline {
     this.links.forEach((link, index) => link.classList.toggle('folio-current', index === current));
   }
 
-  private setOpen(open: boolean): void {
-    this.onToggle(() => {
+  /** `byUser`: opened or closed now, not reopened after the preview reloaded. */
+  private setOpen(open: boolean, byUser = true): void {
+    if (open === !this.panel.hidden) {
+      return;
+    }
+    this.actions.toggle(() => {
       this.panel.hidden = !open;
       this.button.setAttribute('aria-expanded', String(open));
       document.body.classList.toggle('folio-outline-open', open);
     });
     this.state.set('outlineOpen', open);
+    if (byUser && !open) {
+      this.post({ type: 'outlineClosed' });
+    } else if (byUser && !this.docked()) {
+      this.post({ type: 'fitOutline', ...this.fit() });
+    }
     if (open) {
       this.render();
     }
     this.wake();
+  }
+
+  private docked(): boolean {
+    return window.matchMedia(`(min-width: ${DOCK_MIN_WIDTH}px)`).matches;
+  }
+
+  /**
+   * How wide the preview should be for the panel to sit beside the text: as
+   * wide as now plus the panel, so the text keeps its width (no wider than
+   * the column needs), and at least wide enough to dock at all.
+   */
+  private fit(): { width: number; wanted: number; needed: number } {
+    const width = window.innerWidth;
+    const column = parseFloat(getComputedStyle(this.root).maxWidth);
+    const roomy = Number.isFinite(column) ? DOCK_SIDEBAR + column : Infinity;
+    return { width, wanted: Math.max(DOCK_MIN_WIDTH, Math.min(width + DOCK_SIDEBAR, roomy)), needed: DOCK_MIN_WIDTH };
   }
 
   private wake(): void {
@@ -245,7 +296,7 @@ export class Outline {
     copy.className = 'folio-outline-copy';
     copy.textContent = 'Copy for AI';
     copy.title = 'Copy the notes as a message to paste into a chat with an AI assistant';
-    copy.addEventListener('click', () => this.copyNotes());
+    copy.addEventListener('click', () => this.actions.copyNotes());
     bar.append(count, copy);
     this.list.replaceChildren(
       bar,
@@ -277,8 +328,8 @@ export class Outline {
         }
         if (found) {
           item.tabIndex = 0;
-          item.addEventListener('click', () => this.openNote(note.id));
-          item.addEventListener('keydown', (event) => event.key === 'Enter' && this.openNote(note.id));
+          item.addEventListener('click', () => this.actions.openNote(note.id));
+          item.addEventListener('keydown', (event) => event.key === 'Enter' && this.actions.openNote(note.id));
         } else {
           const lost = document.createElement('div');
           lost.className = 'folio-outline-lost';
@@ -287,7 +338,7 @@ export class Outline {
           remove.type = 'button';
           remove.className = 'mtp-link';
           remove.textContent = 'Delete';
-          remove.addEventListener('click', () => this.deleteNote(note.id));
+          remove.addEventListener('click', () => this.actions.deleteNote(note.id));
           lost.append(' ', remove);
           item.append(lost);
         }

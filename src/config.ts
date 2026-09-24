@@ -88,6 +88,7 @@ export interface ReadingConfig {
   width: ColumnWidth;
   font: ReadingFont;
   outline: boolean;
+  outlineAutoClose: boolean;
   progress: boolean;
   focusMode: boolean;
   resume: boolean;
@@ -107,11 +108,19 @@ export function getReadingConfig(): ReadingConfig {
     width: oneOf(c.get('reading.width'), ['narrow', 'medium', 'wide', 'full'] as const, 'medium'),
     font: oneOf(c.get('reading.font'), ['theme', 'sans', 'serif'] as const, 'theme'),
     outline: c.get<boolean>('reading.outline', true),
+    outlineAutoClose: c.get<boolean>('reading.outlineAutoClose', true),
     progress: c.get<boolean>('reading.progress', true),
     focusMode: c.get<boolean>('reading.focusMode', false),
     resume: c.get<boolean>('reading.resume', true),
     notes: c.get<boolean>('notes.enabled', true),
   };
+}
+
+export type OutlineFit = 'once' | 'always' | 'never';
+
+/** Whether the preview is widened to fit the table of contents (see src/preview/outlineFit.ts). */
+export function getOutlineFit(): OutlineFit {
+  return oneOf(vscode.workspace.getConfiguration(SECTION).get('reading.outlineFit'), ['once', 'always', 'never'] as const, 'once');
 }
 
 export type NotesStorage = 'document' | 'sidecar';

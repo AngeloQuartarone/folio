@@ -130,6 +130,25 @@ const SECTIONS: SectionDefinition[] = [
         default: true,
       },
       {
+        key: 'reading.outlineFit',
+        label: 'Make room for contents',
+        description: 'Widen a narrow preview so the table of contents fits beside the text, taking room from the editor next to it. “Always” gives the room back when it closes.',
+        kind: 'select',
+        default: 'once',
+        options: [
+          { value: 'once', label: 'First time' },
+          { value: 'always', label: 'Always' },
+          { value: 'never', label: 'Never' },
+        ],
+      },
+      {
+        key: 'reading.outlineAutoClose',
+        label: 'Click text to close contents',
+        description: 'When the table of contents floats over the text, a click on the text closes it.',
+        kind: 'toggle',
+        default: true,
+      },
+      {
         key: 'reading.progress',
         label: 'Reading time and progress',
         description: 'How long the document takes to read, and a thin progress bar at the top.',

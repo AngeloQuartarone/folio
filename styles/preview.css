@@ -1293,8 +1293,7 @@ body.mtp-settings-open {
   color: var(--mtp-fg);
   font-size: 13px;
   line-height: 1.4;
-  transform-origin: top left;
-  animation: mtp-pop 200ms var(--mtp-ease);
+  animation: folio-dock 200ms var(--mtp-ease);
 }
 
 .folio-outline[hidden] {
@@ -1471,20 +1470,20 @@ body.mtp-settings-open {
   font-size: 12px;
 }
 
-/* Wide enough, the open table of contents is a sidebar: the text moves over
-   (or narrows) to make room instead of sliding underneath it. Narrower
-   panes keep it floating above the text. */
-@media (min-width: 880px) {
+/* Sidebar beside the text: wide enough, the open table of contents pushes
+   the text over (or narrows it) instead of covering it; narrower panes keep
+   it floating above the text. The width and the padding (the panel's 260px
+   plus its 14px margin) are DOCK_MIN_WIDTH and DOCK_SIDEBAR in
+   src/webview/reading.ts. */
+@media (min-width: 840px) {
   body.folio-outline-open:not([for='html-export']) {
     box-sizing: border-box;
-    padding-left: 288px;
-  }
-
-  body.folio-outline-open .folio-outline {
-    animation-name: folio-dock;
+    padding-left: 274px;
   }
 }
 
+/* Slides in from the left, docked or floating (the same animation, so it
+   does not play again when the pane grows and the panel docks). */
 @keyframes folio-dock {
   from {
     opacity: 0;

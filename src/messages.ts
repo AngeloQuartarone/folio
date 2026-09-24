@@ -117,6 +117,13 @@ export type WebviewMessage =
       | { action: 'reply'; id: string; text: string }
       | { action: 'delete' | 'resolve' | 'reopen'; id: string }
     ))
+  /**
+   * The table of contents opened in a preview too narrow to show it beside
+   * the text: widen the preview from `width` to `wanted`, or at least to
+   * `needed` (CSS pixels).
+   */
+  | { type: 'fitOutline'; width: number; wanted: number; needed: number }
+  | { type: 'outlineClosed' }
   /** Validated by the host against the settings description. */
   | { type: 'setSetting'; key: string; value: unknown }
   /** Pick a path setting with a dialog, or reset a setting to its default. */
@@ -159,6 +166,8 @@ export interface ReadingSettings {
   width: 'narrow' | 'medium' | 'wide' | 'full';
   font: 'theme' | 'sans' | 'serif';
   outline: boolean;
+  /** A click on the text closes the table of contents when it floats over it. */
+  outlineAutoClose: boolean;
   progress: boolean;
   focusMode: boolean;
   resume: boolean;

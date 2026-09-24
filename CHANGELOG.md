@@ -9,8 +9,12 @@
 - Reading: typography settings (text size, line spacing, column width,
   font), a table of contents with the current section highlighted, reading
   time and a progress bar, focus mode, and resume reading where you stopped.
-  The table of contents opens as a sidebar beside the text in wide panes
-  (the text moves over and keeps your place) and floats in narrow ones.
+  The table of contents opens as a sidebar beside the text (the text moves
+  over and keeps your place). A preview too narrow for it is widened the
+  first time the table of contents opens, taking room from the editor
+  beside it (`folio.reading.outlineFit`: `once`, `always` to also give the
+  room back when it closes, or `never`); where it still floats over the
+  text, a click on the text closes it (`folio.reading.outlineAutoClose`).
 - Notes in the margin: highlight selected text with a note; notes follow
   their text when the document changes and are listed in the table of
   contents.

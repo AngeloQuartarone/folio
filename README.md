@@ -21,9 +21,14 @@ It is an independent project derived from
 - **Typography**: text size, line spacing, column width and font (the
   theme's, sans-serif or serif).
 - **Table of contents**: a button in the top-left corner opens the headings,
-  with the section you are reading highlighted; click one to go there. In
-  a wide enough pane it opens as a sidebar beside the text, which moves over
-  to make room; in narrow panes it floats above the text.
+  with the section you are reading highlighted; click one to go there. It
+  opens as a sidebar beside the text, which moves over to make room. When
+  the preview is too narrow for that, Folio widens it the first time you
+  open the table of contents, taking room from the editor beside it (which
+  keeps at least 260 pixels); set `folio.reading.outlineFit` to `always` to
+  also give the room back when it closes, or `never`. In a preview left
+  narrow the table of contents floats over the text, and a click on the
+  text closes it.
 - **Reading time and progress**: "8 min read" above the document, the time
   left in the table of contents, and a progress bar at the top.
 - **Focus mode**: everything but the paragraph you are reading fades out.
@@ -171,6 +176,8 @@ selection. If the text is already in the target language a small
 | `folio.reading.width` | `medium` | Reading column: `narrow`, `medium`, `wide` or `full`. |
 | `folio.reading.font` | `theme` | `theme`, `sans` or `serif`. |
 | `folio.reading.outline` | `true` | Table of contents button. |
+| `folio.reading.outlineFit` | `once` | Widen a narrow preview so the table of contents fits beside the text: `once` (the first time in each preview), `always` (and give the room back when it closes) or `never`. |
+| `folio.reading.outlineAutoClose` | `true` | Close the table of contents with a click on the text when it floats over it. |
 | `folio.reading.progress` | `true` | Reading time and progress bar. |
 | `folio.reading.focusMode` | `false` | Dim everything but the paragraph being read. |
 | `folio.reading.resume` | `true` | Reopen documents where you stopped reading. |
