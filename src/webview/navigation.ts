@@ -107,6 +107,8 @@ export class History {
 export interface KeyActions {
   back(): void;
   toggleOutline(): void;
+  /** j/k in focus mode: move the focus instead; true when it did. */
+  step?(direction: 1 | -1): boolean;
 }
 
 /**
@@ -135,10 +137,14 @@ export function enableKeyboard(root: HTMLElement, actions: KeyActions): void {
     const headings = () => visible(Array.from(root.querySelectorAll(':scope > :is(h1, h2, h3, h4, h5, h6)')));
     switch (event.key) {
       case 'j':
-        moveTo(next(blocks()));
+        if (!actions.step?.(1)) {
+          moveTo(next(blocks()));
+        }
         break;
       case 'k':
-        moveTo(previous(blocks()));
+        if (!actions.step?.(-1)) {
+          moveTo(previous(blocks()));
+        }
         break;
       case 'J':
         moveTo(next(headings()));

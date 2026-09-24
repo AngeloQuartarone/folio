@@ -438,6 +438,22 @@ function defineTests(): void {
       }
     });
 
+    it('toggles focus mode in the preview from the command', async () => {
+      const api = await activate();
+      const sent: HostMessage[] = [];
+      const original = api.preview.postMessage.bind(api.preview);
+      api.preview.postMessage = (message: HostMessage) => {
+        sent.push(message);
+        original(message);
+      };
+      try {
+        await vscode.commands.executeCommand('folio.toggleFocusMode');
+        assert.ok(sent.some((message) => message.type === 'toggleFocusMode'));
+      } finally {
+        api.preview.postMessage = original;
+      }
+    });
+
     it('remembers where the user stopped reading', async () => {
       const api = await activate();
       const uri = fixture('sample.md');

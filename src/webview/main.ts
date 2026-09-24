@@ -61,7 +61,7 @@ const sections = reading.collapsible
   ? new Sections(preview, state, () => {
       scrollMap = null;
       notes?.layout();
-      focus?.reset();
+      focus.reset();
     })
   : undefined;
 const notes = reading.notes
@@ -80,7 +80,38 @@ const outline = reading.outline
     })
   : undefined;
 const progress = reading.progress ? new ReadingProgress(preview) : undefined;
-const focus = reading.focusMode ? new FocusMode(preview, reading.focusScope) : undefined;
+/**
+ * Focus mode starts as the setting says; the focus key toggles it in this
+ * preview (remembered until the setting itself changes).
+ */
+const focusToggled = state.get<{ setting: boolean; active: boolean }>('focusToggled');
+const focus = new FocusMode(
+  preview,
+  { scope: reading.focusScope, navigation: reading.focusNavigation },
+  focusToggled?.setting === reading.focusMode ? focusToggled.active : reading.focusMode,
+);
+function toggleFocus(): void {
+  focus.setActive(!focus.isActive);
+  state.set('focusToggled', { setting: reading.focusMode, active: focus.isActive });
+}
+let pointerOnPreview = false;
+document.documentElement.addEventListener('mouseleave', () => (pointerOnPreview = false));
+document.addEventListener('mousemove', () => (pointerOnPreview = true), { passive: true });
+document.addEventListener('keydown', (event) => {
+  const target = event.target as HTMLElement | null;
+  if (
+    reading.focusKey &&
+    pointerOnPreview &&
+    !event.metaKey &&
+    !event.ctrlKey &&
+    !event.altKey &&
+    event.key.toLowerCase() === reading.focusKey.toLowerCase() &&
+    !target?.closest?.('input, textarea, select, [contenteditable="true"]')
+  ) {
+    event.preventDefault();
+    toggleFocus();
+  }
+});
 const history = new History(
   state,
   post,
@@ -93,7 +124,12 @@ const documentTranslation = new DocumentTranslation(preview, post, () => sourceU
 });
 const linkPreviews = reading.hoverPreviews ? new LinkPreviews(preview, post, () => sourceUri, sanitize) : undefined;
 if (reading.keyboard) {
-  enableKeyboard(preview, { back: () => history.back(), toggleOutline: () => outline?.toggle() });
+  enableKeyboard(preview, {
+    back: () => history.back(),
+    toggleOutline: () => outline?.toggle(),
+    // In focus mode (moving by steps), j/k move the focus.
+    step: (direction) => (focus.stepping() ? (focus.step(direction), true) : false),
+  });
 }
 
 const tooltip = new TranslationTooltip(preview, post, settings.translationEnabled, notes);
@@ -152,7 +188,7 @@ function afterRender(): void {
   sections?.refresh(sourceUri);
   notes?.render();
   outline?.refresh();
-  focus?.reset();
+  focus.reset();
   documentTranslation.refresh();
 }
 
@@ -380,7 +416,7 @@ window.addEventListener(
     readingFrame = requestAnimationFrame(() => {
       progress?.onScroll();
       outline?.onScroll();
-      focus?.onScroll();
+      focus.onScroll();
     });
     // Remember where the user is, to reopen the document there.
     if (reading.resume) {
@@ -538,6 +574,9 @@ window.addEventListener('message', (event: MessageEvent<HostMessage>) => {
       break;
     case 'documentTranslation':
       documentTranslation.onReply(message);
+      break;
+    case 'toggleFocusMode':
+      toggleFocus();
       break;
     case 'toggleDocumentTranslation':
       documentTranslation.toggle();

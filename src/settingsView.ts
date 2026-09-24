@@ -204,6 +204,38 @@ const SECTIONS: SectionDefinition[] = [
         ],
       },
       {
+        key: 'reading.focusNavigation',
+        label: 'Move the focus',
+        description: 'Step: one notch of the wheel, ↑/↓ or j/k goes to the next paragraph. Scroll: it follows the page.',
+        kind: 'select',
+        default: 'step',
+        options: [
+          { value: 'step', label: 'Step' },
+          { value: 'scroll', label: 'Scroll' },
+        ],
+      },
+      {
+        key: 'reading.focusStrength',
+        label: 'Fade the rest',
+        description: 'How much the text outside the focus fades.',
+        kind: 'select',
+        default: 'medium',
+        options: [
+          { value: 'soft', label: 'Soft' },
+          { value: 'medium', label: 'Medium' },
+          { value: 'strong', label: 'Strong' },
+        ],
+      },
+      {
+        key: 'reading.focusKey',
+        label: 'Focus mode key',
+        description: 'Turns focus mode on and off, with the pointer on the preview.',
+        kind: 'text',
+        default: 'f',
+        placeholder: 'None',
+        maxLength: 1,
+      },
+      {
         key: 'reading.resume',
         label: 'Resume reading',
         description: 'Reopen each document where you stopped, when the preview is not following an editor.',

@@ -1905,8 +1905,8 @@ body.mtp-settings-open {
 
 /* Focus on the sentence: in the block being read the other sentences fade
    too; the sentence is a CSS highlight that gets the text colour back. */
-body[data-focus-scope='sentence'] #preview .folio-sentence-block,
-body[data-focus-scope='sentence'] #preview .folio-sentence-block * {
+body[data-focus-mode][data-focus-scope='sentence'] #preview .folio-sentence-block,
+body[data-focus-mode][data-focus-scope='sentence'] #preview .folio-sentence-block * {
   color: color-mix(in srgb, var(--folio-text, currentColor) 34%, transparent) !important;
   transition: color 250ms ease;
 }
@@ -1915,17 +1915,36 @@ body[data-focus-scope='sentence'] #preview .folio-sentence-block * {
   color: var(--folio-text);
 }
 
-/* Focus mode: the block being read stays clear, the rest fades. */
+/* Focus mode: the block being read stays clear, the rest fades and blurs
+   a little (folio.reading.focusStrength). Its translation stays with it. */
+body[data-focus-mode] {
+  --folio-focus-opacity: 0.22;
+  --folio-focus-blur: 0.6px;
+}
+
+body[data-focus-mode][data-focus-strength='soft'] {
+  --folio-focus-opacity: 0.36;
+  --folio-focus-blur: 0px;
+}
+
+body[data-focus-mode][data-focus-strength='strong'] {
+  --folio-focus-opacity: 0.13;
+  --folio-focus-blur: 1.3px;
+}
+
 body[data-focus-mode] #preview > *:not(.folio-reading-time),
 body[data-focus-mode] #preview > .folio-within > * {
-  opacity: 0.28;
-  transition: opacity 350ms ease;
+  opacity: var(--folio-focus-opacity);
+  filter: blur(var(--folio-focus-blur));
+  transition: opacity 350ms ease, filter 350ms ease;
 }
 
 body[data-focus-mode] #preview > .folio-current,
+body[data-focus-mode] #preview > .folio-current + .folio-translation,
 body[data-focus-mode] #preview > .folio-within,
 body[data-focus-mode] #preview > .folio-within > .folio-current {
   opacity: 1;
+  filter: none;
 }
 
 /* ========================================================== document tools */
@@ -2285,7 +2304,9 @@ body[data-color-scheme='dark'] {
   .folio-lightbox,
   .folio-lightbox img,
   .folio-toast,
-  body[data-focus-mode] #preview > * {
+  body[data-focus-mode] #preview > *,
+  body[data-focus-mode] #preview > *:not(.folio-reading-time),
+  body[data-focus-mode] #preview > .folio-within > * {
     animation: none;
     transition: none;
   }

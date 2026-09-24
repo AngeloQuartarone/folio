@@ -65,6 +65,11 @@
         "icon": "$(go-to-file)"
       },
       {
+        "command": "folio.toggleFocusMode",
+        "title": "Toggle Focus Mode",
+        "category": "Folio"
+      },
+      {
         "command": "folio.syncPreview",
         "title": "Sync Preview to Cursor",
         "category": "Folio"
@@ -382,7 +387,7 @@
         "folio.reading.focusMode": {
           "type": "boolean",
           "default": false,
-          "description": "Dim everything except the paragraph you are reading."
+          "description": "Dim everything except the paragraph (or sentence) you are reading. The key in folio.reading.focusKey, or Folio: Toggle Focus Mode, turns it on and off."
         },
         "folio.reading.focusScope": {
           "type": "string",
@@ -396,6 +401,40 @@
           ],
           "default": "paragraph",
           "markdownDescription": "With `#folio.reading.focusMode#` on: what stays clear, the paragraph or the sentence you are reading."
+        },
+        "folio.reading.focusNavigation": {
+          "type": "string",
+          "enum": [
+            "step",
+            "scroll"
+          ],
+          "enumDescriptions": [
+            "One notch of the mouse wheel, ↑/↓ or j/k moves the focus to the next or previous paragraph, and the page scrolls to it.",
+            "The focus follows the paragraph at the reading line as you scroll."
+          ],
+          "default": "step",
+          "markdownDescription": "How the focus moves in focus mode."
+        },
+        "folio.reading.focusStrength": {
+          "type": "string",
+          "enum": [
+            "soft",
+            "medium",
+            "strong"
+          ],
+          "enumDescriptions": [
+            "The rest of the text is lighter.",
+            "Lighter and slightly blurred.",
+            "Much lighter and blurred."
+          ],
+          "default": "medium",
+          "markdownDescription": "How much the text outside the focus fades in focus mode."
+        },
+        "folio.reading.focusKey": {
+          "type": "string",
+          "default": "f",
+          "maxLength": 1,
+          "markdownDescription": "A key that turns focus mode on and off while the pointer is on the preview (and the preview has the keyboard focus). Empty: no key. *Folio: Toggle Focus Mode* can also get a shortcut of its own."
         },
         "folio.reading.resume": {
           "type": "boolean",

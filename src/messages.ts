@@ -111,6 +111,8 @@ export type HostMessage =
       message?: string;
       action?: { label: string; command: WebviewCommand };
     }
+  /** "Folio: Toggle Focus Mode". */
+  | { type: 'toggleFocusMode' }
   /** "Folio: Translate Document" from the command palette. */
   | { type: 'toggleDocumentTranslation' }
   /** The notes of the previewed document (after loading and after each change). */
@@ -208,6 +210,11 @@ export interface ReadingSettings {
   progress: boolean;
   focusMode: boolean;
   focusScope: 'paragraph' | 'sentence';
+  /** Step: the wheel, ↑/↓ and j/k move the focus paragraph by paragraph. */
+  focusNavigation: 'step' | 'scroll';
+  focusStrength: 'soft' | 'medium' | 'strong';
+  /** Toggles focus mode while the pointer is on the preview ('' for none). */
+  focusKey: string;
   resume: boolean;
   notes: boolean;
 }

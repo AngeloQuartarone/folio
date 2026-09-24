@@ -401,32 +401,184 @@ export class ReadingProgress {
  * "sentence" scope, inside that block everything but the sentence too (with
  * the CSS Custom Highlight API, so the text is not wrapped in elements).
  */
+export interface FocusOptions {
+  scope: 'paragraph' | 'sentence';
+  /**
+   * `step`: the wheel (one notch), ↑/↓ and j/k move the focus to the next or
+   * previous paragraph, and the page scrolls to it; `scroll`: the focus
+   * follows the paragraph at the reading line as the page scrolls.
+   */
+  navigation: 'step' | 'scroll';
+}
+
+/** Height of the reading line, from the top of the window. */
+const READING_LINE = 0.42;
+/** Wheel movement (pixels) that makes one step: a mouse notch is about 100. */
+const WHEEL_STEP = 40;
+/** After a step, the wheel waits this long (trackpads keep sending events). */
+const WHEEL_PAUSE_MS = 320;
+
 export class FocusMode {
   private current: Element | undefined;
   private within: Element | undefined;
+  private active: boolean;
   private readonly sentences = typeof CSS !== 'undefined' && 'highlights' in CSS;
+  /** Until then, scroll events come from a step: the focus stays where it moved. */
+  private steppingUntil = 0;
+  private wheel = 0;
+  private wheelPausedUntil = 0;
+  private wheelResetTimer: ReturnType<typeof setTimeout> | undefined;
 
   constructor(
     private readonly root: HTMLElement,
-    private readonly scope: 'paragraph' | 'sentence' = 'paragraph',
+    private readonly options: FocusOptions,
+    active: boolean,
   ) {
+    this.active = active;
     // The highlighted sentence gets the text colour back (the rest of its block is dimmed).
     document.body.style.setProperty('--folio-text', getComputedStyle(root).color);
+    window.addEventListener('wheel', (event) => this.onWheel(event), { passive: false });
+    document.addEventListener('keydown', (event) => {
+      const target = event.target as HTMLElement | null;
+      if (
+        this.stepping() &&
+        !event.defaultPrevented &&
+        !event.altKey &&
+        !event.metaKey &&
+        !event.ctrlKey &&
+        !event.shiftKey &&
+        (event.key === 'ArrowDown' || event.key === 'ArrowUp') &&
+        !target?.closest?.('input, textarea, select, [contenteditable="true"]')
+      ) {
+        event.preventDefault();
+        this.step(event.key === 'ArrowDown' ? 1 : -1);
+      }
+    });
+    this.apply();
+  }
+
+  get isActive(): boolean {
+    return this.active;
+  }
+
+  setActive(active: boolean): void {
+    this.active = active;
+    this.apply();
+  }
+
+  /** Whether the keys and the wheel move the focus paragraph by paragraph now. */
+  stepping(): boolean {
+    return this.active && this.options.navigation === 'step';
   }
 
   onScroll(): void {
-    const line = window.innerHeight * 0.42;
-    const blocks = Array.from(this.root.children).filter(
-      (element) => !element.classList.contains('folio-reading-time'),
-    );
-    const block = nearest(blocks, line);
-    let current = block;
-    let within: Element | undefined;
-    // In a list, only the item being read.
-    if (block && (block.tagName === 'UL' || block.tagName === 'OL')) {
-      within = block;
-      current = nearest(Array.from(block.children), line) ?? block;
+    if (!this.active || Date.now() < this.steppingUntil) {
+      return;
     }
+    const line = window.innerHeight * READING_LINE;
+    const block = nearest(this.blocks(), line);
+    // In a list, only the item being read.
+    const current =
+      block && (block.tagName === 'UL' || block.tagName === 'OL') ? (nearest(Array.from(block.children), line) ?? block) : block;
+    this.setCurrent(current);
+  }
+
+  /** Move the focus to the next (1) or previous (-1) paragraph and scroll to it. */
+  step(direction: 1 | -1): void {
+    const units = this.units();
+    if (!units.length) {
+      return;
+    }
+    let index = this.current ? units.indexOf(this.current) : -1;
+    if (index < 0) {
+      this.onScroll();
+      index = this.current ? units.indexOf(this.current) : 0;
+    }
+    const next = units[Math.min(units.length - 1, Math.max(0, index + direction))];
+    if (!next || next === this.current) {
+      return;
+    }
+    this.setCurrent(next);
+    const rect = next.getBoundingClientRect();
+    const tall = rect.height > window.innerHeight * 0.6;
+    // A short paragraph is centred on the reading line; a long one starts near the top.
+    const top = tall
+      ? window.scrollY + rect.top - window.innerHeight * 0.18
+      : window.scrollY + rect.top + rect.height / 2 - window.innerHeight * READING_LINE;
+    const smooth = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    this.steppingUntil = Date.now() + (smooth ? 700 : 100);
+    window.scrollTo({ top: Math.max(0, top), behavior: smooth ? 'smooth' : 'auto' });
+    if (this.options.scope === 'sentence') {
+      setTimeout(() => this.highlightSentence(this.current, window.innerHeight * READING_LINE), smooth ? 450 : 0);
+    }
+  }
+
+  /** After a render the elements are new. */
+  reset(): void {
+    this.current = undefined;
+    this.within = undefined;
+    this.steppingUntil = 0;
+    this.onScroll();
+  }
+
+  private apply(): void {
+    document.body.toggleAttribute('data-focus-mode', this.active);
+    if (this.active) {
+      this.reset();
+    } else {
+      this.setCurrent(undefined);
+      if (this.sentences) {
+        CSS.highlights.delete('folio-sentence');
+      }
+    }
+  }
+
+  private onWheel(event: WheelEvent): void {
+    const target = event.target as Element | null;
+    if (
+      !this.stepping() ||
+      event.ctrlKey ||
+      Math.abs(event.deltaX) > Math.abs(event.deltaY) ||
+      target?.closest?.('.mtp-ui, .mtp-tooltip, .mtp-settings-window, .folio-lightbox')
+    ) {
+      return;
+    }
+    event.preventDefault();
+    const now = Date.now();
+    clearTimeout(this.wheelResetTimer);
+    this.wheelResetTimer = setTimeout(() => (this.wheel = 0), 200);
+    if (now < this.wheelPausedUntil) {
+      return;
+    }
+    this.wheel += event.deltaY * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? window.innerHeight : 1);
+    if (Math.abs(this.wheel) >= WHEEL_STEP) {
+      this.step(this.wheel > 0 ? 1 : -1);
+      this.wheel = 0;
+      this.wheelPausedUntil = now + WHEEL_PAUSE_MS;
+    }
+  }
+
+  /** The blocks of the document, without Folio's additions. */
+  private blocks(): Element[] {
+    return Array.from(this.root.children).filter(
+      (element) =>
+        element.getClientRects().length > 0 &&
+        !element.classList.contains('folio-reading-time') &&
+        !element.classList.contains('folio-translation'),
+    );
+  }
+
+  /** What the focus steps through: the blocks, and the items of lists one by one. */
+  private units(): Element[] {
+    return this.blocks().flatMap((block) =>
+      block.tagName === 'UL' || block.tagName === 'OL'
+        ? Array.from(block.children).filter((item) => item.getClientRects().length > 0)
+        : [block],
+    );
+  }
+
+  private setCurrent(current: Element | undefined): void {
+    const within = current && current.parentElement !== this.root ? current.parentElement ?? undefined : undefined;
     if (current !== this.current || within !== this.within) {
       this.current?.classList.remove('folio-current', 'folio-sentence-block');
       this.within?.classList.remove('folio-within');
@@ -435,16 +587,9 @@ export class FocusMode {
       this.current = current;
       this.within = within;
     }
-    if (this.scope === 'sentence') {
-      this.highlightSentence(current, line);
+    if (this.active && this.options.scope === 'sentence' && Date.now() >= this.steppingUntil) {
+      this.highlightSentence(current, window.innerHeight * READING_LINE);
     }
-  }
-
-  /** After a render the elements are new. */
-  reset(): void {
-    this.current = undefined;
-    this.within = undefined;
-    this.onScroll();
   }
 
   private highlightSentence(block: Element | undefined, line: number): void {

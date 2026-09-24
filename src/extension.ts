@@ -74,6 +74,14 @@ export function activate(context: vscode.ExtensionContext): ExtensionApi {
 
   command('syncPreview', () => preview.syncToEditor());
 
+  command('toggleFocusMode', () => {
+    if (preview.webviewPanel) {
+      preview.postMessage({ type: 'toggleFocusMode' });
+    } else {
+      void vscode.window.showInformationMessage('Open the Folio preview first.');
+    }
+  });
+
   // The reader tab and the text editor of the same file, one or the other.
   command('openInReader', (uri?: vscode.Uri) => {
     const target = markdownUri(uri);

@@ -106,6 +106,9 @@ export interface ReadingConfig {
   progress: boolean;
   focusMode: boolean;
   focusScope: 'paragraph' | 'sentence';
+  focusNavigation: 'step' | 'scroll';
+  focusStrength: 'soft' | 'medium' | 'strong';
+  focusKey: string;
   resume: boolean;
   notes: boolean;
 }
@@ -131,6 +134,9 @@ export function getReadingConfig(): ReadingConfig {
     progress: c.get<boolean>('reading.progress', true),
     focusMode: c.get<boolean>('reading.focusMode', false),
     focusScope: oneOf(c.get('reading.focusScope'), ['paragraph', 'sentence'] as const, 'paragraph'),
+    focusNavigation: oneOf(c.get('reading.focusNavigation'), ['step', 'scroll'] as const, 'step'),
+    focusStrength: oneOf(c.get('reading.focusStrength'), ['soft', 'medium', 'strong'] as const, 'medium'),
+    focusKey: (c.get<string>('reading.focusKey', 'f') ?? '').trim().slice(0, 1),
     resume: c.get<boolean>('reading.resume', true),
     notes: c.get<boolean>('notes.enabled', true),
   };

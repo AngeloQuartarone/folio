@@ -21,6 +21,11 @@
   keys to move through the document (j/k, J/K, g/G, t); focus on the
   sentence being read; Atkinson Hyperlegible and OpenDyslexic fonts
   (bundled); justified, hyphenated text.
+- Focus mode, more: one wheel notch, ↑/↓ or j/k moves the focus to the
+  next or previous paragraph (or it follows the page:
+  `folio.reading.focusNavigation`); the rest fades and blurs a little, in
+  three strengths; `f` over the preview (`folio.reading.focusKey`) or
+  *Folio: Toggle Focus Mode* turns it on and off.
 - Folio Reader: Markdown files as the reading view in their own tab
   (Open With…, *Folio: Open in Reader*; `folio.openInReader` for every file,
   off by default), with *Folio: Open Source* back to the text.
