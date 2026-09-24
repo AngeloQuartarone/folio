@@ -402,6 +402,42 @@ function defineTests(): void {
       }
     });
 
+    it('opens Markdown files in the reader tab, and back to the source', async () => {
+      const api = await activate();
+      const uri = fixture('other.md');
+      const config = vscode.workspace.getConfiguration('folio');
+      const readerTabs = () =>
+        vscode.window.tabGroups.all
+          .flatMap((group) => group.tabs)
+          .filter((tab) => tab.input instanceof vscode.TabInputCustom && tab.input.viewType === 'folio.reader');
+      try {
+        const ready = waitForMessage(api, (message) => message.type === 'ready');
+        await vscode.commands.executeCommand('vscode.openWith', uri, 'folio.reader');
+        await ready;
+        assert.equal(api.preview.webviewPanel?.viewType, 'folio.reader', 'the reader tab is the preview');
+        assert.equal(api.preview.activeSourceUri?.toString(), uri.toString());
+        assert.equal(readerTabs().length, 1);
+        assert.equal(previewTabs().length, 0, 'one preview at a time');
+
+        await vscode.commands.executeCommand('folio.openSource', uri);
+        await until(() => vscode.window.activeTextEditor?.document.uri.toString() === uri.toString(), 'the source opens');
+
+        await config.update('openInReader', true, vscode.ConfigurationTarget.Global);
+        await until(() => vscode.workspace.getConfiguration('workbench').get<Record<string, string>>('editorAssociations')?.['*.md'] === 'folio.reader', 'associated');
+        await config.update('openInReader', undefined, vscode.ConfigurationTarget.Global);
+        await until(() => !vscode.workspace.getConfiguration('workbench').get<Record<string, string>>('editorAssociations')?.['*.md'], 'and no more');
+      } finally {
+        await config.update('openInReader', undefined, vscode.ConfigurationTarget.Global);
+        for (const tab of readerTabs()) {
+          await vscode.window.tabGroups.close(tab);
+        }
+        await vscode.window.showTextDocument(fixture('sample.md'), { viewColumn: vscode.ViewColumn.One });
+        const back = waitForMessage(api, (message) => message.type === 'ready');
+        api.preview.show(fixture('sample.md'), vscode.ViewColumn.Beside);
+        await back.catch(() => undefined);
+      }
+    });
+
     it('remembers where the user stopped reading', async () => {
       const api = await activate();
       const uri = fixture('sample.md');

@@ -162,30 +162,54 @@ export class PreviewManager implements vscode.Disposable {
   ): void {
     this.sourceUri = uri;
     if (!this.panel) {
-      this.panel = vscode.window.createWebviewPanel(
-        PREVIEW_VIEW_TYPE,
-        '',
-        { viewColumn: column, preserveFocus },
-        {
-          enableScripts: true,
-          enableFindWidget: true,
-          retainContextWhenHidden: true,
-          localResourceRoots: this.localResourceRoots(uri),
-        },
-      );
-      this.panel.iconPath = vscode.Uri.joinPath(this.extensionUri, 'media', 'preview.svg');
-      this.panelDisposables.push(
-        this.panel.webview.onDidReceiveMessage((message: WebviewMessage) =>
-          this.onMessage(message),
+      this.attach(
+        vscode.window.createWebviewPanel(
+          PREVIEW_VIEW_TYPE,
+          '',
+          { viewColumn: column, preserveFocus },
+          {
+            enableScripts: true,
+            enableFindWidget: true,
+            retainContextWhenHidden: true,
+            localResourceRoots: this.localResourceRoots(uri),
+          },
         ),
-        this.panel.onDidDispose(() => this.onPanelDisposed()),
+        uri,
       );
-      this.reload();
     } else {
       // Keep the panel where the user put it.
       this.panel.reveal(this.panel.viewColumn ?? column, preserveFocus);
       this.retarget(uri);
     }
+  }
+
+  /**
+   * Take over a panel VS Code created: the reader tab ("Open With… › Folio
+   * Reader"). There is one preview at a time, so an earlier one is closed.
+   */
+  adopt(panel: vscode.WebviewPanel, uri: vscode.Uri): void {
+    const previous = this.panel;
+    if (previous && previous !== panel) {
+      this.onPanelDisposed();
+      previous.dispose();
+    }
+    panel.webview.options = { enableScripts: true, localResourceRoots: this.localResourceRoots(uri) };
+    this.attach(panel, uri);
+  }
+
+  private attach(panel: vscode.WebviewPanel, uri: vscode.Uri): void {
+    this.sourceUri = uri;
+    this.panel = panel;
+    panel.iconPath = vscode.Uri.joinPath(this.extensionUri, 'media', 'preview.svg');
+    this.panelDisposables.push(
+      panel.webview.onDidReceiveMessage((message: WebviewMessage) => this.onMessage(message)),
+      panel.onDidDispose(() => {
+        if (this.panel === panel) {
+          this.onPanelDisposed();
+        }
+      }),
+    );
+    this.reload();
   }
 
   /**

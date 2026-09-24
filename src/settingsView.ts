@@ -341,6 +341,13 @@ const SECTIONS: SectionDefinition[] = [
         maxLength: 100,
       },
       {
+        key: 'openInReader',
+        label: 'Open files in the reader',
+        description: 'Markdown files open as the reading view in their own tab, instead of the text editor.',
+        kind: 'toggle',
+        default: false,
+      },
+      {
         key: 'hideBuiltInPreviewButton',
         label: 'Hide VS Code preview button',
         description: 'Show only this preview’s button in the editor title bar.',

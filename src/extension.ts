@@ -10,6 +10,7 @@ import { exportDocument } from './export/exportCommands';
 import { migrateLegacyModels, migrateLegacySettings } from './legacy';
 import { NotesController } from './notes/notesController';
 import { OutlineFit } from './preview/outlineFit';
+import { READER_VIEW_TYPE, registerReader, syncEditorAssociations } from './preview/reader';
 import { PreviewManager, isMarkdownDocument } from './preview/previewManager';
 import { WebviewMessage } from './messages';
 import { isKnownSetting, pathSetting, validSetting } from './settingsView';
@@ -31,6 +32,10 @@ export function activate(context: vscode.ExtensionContext): ExtensionApi {
   const translation = new TranslationController(context, preview);
   const notes = new NotesController(preview);
   new OutlineFit(preview);
+  context.subscriptions.push(registerReader(preview));
+  if (vscode.workspace.getConfiguration(SECTION).get<boolean>('openInReader', false)) {
+    void syncEditorAssociations();
+  }
   context.subscriptions.push(preview, translation, notes);
 
   // VS Code's built-in Markdown extension hides its own preview buttons
@@ -68,6 +73,21 @@ export function activate(context: vscode.ExtensionContext): ExtensionApi {
   });
 
   command('syncPreview', () => preview.syncToEditor());
+
+  // The reader tab and the text editor of the same file, one or the other.
+  command('openInReader', (uri?: vscode.Uri) => {
+    const target = markdownUri(uri);
+    if (target) {
+      void vscode.commands.executeCommand('vscode.openWith', target, READER_VIEW_TYPE);
+    }
+  });
+
+  command('openSource', (uri?: vscode.Uri) => {
+    const target = uri instanceof vscode.Uri ? uri : preview.activeSourceUri;
+    if (target) {
+      void vscode.commands.executeCommand('vscode.openWith', target, 'default');
+    }
+  });
 
   command('toggleScrollSync', async () => {
     const config = vscode.workspace.getConfiguration(SECTION);

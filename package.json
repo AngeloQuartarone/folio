@@ -33,7 +33,8 @@
   ],
   "main": "./dist/extension.js",
   "activationEvents": [
-    "onLanguage:markdown"
+    "onLanguage:markdown",
+    "onCustomEditor:folio.reader"
   ],
   "contributes": {
     "commands": [
@@ -50,6 +51,18 @@
         "command": "folio.openPreview",
         "title": "Open Preview",
         "category": "Folio"
+      },
+      {
+        "command": "folio.openInReader",
+        "title": "Open in Reader",
+        "category": "Folio",
+        "icon": "$(book)"
+      },
+      {
+        "command": "folio.openSource",
+        "title": "Open Source",
+        "category": "Folio",
+        "icon": "$(go-to-file)"
       },
       {
         "command": "folio.syncPreview",
@@ -471,6 +484,11 @@
           "type": "boolean",
           "default": true,
           "description": "Hide the preview buttons of VS Code's built-in Markdown preview (editor title bar, explorer and tab menus), so only this extension's button is shown."
+        },
+        "folio.openInReader": {
+          "type": "boolean",
+          "default": false,
+          "markdownDescription": "Open Markdown files in the Folio Reader, the reading view in its own tab, instead of the text editor (the **Open Source** button in its title bar opens the text). Sets VS Code's `#workbench.editorAssociations#` for `*.md` and `*.markdown`; turning it off removes them. Any Markdown file can also be opened with **Open With… › Folio Reader**."
         }
       }
     },
@@ -493,6 +511,11 @@
         {
           "command": "folio.openPreviewToTheSide",
           "when": "editorLangId == markdown",
+          "group": "navigation"
+        },
+        {
+          "command": "folio.openSource",
+          "when": "activeCustomEditorId == folio.reader",
           "group": "navigation"
         }
       ],
@@ -518,6 +541,11 @@
           "command": "folio.openPreviewToTheSide",
           "when": "resourceLangId == markdown",
           "group": "navigation"
+        },
+        {
+          "command": "folio.openInReader",
+          "when": "resourceLangId == markdown",
+          "group": "navigation"
         }
       ],
       "commandPalette": [
@@ -528,9 +556,32 @@
         {
           "command": "folio.openPreview",
           "when": "editorLangId == markdown"
+        },
+        {
+          "command": "folio.openInReader",
+          "when": "editorLangId == markdown"
+        },
+        {
+          "command": "folio.openSource",
+          "when": "activeCustomEditorId == folio.reader"
         }
       ]
-    }
+    },
+    "customEditors": [
+      {
+        "viewType": "folio.reader",
+        "displayName": "Folio Reader",
+        "selector": [
+          {
+            "filenamePattern": "*.md"
+          },
+          {
+            "filenamePattern": "*.markdown"
+          }
+        ],
+        "priority": "option"
+      }
+    ]
   },
   "scripts": {
     "build": "node scripts/build.mjs",

@@ -66,6 +66,14 @@ It is an independent project derived from
   (**Translate document**) or with *Folio: Translate Document*; the small
   pill at the top shows the progress, and its × shows the original only.
 
+### Reader tab
+
+- **Folio Reader**: open a Markdown file as the reading view in its own
+  tab, without the text editor: **Open With… › Folio Reader**, *Folio: Open
+  in Reader*, or the explorer's context menu. **Open Source** in its title
+  bar opens the text. Set `folio.openInReader` to open every Markdown file
+  this way (off by default).
+
 ### Working with the document
 
 - **Notes in the margin**: select text, choose **Add note**, write. The text
@@ -120,6 +128,10 @@ And a few things GitHub does not:
 | --- | --- |
 | Folio: Open Preview to the Side | `Ctrl+K V` / `Cmd+K V` |
 | Folio: Open Preview | `Ctrl+Shift+V` / `Cmd+Shift+V` |
+| Folio: Open in Reader | |
+| Folio: Open Source | |
+| Folio: Translate Document | |
+| Folio: Copy Notes for AI | |
 | Folio: Select Preview Theme | |
 | Folio: Select Code Block Theme | |
 | Folio: Sync Preview to Cursor | |
@@ -232,6 +244,7 @@ selection. If the text is already in the target language a small
 | `folio.wikiLinks` | `true` | Render `[[wiki links]]`. |
 | `folio.frontMatter` | `hide` | Front matter: `hide`, or `show` as a header. |
 | `folio.customCss` | *(empty)* | A CSS file of yours for the preview and exports (absolute, `~/…` or relative to the workspace folder). |
+| `folio.openInReader` | `false` | Open Markdown files in the Folio Reader tab instead of the text editor (sets `workbench.editorAssociations`). |
 | `folio.hideBuiltInPreviewButton` | `true` | Hide VS Code's own Markdown preview button. |
 | `folio.chromePath` | `""` | Browser used for PDF export; detected automatically when empty. |
 
