@@ -276,6 +276,33 @@ const SECTIONS: SectionDefinition[] = [
         default: true,
       },
       {
+        key: 'wikiLinks',
+        label: 'Wiki links',
+        description: 'Render [[Page]] links, as Obsidian writes them.',
+        kind: 'toggle',
+        default: true,
+      },
+      {
+        key: 'frontMatter',
+        label: 'Front matter',
+        description: 'The metadata at the top of a document: hidden, or shown as a header.',
+        kind: 'select',
+        default: 'hide',
+        options: [
+          { value: 'hide', label: 'Hide' },
+          { value: 'show', label: 'Show' },
+        ],
+      },
+      {
+        key: 'customCss',
+        label: 'Your stylesheet',
+        description: 'A CSS file applied after Folio’s styles, in the preview and in exports.',
+        kind: 'path',
+        default: '',
+        placeholder: 'None',
+        folder: false,
+      },
+      {
         key: 'liveUpdateDebounceMs',
         label: 'Update delay',
         description: 'Wait after an edit before updating the preview.',

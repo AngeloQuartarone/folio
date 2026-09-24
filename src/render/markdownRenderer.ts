@@ -21,7 +21,9 @@ import sup from 'markdown-it-sup';
 import taskLists from 'markdown-it-task-lists';
 import Prism from '../vendor/prism/prism.js';
 import { stripNotesBlock } from '../notes/notesBlock';
+import { frontMatterHtml, parseFrontMatter } from './frontMatter';
 import { githubAlerts, headingIds, sourceMap, stripFrontMatter } from './plugins';
+import { wikiLinks } from './wikiLinks';
 
 export interface RendererOptions {
   /** Render a single newline as `<br>` (GitHub does not). */
@@ -30,6 +32,10 @@ export interface RendererOptions {
   math: boolean;
   /** Emit ```mermaid blocks as diagrams (rendered by mermaid.js in the page). */
   mermaid: boolean;
+  /** Render [[wiki links]]. */
+  wikiLinks?: boolean;
+  /** Show the front matter as a header instead of hiding it. */
+  frontMatter?: 'hide' | 'show';
 }
 
 export interface RenderEnv {
@@ -77,6 +83,9 @@ export class MarkdownRenderer {
       .use(githubAlerts)
       .use(headingIds)
       .use(sourceMap);
+    if (options.wikiLinks) {
+      this.md.use(wikiLinks);
+    }
     if (options.math) {
       this.md.use(markdownItKatex, {
         katex,
@@ -90,7 +99,9 @@ export class MarkdownRenderer {
 
   render(text: string, env: RenderEnv = {}): RenderResult {
     // Front matter and Folio's notes block are never shown (nor exported).
-    const html = this.md.render(stripNotesBlock(stripFrontMatter(text)), env);
+    const body = this.md.render(stripNotesBlock(stripFrontMatter(text)), env);
+    const frontMatter = this.options.frontMatter === 'show' ? parseFrontMatter(text) : undefined;
+    const html = (frontMatter ? frontMatterHtml(frontMatter) : '') + body;
     return {
       html,
       lineCount: text.split('\n').length,

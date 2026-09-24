@@ -365,6 +365,43 @@ function defineTests(): void {
       }
     });
 
+    it('finds wiki link pages anywhere in the workspace, and applies the user stylesheet', async () => {
+      const api = await activate();
+      const uri = fixture('sample.md');
+      const folder = fixture('wiki-sub').fsPath;
+      const page = path.join(folder, 'Wiki Target.md');
+      const css = fixture('folio-test.css').fsPath;
+      const config = vscode.workspace.getConfiguration('folio');
+      mkdirSync(folder, { recursive: true });
+      writeFileSync(page, '# Wiki Target\n\n## Part\n\nText.\n');
+      writeFileSync(css, 'body { --folio-probe: 42px; }');
+      try {
+        await vscode.window.showTextDocument(uri, { viewColumn: vscode.ViewColumn.One });
+        const ready = waitForMessage(api, (message) => message.type === 'ready');
+        api.preview.show(uri, vscode.ViewColumn.Beside);
+        await ready.catch(() => undefined);
+        (api.preview as any).onMessage({ type: 'openLink', sourceUri: uri.toString(), href: 'Wiki%20Target.md#part' });
+        await until(() => vscode.window.activeTextEditor?.document.uri.fsPath === page, 'the page is found in a subfolder');
+        assert.equal(vscode.window.activeTextEditor?.selection.active.line, 2, 'at its heading');
+
+        await vscode.window.showTextDocument(uri, { viewColumn: vscode.ViewColumn.One });
+        await until(() => api.preview.activeSourceUri?.toString() === uri.toString());
+        await config.update('customCss', 'folio-test.css', vscode.ConfigurationTarget.Global);
+        await until(() => !!api.preview.webviewPanel?.webview.html.includes('--folio-probe: 42px'), 'the preview has the stylesheet');
+        writeFileSync(css, 'body { --folio-probe: 43px; }');
+        await until(() => !!api.preview.webviewPanel?.webview.html.includes('--folio-probe: 43px'), 'saving it reloads the preview');
+        const output = fixture('sample.html').fsPath;
+        await vscode.commands.executeCommand('folio.exportHtml', uri);
+        assert.match(readFileSync(output, 'utf8'), /--folio-probe: 43px/, 'exports have it too');
+        rmSync(output, { force: true });
+      } finally {
+        await config.update('customCss', undefined, vscode.ConfigurationTarget.Global);
+        rmSync(folder, { recursive: true, force: true });
+        rmSync(css, { force: true });
+        await vscode.window.showTextDocument(uri, { viewColumn: vscode.ViewColumn.One });
+      }
+    });
+
     it('remembers where the user stopped reading', async () => {
       const api = await activate();
       const uri = fixture('sample.md');

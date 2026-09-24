@@ -1578,6 +1578,46 @@ body.mtp-settings-open {
   }
 }
 
+/* Front matter shown as a header (folio.frontMatter: show). */
+.markdown-preview .folio-front-matter {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 5px 18px;
+  margin: 0 0 2rem;
+  padding: 12px 16px;
+  border-radius: 10px;
+  background: color-mix(in srgb, currentColor 4%, transparent);
+  font-size: 0.85em;
+  line-height: 1.5;
+}
+
+.markdown-preview .folio-front-matter > div {
+  display: contents;
+}
+
+.markdown-preview .folio-front-matter dt {
+  margin: 0;
+  padding: 0;
+  font-style: normal;
+  font-weight: 500;
+  opacity: 0.6;
+}
+
+.markdown-preview .folio-front-matter dd {
+  margin: 0;
+  padding: 0;
+  overflow-wrap: anywhere;
+}
+
+.markdown-preview .folio-tag {
+  display: inline-block;
+  margin: 1px 3px 1px 0;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, currentColor 9%, transparent);
+  font-size: 0.92em;
+}
+
 /* Folding sections: an arrow in the margin, left of the heading. */
 .markdown-preview :is(h1, h2, h3, h4, h5, h6):has(> .folio-fold) {
   position: relative;

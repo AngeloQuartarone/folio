@@ -28,6 +28,8 @@ export interface StandaloneOptions {
   target: 'html' | 'pdf';
   /** Directory of the Markdown file; used as `<base>` for PDF export. */
   baseDir: string;
+  /** The user's stylesheet (folio.customCss), after Folio's. */
+  customCss?: string;
 }
 
 export function buildStandaloneHtml(options: StandaloneOptions): string {
@@ -41,6 +43,7 @@ export function buildStandaloneHtml(options: StandaloneOptions): string {
     read('styles', 'style-template.css'),
     read('styles', 'preview.css'),
     options.target === 'pdf' ? PDF_CSS : HTML_CSS,
+    options.customCss ?? '',
   ];
   if (rendered.hasMath) {
     styles.unshift(inlineKatexFonts(read('katex', 'katex.min.css'), join(distDir, 'katex')));

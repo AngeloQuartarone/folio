@@ -13,6 +13,7 @@ import {
   themesForExport,
 } from '../themes';
 import { findChrome, printToPdf } from './chrome';
+import { readUserCss } from '../userStyles';
 import { buildStandaloneHtml } from './standaloneHtml';
 
 export type ExportTarget = 'html' | 'pdf';
@@ -55,6 +56,7 @@ export async function exportDocument(
     colorScheme,
     target,
     baseDir,
+    customCss: readUserCss(config.customCss),
   });
 
   const output = sourcePath.replace(/\.[^./\\]+$/, '') + (target === 'pdf' ? '.pdf' : '.html');

@@ -92,9 +92,20 @@ It is an independent project derived from
 Tables, task lists, fenced code with syntax highlighting (Prism, ~400
 languages, 24 code themes), footnotes, emoji `:smile:`, `~sub~`/`^sup^`/`==mark==`,
 definition lists, abbreviations, GitHub alerts (`> [!NOTE]` …), raw HTML
-(sanitized), heading anchors, front matter (hidden), **math** with KaTeX and
-**Mermaid** diagrams. Images resolve relative to the Markdown file (and
-`/path` to the workspace root). Scroll sync works in both directions.
+(sanitized), heading anchors, **math** with KaTeX and **Mermaid** diagrams.
+Images resolve relative to the Markdown file (and `/path` to the workspace
+root). Scroll sync works in both directions.
+
+And a few things GitHub does not:
+
+- **Wiki links**, as Obsidian writes them: `[[Page]]`, `[[Page|text]]`,
+  `[[Page#Heading]]`, `[[#Heading]]`, and `![[image.png]]` to show an image.
+  A page is the Markdown file of that name, next to the document or
+  anywhere in the workspace.
+- **Front matter** hidden, or shown as a quiet header with one row per
+  entry and lists as tags (`folio.frontMatter`).
+- **Your own stylesheet** (`folio.customCss`), applied after Folio's styles
+  in the preview and in exports, and reloaded when you save it.
 
 ## Usage
 
@@ -211,6 +222,9 @@ selection. If the text is already in the target language a small
 | `folio.breakOnSingleNewLine` | `false` | Render single line breaks as `<br>`. |
 | `folio.math.enabled` | `true` | Render math with KaTeX. |
 | `folio.mermaid.enabled` | `true` | Render Mermaid diagrams. |
+| `folio.wikiLinks` | `true` | Render `[[wiki links]]`. |
+| `folio.frontMatter` | `hide` | Front matter: `hide`, or `show` as a header. |
+| `folio.customCss` | *(empty)* | A CSS file of yours for the preview and exports (absolute, `~/…` or relative to the workspace folder). |
 | `folio.hideBuiltInPreviewButton` | `true` | Hide VS Code's own Markdown preview button. |
 | `folio.chromePath` | `""` | Browser used for PDF export; detected automatically when empty. |
 

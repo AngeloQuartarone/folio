@@ -16,6 +16,8 @@ export interface PageOptions {
   codeBlockTheme: CodeBlockTheme;
   colorScheme: ColorScheme;
   settings: Omit<WebviewSettings, 'mermaidScriptUri'>;
+  /** The user's stylesheet (folio.customCss), after Folio's. */
+  customCss?: string;
 }
 
 export function createNonce(): string {
@@ -68,7 +70,7 @@ export function buildPreviewPage(options: PageOptions): string {
 <link rel="stylesheet" href="${asset('styles', 'prism_theme', options.codeBlockTheme)}">
 <link rel="stylesheet" href="${asset('styles', 'style-template.css')}">
 <link rel="stylesheet" href="${asset('styles', 'preview.css')}">
-</head>
+${options.customCss ? `<style id="folio-custom-css">\n${options.customCss}\n</style>\n` : ''}</head>
 <body class="preview-container" data-color-scheme="${options.colorScheme}" data-preview-theme="${options.previewTheme.replace(/\.css$/, '')}" data-reading-font="${reading.font}" data-line-height="${reading.lineHeight}" data-width="${reading.width}"${reading.justify ? ' data-justify' : ''}${reading.focusMode ? ` data-focus-mode data-focus-scope="${reading.focusScope}"` : ''} style="--folio-font-size: ${reading.fontSize}px">
 <div class="crossnote markdown-preview" data-for="preview" id="preview"></div>
 <script nonce="${nonce}" src="${asset('webview', 'preview.js')}"></script>

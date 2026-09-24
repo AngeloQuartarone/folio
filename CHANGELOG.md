@@ -21,6 +21,9 @@
   keys to move through the document (j/k, J/K, g/G, t); focus on the
   sentence being read; Atkinson Hyperlegible and OpenDyslexic fonts
   (bundled); justified, hyphenated text.
+- Rendering: `[[wiki links]]` (pages found anywhere in the workspace,
+  `![[image]]` embeds), front matter shown as a header on request, and a
+  stylesheet of your own for the preview and exports.
 - Notes in the margin: highlight selected text with a note; notes follow
   their text when the document changes and are listed in the table of
   contents.

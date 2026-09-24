@@ -433,6 +433,29 @@
           "default": true,
           "description": "Render ```mermaid code blocks as diagrams."
         },
+        "folio.wikiLinks": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Render `[[wiki links]]` as Obsidian writes them: `[[Page]]`, `[[Page|text]]`, `[[Page#Heading]]`, and `![[image.png]]` to show an image. A page is the Markdown file of that name, next to the document or anywhere in the workspace."
+        },
+        "folio.frontMatter": {
+          "type": "string",
+          "enum": [
+            "hide",
+            "show"
+          ],
+          "enumDescriptions": [
+            "Hide the front matter, as GitHub's rendered prose does not show it.",
+            "Show it as a quiet header above the document: one row per entry, lists as tags."
+          ],
+          "default": "hide",
+          "markdownDescription": "The YAML (or TOML) front matter at the top of a document."
+        },
+        "folio.customCss": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "A CSS file of your own, applied after Folio's styles in the preview and in HTML and PDF exports (for example to change fonts or colours). An absolute path, `~/…`, or a path relative to the workspace folder. It is reloaded when you save it."
+        },
         "folio.chromePath": {
           "type": "string",
           "default": "",

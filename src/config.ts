@@ -22,6 +22,9 @@ export const PREVIEW_SETTINGS = [
   'breakOnSingleNewLine',
   'math.enabled',
   'mermaid.enabled',
+  'wikiLinks',
+  'frontMatter',
+  'customCss',
   'reading',
   'notes.enabled',
 ].map((key) => `${SECTION}.${key}`);
@@ -54,6 +57,10 @@ export interface PreviewConfig {
   breakOnSingleNewLine: boolean;
   math: boolean;
   mermaid: boolean;
+  wikiLinks: boolean;
+  frontMatter: 'hide' | 'show';
+  /** A CSS file of the user's, as written in the setting (see resolveUserPath). */
+  customCss: string;
   chromePath: string;
 }
 
@@ -74,6 +81,9 @@ export function getPreviewConfig(): PreviewConfig {
     breakOnSingleNewLine: c.get<boolean>('breakOnSingleNewLine', false),
     math: c.get<boolean>('math.enabled', true),
     mermaid: c.get<boolean>('mermaid.enabled', true),
+    wikiLinks: c.get<boolean>('wikiLinks', true),
+    frontMatter: c.get<string>('frontMatter') === 'show' ? 'show' : 'hide',
+    customCss: c.get<string>('customCss', '').trim(),
     chromePath: c.get<string>('chromePath', '').trim(),
   };
 }

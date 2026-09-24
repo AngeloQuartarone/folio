@@ -28,6 +28,7 @@ import {
   resolvePreviewTheme,
 } from '../themes';
 import { settingsSections } from '../settingsView';
+import { readUserCss, resolveUserPath } from '../userStyles';
 import { buildPreviewPage } from './page';
 import { findRenderedText } from './sourceMatch';
 
@@ -63,6 +64,8 @@ export class PreviewManager implements vscode.Disposable {
   private ownSelection: { selection: vscode.Selection; until: number } | undefined;
   private readonly disposables: vscode.Disposable[] = [];
   private readonly panelDisposables: vscode.Disposable[] = [];
+  /** Reloads the preview when the user's stylesheet is saved. */
+  private cssWatcher: vscode.Disposable | undefined;
   private readonly messageListeners: Array<
     (message: WebviewMessage, panel: vscode.WebviewPanel) => void
   > = [];
@@ -98,6 +101,9 @@ export class PreviewManager implements vscode.Disposable {
           return;
         }
         this.config = getPreviewConfig();
+        if (event.affectsConfiguration(`${SECTION}.customCss`)) {
+          this.watchUserCss();
+        }
         if (PREVIEW_SETTINGS.some((key) => event.affectsConfiguration(key))) {
           this.renderer = createRenderer(this.config);
           this.reload();
@@ -105,12 +111,28 @@ export class PreviewManager implements vscode.Disposable {
           this.post({ type: 'settings', sections: previewSettingsSections() });
         }
       }),
+      { dispose: () => this.cssWatcher?.dispose() },
       vscode.window.onDidChangeActiveColorTheme(() => {
         if (this.config.previewColorScheme === 'editorColorScheme') {
           this.reload();
         }
       }),
     );
+    this.watchUserCss();
+  }
+
+  private watchUserCss(): void {
+    this.cssWatcher?.dispose();
+    const uri = resolveUserPath(this.config.customCss);
+    if (!uri) {
+      this.cssWatcher = undefined;
+      return;
+    }
+    const watcher = vscode.workspace.createFileSystemWatcher(
+      new vscode.RelativePattern(vscode.Uri.joinPath(uri, '..'), path.basename(uri.fsPath)),
+    );
+    const reload = () => this.reload();
+    this.cssWatcher = vscode.Disposable.from(watcher, watcher.onDidChange(reload), watcher.onDidCreate(reload), watcher.onDidDelete(reload));
   }
 
   get activeSourceUri(): vscode.Uri | undefined {
@@ -212,6 +234,7 @@ export class PreviewManager implements vscode.Disposable {
         sections: previewSettingsSections(),
         reading: getReadingConfig(),
       },
+      customCss: readUserCss(this.config.customCss),
     });
   }
 
@@ -507,6 +530,28 @@ export class PreviewManager implements vscode.Disposable {
     return { target: vscode.Uri.joinPath(this.sourceUri, '..', decodeURIComponent(pathPart)), fragment };
   }
 
+  /**
+   * The existing file a link points to. A bare name that is not next to the
+   * document ([[Page]] wiki links) is looked for in the whole workspace.
+   */
+  private async findLink(href: string): Promise<{ target: vscode.Uri; fragment: string } | undefined> {
+    const link = this.resolveLink(href);
+    if (!link) {
+      return undefined;
+    }
+    try {
+      await vscode.workspace.fs.stat(link.target);
+      return link;
+    } catch {
+      const name = decodeURIComponent(splitFragment(href)[0]);
+      if (!name || /[\\/*?{}[\]]/.test(name)) {
+        return undefined;
+      }
+      const [found] = await vscode.workspace.findFiles(`**/${name}`, '**/node_modules/**', 1);
+      return found ? { target: found, fragment: link.fragment } : undefined;
+    }
+  }
+
   private async openLink(href: string): Promise<void> {
     if (!this.sourceUri) {
       return;
@@ -516,11 +561,13 @@ export class PreviewManager implements vscode.Disposable {
         await vscode.env.openExternal(vscode.Uri.parse(href, true));
         return;
       }
-      const link = this.resolveLink(href);
-      if (!link) {
+      if (!this.resolveLink(href)) {
         return; // command:, vscode:, javascript: ... are never followed
       }
-      await vscode.workspace.fs.stat(link.target);
+      const link = await this.findLink(href);
+      if (!link) {
+        throw new Error('not found');
+      }
       if (isMarkdownPath(link.target)) {
         await this.openMarkdown(link.target, (text) => (link.fragment ? findHeadingLine(text, link.fragment) : 0));
       } else {
@@ -560,11 +607,14 @@ export class PreviewManager implements vscode.Disposable {
    * rendered, for the preview shown on hover.
    */
   private async linkPreview(id: number, href: string): Promise<void> {
-    const link = typeof href === 'string' ? this.resolveLink(href) : undefined;
-    if (!this.panel || !link || !isMarkdownPath(link.target) || !Number.isInteger(id)) {
+    if (!this.panel || typeof href !== 'string' || !Number.isInteger(id)) {
       return;
     }
     try {
+      const link = await this.findLink(href);
+      if (!link || !isMarkdownPath(link.target)) {
+        return;
+      }
       const document = await vscode.workspace.openTextDocument(link.target);
       const text = document.getText();
       const snippet = markdownExcerpt(text, link.fragment ? findHeadingLine(text, link.fragment) : 0);
@@ -595,6 +645,8 @@ export function createRenderer(config: PreviewConfig): MarkdownRenderer {
     breaks: config.breakOnSingleNewLine,
     math: config.math,
     mermaid: config.mermaid,
+    wikiLinks: config.wikiLinks,
+    frontMatter: config.frontMatter,
   });
 }
 
