@@ -34,10 +34,11 @@ It is an independent project derived from
 - **Reading time and progress**: "8 min read" above the document, the time
   left in the table of contents, and a progress bar at the top.
 - **Focus mode**: everything but the section you are reading (a heading
-  with the paragraphs below it, cut into parts when taller than the window)
+  with everything below it up to the next heading, cut into parts only when
+  it does not fit in the window)
   fades and blurs a little (soft, medium or strong:
-  `folio.reading.focusStrength`); or keep just the paragraph, or the
-  sentence, clear (`folio.reading.focusScope`). One notch of the mouse
+  `folio.reading.focusStrength`); or keep a single block (a paragraph, a
+  list item, a table), or the sentence, clear (`folio.reading.focusScope`). One notch of the mouse
   wheel, `↑`/`↓` or `j`/`k` moves the focus to the next or previous part and
   brings it to the reading line; set
   `folio.reading.focusNavigation` to `scroll` to have the focus follow the

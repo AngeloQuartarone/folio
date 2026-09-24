@@ -397,12 +397,17 @@
             "sentence"
           ],
           "enumDescriptions": [
-            "A heading with the paragraphs below it; a section taller than the window is cut into parts.",
-            "One paragraph, or one list item.",
+            "A heading with everything below it up to the next heading (paragraphs, lists, tables); cut into parts only when it does not fit in the window.",
+            "One block at a time: a paragraph, a list item, a table.",
             "Only the sentence you are reading."
           ],
           "default": "section",
-          "markdownDescription": "With `#folio.reading.focusMode#` on: what stays clear."
+          "markdownDescription": "With `#folio.reading.focusMode#` on: what stays clear.",
+          "enumItemLabels": [
+            "Heading and its text",
+            "Single block",
+            "Sentence"
+          ]
         },
         "folio.reading.focusNavigation": {
           "type": "string",

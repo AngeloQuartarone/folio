@@ -195,12 +195,12 @@ const SECTIONS: SectionDefinition[] = [
       {
         key: 'reading.focusScope',
         label: 'Focus on',
-        description: 'What stays clear in focus mode: a heading with its paragraphs, one paragraph, or one sentence.',
+        description: 'What stays clear in focus mode: a heading with everything below it, one block (a paragraph, a list item, a table), or one sentence.',
         kind: 'select',
         default: 'section',
         options: [
-          { value: 'section', label: 'Section' },
-          { value: 'paragraph', label: 'Paragraph' },
+          { value: 'section', label: 'Heading and its text' },
+          { value: 'paragraph', label: 'Single block' },
           { value: 'sentence', label: 'Sentence' },
         ],
       },

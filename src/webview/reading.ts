@@ -418,8 +418,8 @@ export interface FocusOptions {
 
 /** Height of the reading line, from the top of the window. */
 const READING_LINE = 0.42;
-/** A section taller than this share of the window is cut into parts. */
-const SECTION_MAX = 0.7;
+/** A section is cut into parts only when it does not fit in this share of the window. */
+const SECTION_MAX = 0.9;
 /** Wheel movement (pixels) that makes one step: a mouse notch is about 100. */
 const WHEEL_STEP = 40;
 /** After a step, the wheel waits this long (trackpads keep sending events). */
@@ -597,12 +597,13 @@ export class FocusMode {
         last.push(block);
       }
     }
-    // Taller than the window allows: cut between blocks (a long list between
-    // its items), never right after the heading.
+    // Too tall for the window: cut between blocks (never inside a paragraph
+    // or a table), never right after the heading.
     const limit = window.innerHeight * SECTION_MAX;
     return sections.flatMap((section) => {
       const pieces = section.flatMap((block) =>
-        isList(block) && block.getBoundingClientRect().height > limit ? Array.from(block.children).filter(shown) : [block],
+        // A list is split into its items only when it alone does not fit.
+        isList(block) && block.getBoundingClientRect().height > window.innerHeight ? Array.from(block.children).filter(shown) : [block],
       );
       const parts: Element[][] = [];
       let part: Element[] = [];
