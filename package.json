@@ -92,6 +92,11 @@
         "category": "Folio"
       },
       {
+        "command": "folio.copyNotesForAI",
+        "title": "Copy Notes for AI",
+        "category": "Folio"
+      },
+      {
         "command": "folio.manageOfflineLanguages",
         "title": "Manage Offline Languages",
         "category": "Folio"
@@ -318,7 +323,25 @@
         "folio.notes.enabled": {
           "type": "boolean",
           "default": true,
-          "markdownDescription": "Add notes to text selected in the preview. Notes are saved next to the document, in `<file>.folio.json`."
+          "markdownDescription": "Add notes to text selected in the preview."
+        },
+        "folio.notes.storage": {
+          "type": "string",
+          "enum": [
+            "document",
+            "sidecar"
+          ],
+          "enumDescriptions": [
+            "In a comment at the end of the Markdown file: notes travel with it and an AI reading the file sees them. Other Markdown viewers do not show the comment.",
+            "In a file next to the document, `<file>.folio.json`."
+          ],
+          "default": "document",
+          "markdownDescription": "Where notes are kept."
+        },
+        "folio.notes.author": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "Your name on new notes and replies. Empty: your Git `user.name`, else your system user name."
         },
         "folio.scrollSync": {
           "type": "boolean",

@@ -114,6 +114,23 @@ export function getReadingConfig(): ReadingConfig {
   };
 }
 
+export type NotesStorage = 'document' | 'sidecar';
+
+export interface NotesConfig {
+  /** `document`: a comment at the end of the Markdown file; `sidecar`: `<file>.folio.json`. */
+  storage: NotesStorage;
+  /** Name on new notes and replies; empty = the Git user name, else the system user. */
+  author: string;
+}
+
+export function getNotesConfig(): NotesConfig {
+  const c = vscode.workspace.getConfiguration(SECTION);
+  return {
+    storage: oneOf(c.get('notes.storage'), ['document', 'sidecar'] as const, 'document'),
+    author: c.get<string>('notes.author', '').trim().slice(0, 100),
+  };
+}
+
 export function editorColorScheme(): 'light' | 'dark' {
   const kind = vscode.window.activeColorTheme.kind;
   return kind === vscode.ColorThemeKind.Light ||

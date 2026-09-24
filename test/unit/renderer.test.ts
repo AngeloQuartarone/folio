@@ -108,6 +108,14 @@ describe('helpers', () => {
     assert.equal(slugify('a_b-c'), 'a_b-c');
   });
 
+  it('hides the notes block and keeps the source lines', () => {
+    const text = '# Title\n\nBody\n\n<!-- folio:notes v1\nNotes left with Folio.\n{"id":"a","quote":"Body","text":"x"}\n-->\n';
+    const result = renderer.render(text);
+    assert.equal(result.html.includes('folio'), false);
+    assert.equal(result.lineCount, text.split('\n').length);
+    assert.match(result.html, /<p data-source-line="3"/);
+  });
+
   it('stripFrontMatter only strips a leading block', () => {
     assert.equal(stripFrontMatter('text\n---\na\n---'), 'text\n---\na\n---');
     assert.equal(stripFrontMatter('---\na: 1\n---\nbody'), '\n\n\nbody');

@@ -63,6 +63,8 @@ export class Outline {
     private readonly state: StateStore,
     private readonly openNote: (id: string) => void,
     private readonly deleteNote: (id: string) => void,
+    /** "Copy for AI": the notes as a message for an AI assistant. */
+    private readonly copyNotes: () => void,
     /** The panel moves the text aside in wide windows: `change` opens or closes it. */
     private readonly onToggle: (change: () => void) => void = (change) => change(),
   ) {
@@ -233,11 +235,27 @@ export class Outline {
       this.list.replaceChildren(empty);
       return;
     }
+    const bar = document.createElement('div');
+    bar.className = 'folio-outline-notes-bar';
+    const open = this.notes.filter(({ note }) => note.status !== 'resolved').length;
+    const count = document.createElement('span');
+    count.textContent = open ? `${open} open` : 'All resolved';
+    const copy = document.createElement('button');
+    copy.type = 'button';
+    copy.className = 'folio-outline-copy';
+    copy.textContent = 'Copy for AI';
+    copy.title = 'Copy the notes as a message to paste into a chat with an AI assistant';
+    copy.addEventListener('click', () => this.copyNotes());
+    bar.append(count, copy);
     this.list.replaceChildren(
+      bar,
       ...this.notes.map(({ note, found }) => {
         const item = document.createElement('div');
         item.className = 'folio-outline-note';
         item.dataset['found'] = String(found);
+        if (note.status === 'resolved') {
+          item.dataset['resolved'] = 'true';
+        }
         const quote = document.createElement('div');
         quote.className = 'folio-outline-quote';
         quote.textContent = note.quote;
@@ -245,6 +263,18 @@ export class Outline {
         text.className = 'folio-outline-note-text';
         text.textContent = note.text || '(empty note)';
         item.append(quote, text);
+        const replies = note.replies?.length ?? 0;
+        const details = [
+          note.author,
+          replies ? `${replies} ${replies === 1 ? 'reply' : 'replies'}` : '',
+          note.status === 'resolved' ? 'Resolved' : '',
+        ].filter(Boolean);
+        if (details.length) {
+          const meta = document.createElement('div');
+          meta.className = 'folio-outline-note-meta';
+          meta.textContent = details.join(' · ');
+          item.append(meta);
+        }
         if (found) {
           item.tabIndex = 0;
           item.addEventListener('click', () => this.openNote(note.id));

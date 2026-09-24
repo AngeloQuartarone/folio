@@ -20,6 +20,7 @@ import sub from 'markdown-it-sub';
 import sup from 'markdown-it-sup';
 import taskLists from 'markdown-it-task-lists';
 import Prism from '../vendor/prism/prism.js';
+import { stripNotesBlock } from '../notes/notesBlock';
 import { githubAlerts, headingIds, sourceMap, stripFrontMatter } from './plugins';
 
 export interface RendererOptions {
@@ -88,7 +89,8 @@ export class MarkdownRenderer {
   }
 
   render(text: string, env: RenderEnv = {}): RenderResult {
-    const html = this.md.render(stripFrontMatter(text), env);
+    // Front matter and Folio's notes block are never shown (nor exported).
+    const html = this.md.render(stripNotesBlock(stripFrontMatter(text)), env);
     return {
       html,
       lineCount: text.split('\n').length,

@@ -81,6 +81,17 @@ export function settingControl(item: SettingItem, post: Post): HTMLElement {
       wrapper.append(input, unit);
       return wrapper;
     }
+    case 'text': {
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.className = 'mtp-text';
+      input.placeholder = item.placeholder;
+      input.maxLength = item.maxLength;
+      input.value = item.value;
+      input.spellcheck = false;
+      input.addEventListener('change', () => set(input.value.trim()));
+      return input;
+    }
     case 'path': {
       const wrapper = document.createElement('span');
       wrapper.className = 'mtp-path';

@@ -20,6 +20,7 @@ import { TranslationController } from './translation/translationController';
 export interface ExtensionApi {
   preview: PreviewManager;
   translation: TranslationController;
+  notes: NotesController;
 }
 
 export function activate(context: vscode.ExtensionContext): ExtensionApi {
@@ -27,8 +28,8 @@ export function activate(context: vscode.ExtensionContext): ExtensionApi {
   void migrateLegacySettings(context);
   const preview = new PreviewManager(context.extensionUri, context.workspaceState);
   const translation = new TranslationController(context, preview);
-  new NotesController(preview);
-  context.subscriptions.push(preview, translation);
+  const notes = new NotesController(preview);
+  context.subscriptions.push(preview, translation, notes);
 
   // VS Code's built-in Markdown extension hides its own preview buttons
   // (editor title, explorer and tab context menus) when this is set.
@@ -91,6 +92,8 @@ export function activate(context: vscode.ExtensionContext): ExtensionApi {
 
   command('manageOfflineLanguages', () => translation.manageLanguages());
 
+  command('copyNotesForAI', (uri?: vscode.Uri) => notes.copyForAI(markdownUri(uri, preview.activeSourceUri)));
+
   command('toggleTranslation', async () => {
     const config = vscode.workspace.getConfiguration(SECTION);
     const value = !config.get<boolean>('translation.enabled', true);
@@ -116,7 +119,7 @@ export function activate(context: vscode.ExtensionContext): ExtensionApi {
 
   preview.onDidReceiveMessage((message) => void onSettingsMessage(message, context.extension.id));
 
-  return { preview, translation };
+  return { preview, translation, notes };
 }
 
 /**

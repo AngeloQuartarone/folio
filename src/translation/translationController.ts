@@ -10,6 +10,7 @@ import * as vscode from 'vscode';
 import { SECTION, getTranslationConfig } from '../config';
 import { LanguageStatus, TranslationReply, WebviewCommand, WebviewMessage } from '../messages';
 import { PreviewManager } from '../preview/previewManager';
+import { stripNotesBlock } from '../notes/notesBlock';
 import { stripFrontMatter } from '../render/plugins';
 import { DictionaryInfo, DictionaryStore, dictionaryFor } from './dictionary/dictionaryStore';
 import { languageName } from './languages';
@@ -435,7 +436,7 @@ export class TranslationController implements vscode.Disposable {
   }
 
   /**
-   * Text of the previewed document without front matter and code, used to
+   * Text of the previewed document without front matter, notes and code, used to
    * detect the language when the selected sentence is too short.
    */
   private async documentSample(): Promise<string | undefined> {
@@ -446,7 +447,7 @@ export class TranslationController implements vscode.Disposable {
     const document = await vscode.workspace.openTextDocument(uri);
     const key = `${uri.toString()}@${document.version}`;
     if (this.documentLanguageSample?.key !== key) {
-      const text = stripFrontMatter(document.getText())
+      const text = stripNotesBlock(stripFrontMatter(document.getText()))
         .replace(/^(```|~~~)[\s\S]*?^\1/gm, ' ')
         .replace(/`[^`]*`/g, ' ')
         .replace(/<[^>]+>|\]\([^)]*\)|[#>*_|[\]-]/g, ' ')

@@ -701,6 +701,26 @@ label.mtp-setting {
   text-align: right;
 }
 
+.mtp-ui input.mtp-text {
+  box-sizing: border-box;
+  width: 160px;
+  padding: 5px 8px;
+  border: 0;
+  border-radius: 7px;
+  background: var(--mtp-fill);
+  color: var(--mtp-fg);
+  font: inherit;
+  outline: none;
+}
+
+.mtp-ui input.mtp-text::placeholder {
+  color: var(--mtp-faint);
+}
+
+.mtp-ui input.mtp-text:focus {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--mtp-accent) 45%, transparent);
+}
+
 .mtp-number {
   display: flex;
   align-items: center;
@@ -1406,6 +1426,45 @@ body.mtp-settings-open {
   white-space: pre-wrap;
 }
 
+.folio-outline-note-meta {
+  margin-top: 4px;
+  color: var(--mtp-faint);
+  font-size: 11.5px;
+}
+
+.folio-outline-note[data-resolved='true'] .folio-outline-quote,
+.folio-outline-note[data-resolved='true'] .folio-outline-note-text {
+  opacity: 0.55;
+}
+
+.folio-outline-notes-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0 0 6px;
+  padding: 0 4px 0 10px;
+  color: var(--mtp-muted);
+  font-size: 12px;
+}
+
+.folio-outline-copy {
+  padding: 3px 9px;
+  border: 0;
+  border-radius: 7px;
+  background: var(--mtp-fill);
+  color: var(--mtp-fg);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 150ms ease;
+}
+
+.folio-outline-copy:hover {
+  background: var(--mtp-fill-strong);
+}
+
 .folio-outline-lost {
   margin-top: 4px;
   color: var(--mtp-error);
@@ -1638,8 +1697,44 @@ body[data-color-scheme='dark'] {
   transform: rotate(-45deg) scale(1.15);
 }
 
+/* Resolved notes stay findable but step back. */
+.markdown-preview mark.folio-note.folio-resolved {
+  background: transparent;
+  box-shadow: none;
+  text-decoration: underline dotted var(--folio-note);
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 3px;
+}
+
+.markdown-preview mark.folio-note.folio-resolved:hover {
+  background: var(--folio-note-bg);
+}
+
+.folio-note-pin.folio-resolved {
+  opacity: 0.4;
+}
+
+.folio-note-pin.folio-resolved:hover {
+  opacity: 1;
+}
+
 .folio-note-card {
   min-width: 240px;
+}
+
+/* Replies: a quiet thread under the note. */
+.folio-note-reply {
+  margin-top: 10px;
+  padding-top: 9px;
+  border-top: 1px solid var(--mtp-hairline);
+}
+
+.folio-note-reply .folio-note-text {
+  font-size: 13.5px;
+}
+
+.folio-note-spacer {
+  flex: 1;
 }
 
 .folio-note-card[hidden] {

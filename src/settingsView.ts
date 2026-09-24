@@ -13,6 +13,7 @@ type Control =
   | { kind: 'toggle'; default: boolean }
   | { kind: 'select'; default: string; options: Choice[] }
   | { kind: 'number'; default: number; min: number; max: number; step: number; unit: string }
+  | { kind: 'text'; default: string; placeholder: string; maxLength: number }
   | { kind: 'path'; default: string; placeholder: string; folder: boolean };
 
 type Definition = { key: string; label: string; description?: string } & Control;
@@ -228,9 +229,29 @@ const SECTIONS: SectionDefinition[] = [
       {
         key: 'notes.enabled',
         label: 'Notes',
-        description: 'Add notes to selected text. They are saved next to the document (<file>.folio.json).',
+        description: 'Add notes to selected text.',
         kind: 'toggle',
         default: true,
+      },
+      {
+        key: 'notes.storage',
+        label: 'Keep notes',
+        description: 'In the document, notes travel with the file and an AI reading it sees them; other Markdown viewers hide them.',
+        kind: 'select',
+        default: 'document',
+        options: [
+          { value: 'document', label: 'In the document' },
+          { value: 'sidecar', label: 'In a file next to it' },
+        ],
+      },
+      {
+        key: 'notes.author',
+        label: 'Your name on notes',
+        description: 'Shown on your notes and replies.',
+        kind: 'text',
+        default: '',
+        placeholder: 'Git user name',
+        maxLength: 100,
       },
       {
         key: 'hideBuiltInPreviewButton',
@@ -275,6 +296,9 @@ export function settingsSections(get: (key: string) => unknown): SettingSection[
         const { folder: _folder, ...path } = rest;
         return { ...path, value: typeof raw === 'string' ? raw.trim() : '' };
       }
+      if (rest.kind === 'text') {
+        return { ...rest, value: typeof raw === 'string' ? raw.trim().slice(0, rest.maxLength) : '' };
+      }
       if (rest.kind === 'number' && typeof raw === 'number' && Number.isFinite(raw)) {
         return { ...rest, value: Math.min(rest.max, Math.max(rest.min, raw)) };
       }
@@ -294,6 +318,8 @@ export function validSetting(key: string, value: unknown): string | number | boo
       return typeof value === 'boolean' ? value : undefined;
     case 'select':
       return definition.options.some((option) => option.value === value) ? (value as string) : undefined;
+    case 'text':
+      return typeof value === 'string' && value.trim().length <= definition.maxLength ? value.trim() : undefined;
     case 'number':
       return typeof value === 'number' && Number.isFinite(value) && value >= definition.min && value <= definition.max
         ? value

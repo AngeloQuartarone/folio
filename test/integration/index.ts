@@ -3,7 +3,7 @@
  * by scripts/run-integration-tests.mjs.
  */
 import * as assert from 'node:assert/strict';
-import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, symlinkSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import * as path from 'node:path';
@@ -40,6 +40,17 @@ function waitForMessage(
       }
     });
   });
+}
+
+/** Wait until `condition` holds (host work is asynchronous). */
+async function until(condition: () => boolean, what = 'condition', timeoutMs = 10_000): Promise<void> {
+  const end = Date.now() + timeoutMs;
+  while (!condition()) {
+    if (Date.now() > end) {
+      throw new Error(`timed out waiting: ${what}`);
+    }
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  }
 }
 
 function previewTabs(): vscode.Tab[] {
@@ -194,6 +205,8 @@ function defineTests(): void {
       const uri = fixture('sample.md');
       const file = `${uri.fsPath}.folio.json`;
       rmSync(file, { force: true });
+      const config = vscode.workspace.getConfiguration('folio');
+      await config.update('notes.storage', 'sidecar', vscode.ConfigurationTarget.Global);
       const sent: HostMessage[] = [];
       const original = api.preview.postMessage.bind(api.preview);
       api.preview.postMessage = (message: HostMessage) => {
@@ -212,14 +225,101 @@ function defineTests(): void {
       };
       try {
         (api.preview as any).onMessage({ type: 'note', sourceUri: uri.toString(), action: 'add', note });
+        await until(() => existsSync(file));
         assert.equal(JSON.parse(readFileSync(file, 'utf8')).notes[0].text, 'Check this');
-        const reply = sent.find((message) => message.type === 'notes');
-        assert.equal(reply?.type === 'notes' && reply.notes.length, 1);
-        (api.preview as any).onMessage({ type: 'note', sourceUri: uri.toString(), action: 'delete', note });
-        assert.equal(existsSync(file), false);
+        await until(() => sent.some((message) => message.type === 'notes' && message.notes.length === 1));
+        (api.preview as any).onMessage({ type: 'note', sourceUri: uri.toString(), action: 'delete', id: 'test-1' });
+        await until(() => !existsSync(file));
+        assert.equal(readFileSync(uri.fsPath, 'utf8').includes('folio:notes'), false, 'the document is untouched');
       } finally {
         api.preview.postMessage = original;
         rmSync(file, { force: true });
+        await config.update('notes.storage', undefined, vscode.ConfigurationTarget.Global);
+      }
+    });
+
+    it('keeps notes in the document: moves old ones, reads replies, exports without them', async () => {
+      const api = await activate();
+      const uri = fixture('notes-roundtrip.md');
+      const sidecar = `${uri.fsPath}.folio.json`;
+      const original = '# Notes\r\n\r\nSome bold text about the river bank.\r\n';
+      writeFileSync(uri.fsPath, original);
+      const old = {
+        id: 'old-1',
+        quote: 'river bank',
+        prefix: 'about the ',
+        suffix: '.',
+        line: 3,
+        text: 'Written before notes lived in the document',
+        created: '2026-09-01T10:00:00.000Z',
+        updated: '2026-09-01T10:00:00.000Z',
+      };
+      writeFileSync(sidecar, JSON.stringify({ version: 1, notes: [old] }));
+      const config = vscode.workspace.getConfiguration('folio');
+      await config.update('notes.author', 'Tester', vscode.ConfigurationTarget.Global);
+      const sent: HostMessage[] = [];
+      const post = api.preview.postMessage.bind(api.preview);
+      api.preview.postMessage = (message: HostMessage) => {
+        sent.push(message);
+        post(message);
+      };
+      const lastNotes = () => {
+        const last = [...sent].reverse().find((message) => message.type === 'notes');
+        return last?.type === 'notes' ? last.notes : [];
+      };
+      const send = (message: object) => (api.preview as any).onMessage({ type: 'note', sourceUri: uri.toString(), ...message });
+      try {
+        const ready = waitForMessage(api, (message) => message.type === 'ready');
+        api.preview.show(uri);
+        await ready;
+        await until(() => lastNotes().length === 1, 'the old note is shown');
+
+        send({
+          action: 'add',
+          note: { ...old, id: 'new-1', quote: 'bold', prefix: 'Some ', suffix: ' text', text: 'Check this', created: '', updated: '' },
+        });
+        await until(() => readFileSync(uri.fsPath, 'utf8').includes('folio:notes'), 'the note is saved in the document');
+        await until(() => !existsSync(sidecar), 'the old file is removed once its notes are in the saved document');
+        const saved = readFileSync(uri.fsPath, 'utf8');
+        assert.ok(saved.startsWith(original), 'the text above the block is unchanged');
+        assert.equal(saved.replace(/\r\n/g, '').includes('\n'), false, 'Windows line endings are kept');
+        assert.match(saved, /"id":"new-1","author":"Tester"/);
+        assert.match(saved, /"id":"old-1"/);
+
+        // An AI answers in the file, on disk.
+        const answered = saved.replace(
+          /("id":"new-1",[^\r\n]*?)"line":/,
+          '$1"replies":[{"author":"Claude","text":"Looks right."}],"line":',
+        );
+        assert.notEqual(answered, saved);
+        writeFileSync(uri.fsPath, answered);
+        await until(
+          () => lastNotes().find((note) => note.id === 'new-1')?.replies?.[0]?.author === 'Claude',
+          'the reply is shown',
+        );
+
+        send({ action: 'resolve', id: 'new-1' });
+        await until(() => /"id":"new-1","author":"Tester","status":"resolved"/.test(readFileSync(uri.fsPath, 'utf8')));
+
+        await vscode.commands.executeCommand('folio.copyNotesForAI', uri);
+        const prompt = await vscode.env.clipboard.readText();
+        assert.match(prompt, /notes-roundtrip\.md/);
+        assert.match(prompt, /"river bank"/);
+
+        const output = fixture('notes-roundtrip.html').fsPath;
+        await vscode.commands.executeCommand('folio.exportHtml', uri);
+        assert.doesNotMatch(readFileSync(output, 'utf8'), /folio:notes|Check this|Looks right/, 'the export has no notes');
+        rmSync(output, { force: true });
+
+        send({ action: 'delete', id: 'new-1' });
+        send({ action: 'delete', id: 'old-1' });
+        await until(() => readFileSync(uri.fsPath, 'utf8') === original, 'the block goes when no notes are left');
+      } finally {
+        api.preview.postMessage = post;
+        await config.update('notes.author', undefined, vscode.ConfigurationTarget.Global);
+        rmSync(uri.fsPath, { force: true });
+        rmSync(sidecar, { force: true });
+        api.preview.show(fixture('sample.md'));
       }
     });
 

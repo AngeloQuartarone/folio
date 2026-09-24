@@ -44,10 +44,22 @@ It is an independent project derived from
 ### Working with the document
 
 - **Notes in the margin**: select text, choose **Add note**, write. The text
-  is highlighted with a pin in the margin; click it to read, edit or delete
-  the note. All notes are listed in the table of contents. They are saved
-  next to the document, in `<file>.folio.json`, and follow the text when the
-  document changes.
+  is highlighted with a pin in the margin; click it to read the note and its
+  replies, reply, resolve, edit or delete it. All notes are listed in the
+  table of contents, and follow their text when the document changes.
+- **Notes that travel with the document, and that your AI reads**: notes are
+  kept in one HTML comment at the end of the Markdown file. GitHub, VS Code's
+  own preview, Obsidian and Pandoc do not show it, so the document looks the
+  same everywhere; anyone opening the file with Folio sees the notes, and an
+  AI assistant reading the file finds them, with a line explaining how to
+  answer (a reply) or close them (`"status": "resolved"`). Folio shows those
+  replies in the note's card. **Copy for AI** (in the Notes tab, or the
+  command *Folio: Copy Notes for AI*) copies the notes as a message ready to
+  paste into a chat. Adding a note is an ordinary edit of the document: it
+  can be undone, and a document without unsaved changes is saved right
+  away. Prefer a separate file? Set `folio.notes.storage` to `sidecar`
+  (`<file>.folio.json`); notes already in such a file are offered to be
+  moved into the document.
 - **Selection sync**: text selected in the preview is selected and
   highlighted in the source, when the file is open in an editor next to it
   (the file is never opened for this).
@@ -162,7 +174,9 @@ selection. If the text is already in the target language a small
 | `folio.reading.progress` | `true` | Reading time and progress bar. |
 | `folio.reading.focusMode` | `false` | Dim everything but the paragraph being read. |
 | `folio.reading.resume` | `true` | Reopen documents where you stopped reading. |
-| `folio.notes.enabled` | `true` | Notes on selected text (saved in `<file>.folio.json`). |
+| `folio.notes.enabled` | `true` | Notes on selected text. |
+| `folio.notes.storage` | `document` | Where notes are kept: `document` (a comment at the end of the Markdown file) or `sidecar` (`<file>.folio.json`). |
+| `folio.notes.author` | *(empty)* | Your name on notes and replies; empty uses your Git `user.name`, else your system user name. |
 | `folio.translation.enabled` | `true` | Show the translation tooltip on selection. |
 | `folio.translation.targetLanguage` | `it` | Language to translate into (one of the 11 above). |
 | `folio.translation.sourceLanguage` | `auto` | Language of your documents, or `auto` to detect it. |
@@ -221,8 +235,11 @@ task rebuilds on change).
 - Scripts inside the Markdown never run: the preview and the exports use a
   strict Content Security Policy, and raw HTML is sanitized in the preview.
 - Only one preview panel at a time (it follows the active Markdown editor).
-- Notes need a document saved on disk (they live in `<file>.folio.json`);
-  a note whose text was deleted from the document is listed as not found.
+- A note whose text was deleted from the document is listed as not found.
+  Notes in the document are one line each; if two people add notes to the
+  same file at the same time, Git may ask to merge those lines. A plain
+  text editor (not a Markdown viewer) shows the notes comment at the end of
+  the file. The `sidecar` storage needs a document saved on disk.
 - Not available in VS Code for the Web.
 
 ## Adding a translation engine

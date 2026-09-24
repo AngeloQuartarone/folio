@@ -1,7 +1,8 @@
 /*
  * Notes in the margin: highlighted text with a note, a pin next to it, and a
- * card to read, edit or delete it. The host keeps the notes in
- * `<file>.folio.json` (src/notes/notesStore.ts).
+ * card to read it with its replies, answer, resolve, edit or delete it. The
+ * host keeps the notes at the end of the document or next to it
+ * (src/notes/notesController.ts).
  * Copyright (c) 2026 Angelo Quartarone.
  *
  * A note is found again through the text it quotes (with a little context
@@ -185,7 +186,7 @@ export class Notes {
     }
     const rect = range.getBoundingClientRect();
     this.cardFor = undefined;
-    this.edit('', rect, (text) => {
+    this.edit('', 'Write a note…', rect, (text) => {
       const now = new Date().toISOString();
       const note: NoteData = {
         id: `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`,
@@ -194,11 +195,11 @@ export class Notes {
         created: now,
         updated: now,
       };
-      this.send('add', note);
+      this.post({ type: 'note', sourceUri: this.sourceUri(), action: 'add', note });
     });
   }
 
-  /** Show a note's card next to its text. */
+  /** Show a note's card next to its text: the note, its replies, and what can be done. */
   open(id: string, scrolled = false): void {
     const note = this.notes.find((candidate) => candidate.id === id);
     const mark = this.root.querySelector<HTMLElement>(`mark.folio-note[data-note="${CSS.escape(id)}"]`);
@@ -213,41 +214,45 @@ export class Notes {
     }
     this.cardFor = id;
     this.card.dataset['state'] = 'view';
-    const text = document.createElement('div');
-    text.className = 'folio-note-text';
-    text.textContent = note.text || 'Empty note';
-    const meta = document.createElement('div');
-    meta.className = 'folio-note-meta';
-    meta.textContent = new Date(note.updated).toLocaleDateString(undefined, {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-    });
+    const resolved = note.status === 'resolved';
+    const parts: HTMLElement[] = [message(note.text || 'Empty note', note.author, note.created, resolved)];
+    for (const reply of note.replies ?? []) {
+      const answer = message(reply.text, reply.author, reply.created);
+      answer.classList.add('folio-note-reply');
+      parts.push(answer);
+    }
     const actions = document.createElement('div');
     actions.className = 'folio-note-actions';
+    const spacer = document.createElement('span');
+    spacer.className = 'folio-note-spacer';
     actions.append(
-      cardButton('Edit', () => this.edit(note.text, rect, (value) => this.send('update', { ...note, text: value }))),
+      cardButton('Reply', () => this.edit('', 'Write a reply…', rect, (text) => text && this.send('reply', id, text))),
+      cardButton(resolved ? 'Reopen' : 'Resolve', () => {
+        this.send(resolved ? 'reopen' : 'resolve', id);
+        this.closeCard();
+      }),
+      spacer,
+      cardButton('Edit', () => this.edit(note.text, 'Write a note…', rect, (text) => this.send('edit', id, text))),
       cardButton('Delete', () => {
-        this.send('delete', note);
+        this.send('delete', id);
         this.closeCard();
       }, 'folio-danger'),
     );
-    this.card.replaceChildren(text, meta, actions);
+    this.card.replaceChildren(...parts, actions);
     this.show(rect);
   }
 
   delete(id: string): void {
-    const note = this.notes.find((candidate) => candidate.id === id);
-    if (note) {
-      this.send('delete', note);
+    if (this.notes.some((candidate) => candidate.id === id)) {
+      this.send('delete', id);
     }
   }
 
-  private edit(value: string, rect: DOMRect, save: (text: string) => void): void {
+  private edit(value: string, placeholder: string, rect: DOMRect, save: (text: string) => void): void {
     this.card.dataset['state'] = 'edit';
     const input = document.createElement('textarea');
     input.className = 'folio-note-input';
-    input.placeholder = 'Write a note…';
+    input.placeholder = placeholder;
     input.value = value;
     input.rows = 3;
     const submit = () => {
@@ -272,8 +277,15 @@ export class Notes {
     input.setSelectionRange(input.value.length, input.value.length);
   }
 
-  private send(action: 'add' | 'update' | 'delete', note: NoteData): void {
-    this.post({ type: 'note', sourceUri: this.sourceUri(), action, note });
+  private send(action: 'edit' | 'reply', id: string, text: string): void;
+  private send(action: 'delete' | 'resolve' | 'reopen', id: string): void;
+  private send(action: 'edit' | 'reply' | 'delete' | 'resolve' | 'reopen', id: string, text = ''): void {
+    const sourceUri = this.sourceUri();
+    if (action === 'edit' || action === 'reply') {
+      this.post({ type: 'note', sourceUri, action, id, text });
+    } else {
+      this.post({ type: 'note', sourceUri, action, id });
+    }
   }
 
   /** Wrap the note's text in marks; false when it is not in the document. */
@@ -296,14 +308,14 @@ export class Notes {
         }
       }
       if (best >= 0) {
-        this.wrap(index, best, best + note.quote.length - 1, note.id);
+        this.wrap(index, best, best + note.quote.length - 1, note.id, note.status === 'resolved');
         return true;
       }
     }
     return false;
   }
 
-  private wrap(index: TextIndex, first: number, last: number, id: string): void {
+  private wrap(index: TextIndex, first: number, last: number, id: string, resolved: boolean): void {
     // Consecutive characters of the same text node, from last to first so
     // that splitting a node does not move the offsets still to wrap.
     const groups: Array<{ node: Text; from: number; to: number }> = [];
@@ -325,7 +337,7 @@ export class Notes {
       }
       const target = from > 0 ? node.splitText(from) : node;
       const mark = document.createElement('mark');
-      mark.className = 'folio-note';
+      mark.className = resolved ? 'folio-note folio-resolved' : 'folio-note';
       mark.dataset['note'] = id;
       target.parentNode!.insertBefore(mark, target);
       mark.append(target);
@@ -348,8 +360,9 @@ export class Notes {
       const rect = mark.getClientRects()[0] ?? mark.getBoundingClientRect();
       const pin = document.createElement('button');
       pin.type = 'button';
-      pin.className = 'folio-note-pin';
-      pin.title = this.notes.find((note) => note.id === id)?.text || 'Note';
+      const note = this.notes.find((candidate) => candidate.id === id);
+      pin.className = note?.status === 'resolved' ? 'folio-note-pin folio-resolved' : 'folio-note-pin';
+      pin.title = note?.text || 'Note';
       pin.setAttribute('aria-label', `Note: ${pin.title}`);
       const top = rect.top + window.scrollY + rect.height / 2;
       // Notes on the same line: pins side by side, not on top of each other.
@@ -383,6 +396,27 @@ export class Notes {
     this.card.hidden = true;
     this.cardFor = undefined;
   }
+}
+
+/** A note or a reply: its text, then who wrote it and when. */
+function message(text: string, author: string | undefined, created: string, resolved = false): HTMLElement {
+  const item = document.createElement('div');
+  item.className = 'folio-note-message';
+  const body = document.createElement('div');
+  body.className = 'folio-note-text';
+  body.textContent = text;
+  const meta = document.createElement('div');
+  meta.className = 'folio-note-meta';
+  const date = new Date(created);
+  meta.textContent = [
+    author,
+    Number.isNaN(date.getTime()) ? '' : date.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }),
+    resolved ? 'Resolved' : '',
+  ]
+    .filter(Boolean)
+    .join(' · ');
+  item.append(body, meta);
+  return item;
 }
 
 function cardButton(label: string, onClick: () => void, className = ''): HTMLButtonElement {

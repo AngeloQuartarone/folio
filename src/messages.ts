@@ -11,13 +11,15 @@ export type WebviewCommand =
   | 'exportPdf'
   | 'exportHtml'
   | 'manageOfflineLanguages'
-  | 'openSettings';
+  | 'openSettings'
+  | 'copyNotesForAI';
 
 /** How a setting is edited in the preview's settings. */
 export type SettingControl =
   | { kind: 'toggle'; value: boolean }
   | { kind: 'select'; value: string; options: Choice[] }
   | { kind: 'number'; value: number; min: number; max: number; step: number; unit: string }
+  | { kind: 'text'; value: string; placeholder: string; maxLength: number }
   /** A file or folder, chosen with VS Code's dialog (never typed in the webview). */
   | { kind: 'path'; value: string; placeholder: string };
 
@@ -108,7 +110,13 @@ export type WebviewMessage =
   | { type: 'languageModels'; action: 'download' | 'remove'; language: string }
   /** The first source line visible in the preview, to resume reading there. */
   | { type: 'readingPosition'; sourceUri: string; line: number }
-  | { type: 'note'; sourceUri: string; action: 'add' | 'update' | 'delete'; note: NoteData }
+  /** A change to the notes; the host adds the author and the dates. */
+  | ({ type: 'note'; sourceUri: string } & (
+      | { action: 'add'; note: NoteData }
+      | { action: 'edit'; id: string; text: string }
+      | { action: 'reply'; id: string; text: string }
+      | { action: 'delete' | 'resolve' | 'reopen'; id: string }
+    ))
   /** Validated by the host against the settings description. */
   | { type: 'setSetting'; key: string; value: unknown }
   /** Pick a path setting with a dialog, or reset a setting to its default. */
@@ -138,6 +146,11 @@ export interface NoteData {
   text: string;
   created: string;
   updated: string;
+  author?: string;
+  /** Absent while the note is open. */
+  status?: 'resolved';
+  /** Answers, e.g. from an AI that read the notes in the document. */
+  replies?: Array<{ author: string; text: string; created: string }>;
 }
 
 export interface ReadingSettings {

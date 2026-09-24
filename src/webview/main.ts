@@ -8,7 +8,7 @@
  */
 import DOMPurify from 'dompurify';
 import type { HostMessage, WebviewMessage, WebviewSettings } from '../messages';
-import { addCodeCopyButtons, copyFormatted, enableImageZoom } from './documentTools';
+import { addCodeCopyButtons, copyFormatted, enableImageZoom, toast } from './documentTools';
 import { Notes } from './notes';
 import { QuickSettings } from './quickSettings';
 import { FocusMode, Outline, ReadingProgress } from './reading';
@@ -63,6 +63,10 @@ const outline = reading.outline
       state,
       (id) => notes?.open(id),
       (id) => notes?.delete(id),
+      () => {
+        post({ type: 'command', command: 'copyNotesForAI' });
+        toast('Notes copied — paste them into your AI chat');
+      },
       (change) => keepReadingPosition(change),
     )
   : undefined;

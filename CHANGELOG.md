@@ -11,9 +11,17 @@
   time and a progress bar, focus mode, and resume reading where you stopped.
   The table of contents opens as a sidebar beside the text in wide panes
   (the text moves over and keeps your place) and floats in narrow ones.
-- Notes in the margin: highlight selected text with a note, saved next to
-  the document in `<file>.folio.json`; notes follow their text when the
-  document changes and are listed in the table of contents.
+- Notes in the margin: highlight selected text with a note; notes follow
+  their text when the document changes and are listed in the table of
+  contents.
+- Notes are kept in the document itself, in one HTML comment at its end
+  that other Markdown viewers hide: they travel with the file, and an AI
+  reading it can answer them (replies) or resolve them; Folio shows the
+  replies and dims resolved notes. Reply, Resolve and Reopen in the note's
+  card. "Copy for AI" copies the notes as a ready-made message. The block is
+  never rendered, exported or copied. `folio.notes.storage: sidecar` keeps
+  them in `<file>.folio.json` instead; notes already there are offered to be
+  moved. `folio.notes.author` sets the name on notes.
 - Copy buttons on code blocks, image zoom, and "Copy as formatted text" of
   the whole document (for email, Word or Google Docs; math as TeX).
 - First version, derived from Markdown Preview Enhanced 0.8.36 / crossnote 0.9.39
