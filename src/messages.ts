@@ -209,7 +209,8 @@ export interface ReadingSettings {
   keyboard: boolean;
   progress: boolean;
   focusMode: boolean;
-  focusScope: 'paragraph' | 'sentence';
+  /** Section: a heading with its paragraphs (cut when too tall). */
+  focusScope: 'section' | 'paragraph' | 'sentence';
   /** Step: the wheel, ↑/↓ and j/k move the focus paragraph by paragraph. */
   focusNavigation: 'step' | 'scroll';
   focusStrength: 'soft' | 'medium' | 'strong';

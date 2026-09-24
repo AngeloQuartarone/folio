@@ -105,7 +105,7 @@ export interface ReadingConfig {
   keyboard: boolean;
   progress: boolean;
   focusMode: boolean;
-  focusScope: 'paragraph' | 'sentence';
+  focusScope: 'section' | 'paragraph' | 'sentence';
   focusNavigation: 'step' | 'scroll';
   focusStrength: 'soft' | 'medium' | 'strong';
   focusKey: string;
@@ -133,7 +133,7 @@ export function getReadingConfig(): ReadingConfig {
     keyboard: c.get<boolean>('reading.keyboard', true),
     progress: c.get<boolean>('reading.progress', true),
     focusMode: c.get<boolean>('reading.focusMode', false),
-    focusScope: oneOf(c.get('reading.focusScope'), ['paragraph', 'sentence'] as const, 'paragraph'),
+    focusScope: oneOf(c.get('reading.focusScope'), ['section', 'paragraph', 'sentence'] as const, 'section'),
     focusNavigation: oneOf(c.get('reading.focusNavigation'), ['step', 'scroll'] as const, 'step'),
     focusStrength: oneOf(c.get('reading.focusStrength'), ['soft', 'medium', 'strong'] as const, 'medium'),
     focusKey: (c.get<string>('reading.focusKey', 'f') ?? '').trim().slice(0, 1),

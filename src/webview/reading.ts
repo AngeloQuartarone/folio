@@ -402,25 +402,36 @@ export class ReadingProgress {
  * the CSS Custom Highlight API, so the text is not wrapped in elements).
  */
 export interface FocusOptions {
-  scope: 'paragraph' | 'sentence';
+  /**
+   * What stays clear: `section`, a heading with the paragraphs below it (cut
+   * into parts when taller than the window allows); `paragraph`, one block
+   * or list item; `sentence`, the sentence being read.
+   */
+  scope: 'section' | 'paragraph' | 'sentence';
   /**
    * `step`: the wheel (one notch), ↑/↓ and j/k move the focus to the next or
-   * previous paragraph, and the page scrolls to it; `scroll`: the focus
-   * follows the paragraph at the reading line as the page scrolls.
+   * previous part, and the page scrolls to it; `scroll`: the focus follows
+   * the reading line as the page scrolls.
    */
   navigation: 'step' | 'scroll';
 }
 
 /** Height of the reading line, from the top of the window. */
 const READING_LINE = 0.42;
+/** A section taller than this share of the window is cut into parts. */
+const SECTION_MAX = 0.7;
 /** Wheel movement (pixels) that makes one step: a mouse notch is about 100. */
 const WHEEL_STEP = 40;
 /** After a step, the wheel waits this long (trackpads keep sending events). */
 const WHEEL_PAUSE_MS = 320;
 
+const isHeading = (element: Element) => /^H[1-6]$/.test(element.tagName);
+const isList = (element: Element) => element.tagName === 'UL' || element.tagName === 'OL';
+const shown = (element: Element) => element.getClientRects().length > 0;
+
 export class FocusMode {
-  private current: Element | undefined;
-  private within: Element | undefined;
+  /** The blocks (or list items) in focus. */
+  private current: Element[] = [];
   private active: boolean;
   private readonly sentences = typeof CSS !== 'undefined' && 'highlights' in CSS;
   /** Until then, scroll events come from a step: the focus stays where it moved. */
@@ -466,7 +477,7 @@ export class FocusMode {
     this.apply();
   }
 
-  /** Whether the keys and the wheel move the focus paragraph by paragraph now. */
+  /** Whether the keys and the wheel move the focus part by part now. */
   stepping(): boolean {
     return this.active && this.options.navigation === 'step';
   }
@@ -476,47 +487,49 @@ export class FocusMode {
       return;
     }
     const line = window.innerHeight * READING_LINE;
-    const block = nearest(this.blocks(), line);
-    // In a list, only the item being read.
-    const current =
-      block && (block.tagName === 'UL' || block.tagName === 'OL') ? (nearest(Array.from(block.children), line) ?? block) : block;
-    this.setCurrent(current);
+    const units = this.units();
+    const piece = nearest(units.flat(), line);
+    this.setCurrent(units.find((unit) => piece && unit.includes(piece)) ?? []);
+    if (this.options.scope === 'sentence') {
+      this.highlightSentence(this.current[0], sentenceAt);
+    }
   }
 
-  /** Move the focus to the next (1) or previous (-1) paragraph and scroll to it. */
+  /** Move the focus to the next (1) or previous (-1) part and scroll to it. */
   step(direction: 1 | -1): void {
     const units = this.units();
     if (!units.length) {
       return;
     }
-    let index = this.current ? units.indexOf(this.current) : -1;
+    let index = units.findIndex((unit) => unit[0] === this.current[0]);
     if (index < 0) {
       this.onScroll();
-      index = this.current ? units.indexOf(this.current) : 0;
+      index = Math.max(0, units.findIndex((unit) => unit[0] === this.current[0]));
     }
     const next = units[Math.min(units.length - 1, Math.max(0, index + direction))];
-    if (!next || next === this.current) {
+    if (!next || next[0] === this.current[0]) {
       return;
     }
     this.setCurrent(next);
-    const rect = next.getBoundingClientRect();
-    const tall = rect.height > window.innerHeight * 0.6;
-    // A short paragraph is centred on the reading line; a long one starts near the top.
-    const top = tall
-      ? window.scrollY + rect.top - window.innerHeight * 0.18
-      : window.scrollY + rect.top + rect.height / 2 - window.innerHeight * READING_LINE;
+    // The sentence is known before the page moves: the first of the block.
+    if (this.options.scope === 'sentence') {
+      this.highlightSentence(next[0], firstSentence);
+    }
+    const top = next[0].getBoundingClientRect().top;
+    const height = next[next.length - 1].getBoundingClientRect().bottom - top;
+    // A short part is centred on the reading line; a tall one starts near the top.
+    const target =
+      height > window.innerHeight * 0.6
+        ? window.scrollY + top - window.innerHeight * 0.18
+        : window.scrollY + top + height / 2 - window.innerHeight * READING_LINE;
     const smooth = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     this.steppingUntil = Date.now() + (smooth ? 700 : 100);
-    window.scrollTo({ top: Math.max(0, top), behavior: smooth ? 'smooth' : 'auto' });
-    if (this.options.scope === 'sentence') {
-      setTimeout(() => this.highlightSentence(this.current, window.innerHeight * READING_LINE), smooth ? 450 : 0);
-    }
+    window.scrollTo({ top: Math.max(0, target), behavior: smooth ? 'smooth' : 'auto' });
   }
 
   /** After a render the elements are new. */
   reset(): void {
-    this.current = undefined;
-    this.within = undefined;
+    this.current = [];
     this.steppingUntil = 0;
     this.onScroll();
   }
@@ -526,7 +539,7 @@ export class FocusMode {
     if (this.active) {
       this.reset();
     } else {
-      this.setCurrent(undefined);
+      this.setCurrent([]);
       if (this.sentences) {
         CSS.highlights.delete('folio-sentence');
       }
@@ -562,41 +575,80 @@ export class FocusMode {
   private blocks(): Element[] {
     return Array.from(this.root.children).filter(
       (element) =>
-        element.getClientRects().length > 0 &&
+        shown(element) &&
         !element.classList.contains('folio-reading-time') &&
         !element.classList.contains('folio-translation'),
     );
   }
 
-  /** What the focus steps through: the blocks, and the items of lists one by one. */
-  private units(): Element[] {
-    return this.blocks().flatMap((block) =>
-      block.tagName === 'UL' || block.tagName === 'OL'
-        ? Array.from(block.children).filter((item) => item.getClientRects().length > 0)
-        : [block],
-    );
+  /** The parts the focus moves through, each a run of blocks (or list items). */
+  private units(): Element[][] {
+    const blocks = this.blocks();
+    if (this.options.scope !== 'section') {
+      return blocks.flatMap((block) => (isList(block) ? Array.from(block.children).filter(shown).map((item) => [item]) : [[block]]));
+    }
+    // A heading with what follows it; headings in a row stay together.
+    const sections: Element[][] = [];
+    for (const block of blocks) {
+      const last = sections[sections.length - 1];
+      if (!last || (isHeading(block) && !last.every(isHeading))) {
+        sections.push([block]);
+      } else {
+        last.push(block);
+      }
+    }
+    // Taller than the window allows: cut between blocks (a long list between
+    // its items), never right after the heading.
+    const limit = window.innerHeight * SECTION_MAX;
+    return sections.flatMap((section) => {
+      const pieces = section.flatMap((block) =>
+        isList(block) && block.getBoundingClientRect().height > limit ? Array.from(block.children).filter(shown) : [block],
+      );
+      const parts: Element[][] = [];
+      let part: Element[] = [];
+      let top = 0;
+      for (const piece of pieces) {
+        const rect = piece.getBoundingClientRect();
+        if (part.length && rect.bottom - top > limit && !part.every(isHeading)) {
+          parts.push(part);
+          part = [];
+        }
+        if (!part.length) {
+          top = rect.top;
+        }
+        part.push(piece);
+      }
+      if (part.length) {
+        parts.push(part);
+      }
+      return parts;
+    });
   }
 
-  private setCurrent(current: Element | undefined): void {
-    const within = current && current.parentElement !== this.root ? current.parentElement ?? undefined : undefined;
-    if (current !== this.current || within !== this.within) {
-      this.current?.classList.remove('folio-current', 'folio-sentence-block');
-      this.within?.classList.remove('folio-within');
-      current?.classList.add('folio-current');
-      within?.classList.add('folio-within');
-      this.current = current;
-      this.within = within;
+  private setCurrent(current: Element[]): void {
+    if (current.length === this.current.length && current.every((piece, i) => piece === this.current[i])) {
+      return;
     }
-    if (this.active && this.options.scope === 'sentence' && Date.now() >= this.steppingUntil) {
-      this.highlightSentence(current, window.innerHeight * READING_LINE);
+    for (const piece of this.current) {
+      piece.classList.remove('folio-current', 'folio-sentence-block');
+      piece.parentElement?.classList.remove('folio-within');
     }
+    for (const piece of current) {
+      piece.classList.add('folio-current');
+      // In a list, only the items in focus.
+      if (piece.parentElement !== this.root) {
+        piece.parentElement?.classList.add('folio-within');
+      }
+    }
+    this.current = current;
   }
 
-  private highlightSentence(block: Element | undefined, line: number): void {
+  private highlightSentence(block: Element | undefined, find: (block: Element, y: number) => Range | undefined): void {
     if (!this.sentences) {
       return;
     }
-    const range = block && /^(P|LI|DD|DT|BLOCKQUOTE)$/.test(block.tagName) ? sentenceAt(block, line) : undefined;
+    const range =
+      block && /^(P|LI|DD|DT|BLOCKQUOTE)$/.test(block.tagName) ? find(block, window.innerHeight * READING_LINE) : undefined;
     block?.classList.toggle('folio-sentence-block', !!range);
     if (range) {
       CSS.highlights.set('folio-sentence', new Highlight(range));
@@ -606,6 +658,11 @@ export class FocusMode {
   }
 }
 
+/** The first sentence of `block`. */
+function firstSentence(block: Element): Range | undefined {
+  return sentenceRange(block, 0);
+}
+
 /** The sentence of `block` on the line at height `y` of the window. */
 function sentenceAt(block: Element, y: number): Range | undefined {
   const rect = block.getBoundingClientRect();
@@ -613,6 +670,11 @@ function sentenceAt(block: Element, y: number): Range | undefined {
   if (!caret || !block.contains(caret.startContainer)) {
     return undefined;
   }
+  return sentenceRange(block, caret.startContainer, caret.startOffset);
+}
+
+/** The sentence of `block` at a text position (a text node and offset, or an offset in its text). */
+function sentenceRange(block: Element, at: Node | number, offsetInNode = 0): Range | undefined {
   const nodes: Text[] = [];
   const starts: number[] = [];
   let text = '';
@@ -622,25 +684,33 @@ function sentenceAt(block: Element, y: number): Range | undefined {
     starts.push(text.length);
     text += node.data;
   }
-  const index = nodes.indexOf(caret.startContainer as Text);
-  const at = index < 0 ? 0 : starts[index] + caret.startOffset;
+  if (!text.trim()) {
+    return undefined;
+  }
+  const index = typeof at === 'number' ? -1 : nodes.indexOf(at as Text);
+  const offset = typeof at === 'number' ? at : index < 0 ? 0 : starts[index] + offsetInNode;
   // Line breaks of the Markdown source are not sentence ends.
   const segments = new Intl.Segmenter(document.documentElement.lang || undefined, { granularity: 'sentence' }).segment(
     text.replace(/[\r\n]/g, ' '),
   );
-  const segment = segments.containing(Math.min(at, Math.max(0, text.length - 1)));
+  let segment = segments.containing(Math.min(offset, text.length - 1));
+  // Starting at the top: the first sentence with words in it.
+  if (typeof at === 'number' && segment && !segment.segment.trim()) {
+    segment = [...segments].find((candidate) => candidate.segment.trim());
+  }
   if (!segment || !segment.segment.trim()) {
     return undefined;
   }
-  const point = (offset: number): [Text, number] => {
+  const point = (position: number): [Text, number] => {
     let i = starts.length - 1;
-    while (i > 0 && starts[i] > offset) {
+    while (i > 0 && starts[i] > position) {
       i--;
     }
-    return [nodes[i], Math.min(offset - starts[i], nodes[i].data.length)];
+    return [nodes[i], Math.min(position - starts[i], nodes[i].data.length)];
   };
+  const lead = segment.segment.length - segment.segment.trimStart().length;
   const range = document.createRange();
-  range.setStart(...point(segment.index));
+  range.setStart(...point(segment.index + lead));
   range.setEnd(...point(segment.index + segment.segment.trimEnd().length));
   return range;
 }

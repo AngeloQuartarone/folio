@@ -21,8 +21,9 @@
   keys to move through the document (j/k, J/K, g/G, t); focus on the
   sentence being read; Atkinson Hyperlegible and OpenDyslexic fonts
   (bundled); justified, hyphenated text.
-- Focus mode, more: one wheel notch, ↑/↓ or j/k moves the focus to the
-  next or previous paragraph (or it follows the page:
+- Focus mode, more: the focus is a section by default (a heading with its
+  paragraphs, cut into parts when taller than the window); one wheel notch,
+  ↑/↓ or j/k moves it to the next or previous part (or it follows the page:
   `folio.reading.focusNavigation`); the rest fades and blurs a little, in
   three strengths; `f` over the preview (`folio.reading.focusKey`) or
   *Folio: Toggle Focus Mode* turns it on and off.

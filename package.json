@@ -392,15 +392,17 @@
         "folio.reading.focusScope": {
           "type": "string",
           "enum": [
+            "section",
             "paragraph",
             "sentence"
           ],
           "enumDescriptions": [
-            "Only the paragraph you are reading stays clear.",
-            "Only the sentence you are reading stays clear."
+            "A heading with the paragraphs below it; a section taller than the window is cut into parts.",
+            "One paragraph, or one list item.",
+            "Only the sentence you are reading."
           ],
-          "default": "paragraph",
-          "markdownDescription": "With `#folio.reading.focusMode#` on: what stays clear, the paragraph or the sentence you are reading."
+          "default": "section",
+          "markdownDescription": "With `#folio.reading.focusMode#` on: what stays clear."
         },
         "folio.reading.focusNavigation": {
           "type": "string",
@@ -409,7 +411,7 @@
             "scroll"
           ],
           "enumDescriptions": [
-            "One notch of the mouse wheel, ↑/↓ or j/k moves the focus to the next or previous paragraph, and the page scrolls to it.",
+            "One notch of the mouse wheel, ↑/↓ or j/k moves the focus to the next or previous section (or paragraph), and the page scrolls to it.",
             "The focus follows the paragraph at the reading line as you scroll."
           ],
           "default": "step",

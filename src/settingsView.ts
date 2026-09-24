@@ -195,10 +195,11 @@ const SECTIONS: SectionDefinition[] = [
       {
         key: 'reading.focusScope',
         label: 'Focus on',
-        description: 'What stays clear in focus mode.',
+        description: 'What stays clear in focus mode: a heading with its paragraphs, one paragraph, or one sentence.',
         kind: 'select',
-        default: 'paragraph',
+        default: 'section',
         options: [
+          { value: 'section', label: 'Section' },
           { value: 'paragraph', label: 'Paragraph' },
           { value: 'sentence', label: 'Sentence' },
         ],
@@ -206,7 +207,7 @@ const SECTIONS: SectionDefinition[] = [
       {
         key: 'reading.focusNavigation',
         label: 'Move the focus',
-        description: 'Step: one notch of the wheel, ↑/↓ or j/k goes to the next paragraph. Scroll: it follows the page.',
+        description: 'Step: one notch of the wheel, ↑/↓ or j/k goes to the next part. Scroll: it follows the page.',
         kind: 'select',
         default: 'step',
         options: [

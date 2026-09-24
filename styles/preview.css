@@ -142,7 +142,7 @@ body[data-justify] .markdown-preview :is(p, li, dd) {
 
 @media (max-width: 640px) {
   body:not([for='html-export']) .crossnote[data-for='preview'] {
-    padding: 1.5rem 1.25rem 4rem;
+    padding: 3rem 1.25rem 4rem;
   }
 }
 
@@ -1895,7 +1895,8 @@ body.mtp-settings-open {
 }
 
 .folio-reading-time {
-  margin: -1.5rem 0 1.25rem;
+  /* Below the table of contents button (top 10px, 30px high), not beside it. */
+  margin: 0 0 1.25rem;
   color: var(--folio-muted-text, rgba(127, 127, 127, 0.9));
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', Inter, 'Segoe UI', sans-serif;
   font-size: 12.5px;

@@ -33,11 +33,13 @@ It is an independent project derived from
   text closes it.
 - **Reading time and progress**: "8 min read" above the document, the time
   left in the table of contents, and a progress bar at the top.
-- **Focus mode**: everything but the paragraph you are reading fades and
-  blurs a little (soft, medium or strong: `folio.reading.focusStrength`), or
-  everything but the sentence (`folio.reading.focusScope`). One notch of the
-  mouse wheel, `↑`/`↓` or `j`/`k` moves the focus to the next or previous
-  paragraph and brings it to the reading line; set
+- **Focus mode**: everything but the section you are reading (a heading
+  with the paragraphs below it, cut into parts when taller than the window)
+  fades and blurs a little (soft, medium or strong:
+  `folio.reading.focusStrength`); or keep just the paragraph, or the
+  sentence, clear (`folio.reading.focusScope`). One notch of the mouse
+  wheel, `↑`/`↓` or `j`/`k` moves the focus to the next or previous part and
+  brings it to the reading line; set
   `folio.reading.focusNavigation` to `scroll` to have the focus follow the
   page instead. Press `f` with the pointer on the preview to turn it on or
   off (`folio.reading.focusKey`), or give *Folio: Toggle Focus Mode* a
@@ -235,7 +237,7 @@ selection. If the text is already in the target language a small
 | `folio.reading.keyboard` | `true` | `j`/`k`, `J`/`K`, `g`/`G`, `t` and `Alt+←` move through the document. |
 | `folio.reading.progress` | `true` | Reading time and progress bar. |
 | `folio.reading.focusMode` | `false` | Dim everything but the paragraph being read. |
-| `folio.reading.focusScope` | `paragraph` | What focus mode keeps clear: `paragraph` or `sentence`. |
+| `folio.reading.focusScope` | `section` | What focus mode keeps clear: `section` (a heading with its paragraphs), `paragraph` or `sentence`. |
 | `folio.reading.focusNavigation` | `step` | `step`: the wheel, `↑`/`↓` and `j`/`k` move the focus paragraph by paragraph; `scroll`: it follows the page. |
 | `folio.reading.focusStrength` | `medium` | How much the rest fades: `soft`, `medium` (and a slight blur) or `strong`. |
 | `folio.reading.focusKey` | `f` | Key that toggles focus mode with the pointer on the preview (empty: none). |
