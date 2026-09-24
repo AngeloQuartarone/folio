@@ -19,7 +19,9 @@ It is an independent project derived from
   **Sepia** paper theme, with a centred reading column and soft typography.
   Light/Dark can follow the editor or the system.
 - **Typography**: text size, line spacing, column width and font (the
-  theme's, sans-serif or serif).
+  theme's, sans-serif, serif, or two bundled fonts designed for legibility:
+  Atkinson Hyperlegible and OpenDyslexic). Paragraphs can be justified,
+  with long words hyphenated in the document's language.
 - **Table of contents**: a button in the top-left corner opens the headings,
   with the section you are reading highlighted; click one to go there. It
   opens as a sidebar beside the text, which moves over to make room. When
@@ -31,7 +33,18 @@ It is an independent project derived from
   text closes it.
 - **Reading time and progress**: "8 min read" above the document, the time
   left in the table of contents, and a progress bar at the top.
-- **Focus mode**: everything but the paragraph you are reading fades out.
+- **Focus mode**: everything but the paragraph you are reading fades out,
+  or everything but the sentence (`folio.reading.focusScope`).
+- **Fold sections**: the arrow left of a heading folds its section; what is
+  folded is remembered for each document.
+- **Previews on hover**: rest the pointer on a footnote to read it, on a
+  link to a heading to see the start of that section, on a link to another
+  Markdown file to see the start of that file.
+- **Back**: after following a link (to a heading or to another Markdown
+  file), the mouse's back button, `Alt+←` or the **Back** button next to the
+  table of contents button takes you back to where you were.
+- **Keyboard**: `j`/`k` next/previous paragraph, `J`/`K` next/previous
+  heading, `g`/`G` top/bottom, `t` table of contents.
 - **Resume reading**: each document reopens where you stopped (when the
   preview is not following an editor).
 
@@ -174,12 +187,17 @@ selection. If the text is already in the target language a small
 | `folio.reading.fontSize` | `16` | Text size in pixels (13–24). |
 | `folio.reading.lineHeight` | `comfortable` | `compact`, `comfortable` or `airy`. |
 | `folio.reading.width` | `medium` | Reading column: `narrow`, `medium`, `wide` or `full`. |
-| `folio.reading.font` | `theme` | `theme`, `sans` or `serif`. |
+| `folio.reading.font` | `theme` | `theme`, `sans`, `serif`, `hyperlegible` (Atkinson Hyperlegible) or `dyslexic` (OpenDyslexic). |
+| `folio.reading.justify` | `false` | Justify paragraphs and hyphenate long words. |
 | `folio.reading.outline` | `true` | Table of contents button. |
 | `folio.reading.outlineFit` | `once` | Widen a narrow preview so the table of contents fits beside the text: `once` (the first time in each preview), `always` (and give the room back when it closes) or `never`. |
 | `folio.reading.outlineAutoClose` | `true` | Close the table of contents with a click on the text when it floats over it. |
+| `folio.reading.collapsible` | `true` | Fold a section with the arrow next to its heading. |
+| `folio.reading.hoverPreviews` | `true` | Footnotes and link targets on hover. |
+| `folio.reading.keyboard` | `true` | `j`/`k`, `J`/`K`, `g`/`G`, `t` and `Alt+←` move through the document. |
 | `folio.reading.progress` | `true` | Reading time and progress bar. |
 | `folio.reading.focusMode` | `false` | Dim everything but the paragraph being read. |
+| `folio.reading.focusScope` | `paragraph` | What focus mode keeps clear: `paragraph` or `sentence`. |
 | `folio.reading.resume` | `true` | Reopen documents where you stopped reading. |
 | `folio.notes.enabled` | `true` | Notes on selected text. |
 | `folio.notes.storage` | `document` | Where notes are kept: `document` (a comment at the end of the Markdown file) or `sidecar` (`<file>.folio.json`). |

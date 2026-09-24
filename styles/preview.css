@@ -55,8 +55,89 @@ html body[data-reading-font='serif'] {
   font-family: Charter, 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif;
 }
 
+/* Fonts designed for legibility, bundled (SIL Open Font License, see
+   THIRD_PARTY_NOTICES.md): Atkinson Hyperlegible and OpenDyslexic. */
+@font-face {
+  font-family: 'Atkinson Hyperlegible';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('../fonts/atkinson-hyperlegible-latin-400-normal.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Atkinson Hyperlegible';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url('../fonts/atkinson-hyperlegible-latin-400-italic.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Atkinson Hyperlegible';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('../fonts/atkinson-hyperlegible-latin-700-normal.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Atkinson Hyperlegible';
+  font-style: italic;
+  font-weight: 700;
+  font-display: swap;
+  src: url('../fonts/atkinson-hyperlegible-latin-700-italic.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'OpenDyslexic';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('../fonts/opendyslexic-latin-400-normal.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'OpenDyslexic';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url('../fonts/opendyslexic-latin-400-italic.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'OpenDyslexic';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('../fonts/opendyslexic-latin-700-normal.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'OpenDyslexic';
+  font-style: italic;
+  font-weight: 700;
+  font-display: swap;
+  src: url('../fonts/opendyslexic-latin-700-italic.woff2') format('woff2');
+}
+
+html body[data-reading-font='hyperlegible'] {
+  font-family: 'Atkinson Hyperlegible', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+html body[data-reading-font='dyslexic'] {
+  font-family: OpenDyslexic, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
 html body[data-reading-font] :is(h1, h2, h3, h4, h5, h6) {
   font-family: inherit;
+}
+
+/* Justified text, hyphenated in the document's language (<html lang>). */
+body[data-justify] .markdown-preview :is(p, li, dd) {
+  text-align: justify;
+  -webkit-hyphens: auto;
+  hyphens: auto;
 }
 
 @media (max-width: 640px) {
@@ -1497,6 +1578,167 @@ body.mtp-settings-open {
   }
 }
 
+/* Folding sections: an arrow in the margin, left of the heading. */
+.markdown-preview :is(h1, h2, h3, h4, h5, h6):has(> .folio-fold) {
+  position: relative;
+}
+
+.folio-fold {
+  position: absolute;
+  top: 50%;
+  left: -28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  margin-top: -11px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--mtp-muted, rgba(127, 127, 127, 0.8));
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 150ms ease, background 150ms ease;
+}
+
+.folio-fold::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  margin-top: -3px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(45deg);
+  transition: transform 150ms var(--mtp-ease, ease);
+}
+
+.markdown-preview :is(h1, h2, h3, h4, h5, h6):hover > .folio-fold,
+.folio-fold:focus-visible,
+.folio-collapsed > .folio-fold {
+  opacity: 1;
+}
+
+.folio-fold:hover {
+  background: var(--mtp-fill, rgba(127, 127, 127, 0.12));
+}
+
+.folio-collapsed > .folio-fold::before {
+  margin: 0 0 0 -2px;
+  transform: rotate(-45deg);
+}
+
+.markdown-preview .folio-collapsed::after {
+  content: '…';
+  margin-left: 0.3em;
+  opacity: 0.4;
+}
+
+.markdown-preview .folio-folded {
+  display: none !important;
+}
+
+/* "Back" after following a link, next to the table of contents button. */
+.folio-back {
+  position: fixed;
+  top: 10px;
+  left: 52px;
+  z-index: 1001;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  height: 30px;
+  padding: 0 12px 0 11px;
+  border: 0;
+  border-radius: 15px;
+  background: var(--mtp-surface);
+  -webkit-backdrop-filter: blur(16px) saturate(1.6);
+  backdrop-filter: blur(16px) saturate(1.6);
+  box-shadow: var(--mtp-shadow-small);
+  color: var(--mtp-muted);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+  opacity: 0.35;
+  transition: opacity 300ms ease, color 150ms ease;
+}
+
+.folio-back::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-left: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(45deg);
+}
+
+.folio-back.mtp-awake {
+  opacity: 0.8;
+}
+
+.folio-back:hover,
+.folio-back:focus-visible {
+  opacity: 1;
+  color: var(--mtp-fg);
+}
+
+.folio-back[hidden] {
+  display: none;
+}
+
+/* Preview on hover: a footnote, a section, the start of another file. */
+.mtp-tooltip.folio-peek {
+  width: min(420px, calc(100vw - 16px));
+  padding: 12px 16px;
+  pointer-events: none;
+}
+
+.folio-peek-title {
+  margin-bottom: 6px;
+  color: var(--mtp-muted);
+  font-size: 11.5px;
+  font-weight: 500;
+}
+
+.folio-peek-body {
+  max-height: 240px;
+  overflow: hidden;
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+
+.folio-peek-body.folio-peek-clipped {
+  -webkit-mask-image: linear-gradient(#000 calc(100% - 36px), transparent);
+  mask-image: linear-gradient(#000 calc(100% - 36px), transparent);
+}
+
+.folio-peek-body :is(h1, h2, h3, h4, h5, h6) {
+  margin: 0 0 0.35em;
+  padding: 0;
+  border: 0;
+  font-size: 1.08em;
+}
+
+.folio-peek-body :is(p, ul, ol, blockquote, pre, table) {
+  margin: 0 0 0.55em;
+}
+
+.folio-peek-body > :last-child,
+.folio-peek-body li > :last-child {
+  margin-bottom: 0;
+}
+
+.folio-peek-body img {
+  max-width: 100%;
+  max-height: 140px;
+}
+
+.folio-peek-body .footnote-item {
+  list-style: none;
+}
+
 /* Progress bar at the very top. */
 .folio-progress {
   position: fixed;
@@ -1518,6 +1760,18 @@ body.mtp-settings-open {
   font-size: 12.5px;
   letter-spacing: 0.01em;
   user-select: none;
+}
+
+/* Focus on the sentence: in the block being read the other sentences fade
+   too; the sentence is a CSS highlight that gets the text colour back. */
+body[data-focus-scope='sentence'] #preview .folio-sentence-block,
+body[data-focus-scope='sentence'] #preview .folio-sentence-block * {
+  color: color-mix(in srgb, var(--folio-text, currentColor) 34%, transparent) !important;
+  transition: color 250ms ease;
+}
+
+::highlight(folio-sentence) {
+  color: var(--folio-text);
 }
 
 /* Focus mode: the block being read stays clear, the rest fades. */

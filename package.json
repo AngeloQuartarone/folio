@@ -290,15 +290,31 @@
           "enum": [
             "theme",
             "sans",
-            "serif"
+            "serif",
+            "hyperlegible",
+            "dyslexic"
           ],
           "enumItemLabels": [
             "Theme",
             "Sans-serif",
-            "Serif"
+            "Serif",
+            "Atkinson Hyperlegible",
+            "OpenDyslexic"
           ],
           "default": "theme",
-          "description": "Font of the text: the theme's own, or always sans-serif or serif."
+          "description": "Font of the text: the theme's own, sans-serif, serif, or a font designed for legibility.",
+          "enumDescriptions": [
+            "The preview theme's font.",
+            "A system sans-serif font.",
+            "A system serif font.",
+            "Designed for legibility, with letters that are hard to confuse (bundled).",
+            "Weighted letter shapes that some readers with dyslexia find easier (bundled)."
+          ]
+        },
+        "folio.reading.justify": {
+          "type": "boolean",
+          "default": false,
+          "markdownDescription": "Justify paragraphs and hyphenate long words (in the document's language), like a printed page."
         },
         "folio.reading.outline": {
           "type": "boolean",
@@ -325,6 +341,21 @@
           "default": true,
           "markdownDescription": "When the table of contents floats over the text (narrow previews), a click on the text closes it."
         },
+        "folio.reading.collapsible": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Fold a section by clicking the arrow next to its heading."
+        },
+        "folio.reading.hoverPreviews": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Show footnotes, and the section a link points to (in this document or another Markdown file), when the pointer rests on them."
+        },
+        "folio.reading.keyboard": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Keys to move through the document: `j`/`k` next/previous paragraph, `J`/`K` next/previous heading, `g`/`G` top/bottom, `t` table of contents, `Alt+←` back after following a link."
+        },
         "folio.reading.progress": {
           "type": "boolean",
           "default": true,
@@ -334,6 +365,19 @@
           "type": "boolean",
           "default": false,
           "description": "Dim everything except the paragraph you are reading."
+        },
+        "folio.reading.focusScope": {
+          "type": "string",
+          "enum": [
+            "paragraph",
+            "sentence"
+          ],
+          "enumDescriptions": [
+            "Only the paragraph you are reading stays clear.",
+            "Only the sentence you are reading stays clear."
+          ],
+          "default": "paragraph",
+          "markdownDescription": "With `#folio.reading.focusMode#` on: what stays clear, the paragraph or the sentence you are reading."
         },
         "folio.reading.resume": {
           "type": "boolean",
@@ -486,6 +530,8 @@
   },
   "devDependencies": {
     "@browsermt/bergamot-translator": "^0.4.9",
+    "@fontsource/atkinson-hyperlegible": "^5.3.0",
+    "@fontsource/opendyslexic": "^5.3.0",
     "@types/mocha": "^10.0.10",
     "@types/node": "^22.20.4",
     "@types/vscode": "^1.85.0",

@@ -91,6 +91,8 @@ export class Notes {
     private readonly post: (message: WebviewMessage) => void,
     private readonly sourceUri: () => string,
     private readonly onChange: (entries: NoteEntry[]) => void,
+    /** Unfold the section a note is in, before showing it. */
+    private readonly reveal: (element: Element) => void = () => undefined,
   ) {
     this.layer = document.createElement('div');
     this.layer.className = 'mtp-ui folio-note-layer';
@@ -206,6 +208,7 @@ export class Notes {
     if (!note || !mark) {
       return;
     }
+    this.reveal(mark);
     const rect = mark.getBoundingClientRect();
     if (!scrolled && (rect.top < 0 || rect.bottom > window.innerHeight)) {
       mark.scrollIntoView({ block: 'center', behavior: 'smooth' });
@@ -353,7 +356,8 @@ export class Notes {
     let shift = 0;
     for (const mark of Array.from(this.root.querySelectorAll<HTMLElement>('mark.folio-note'))) {
       const id = mark.dataset['note']!;
-      if (seen.has(id)) {
+      // Notes in a folded section get no pin.
+      if (seen.has(id) || !mark.getClientRects().length) {
         continue;
       }
       seen.add(id);

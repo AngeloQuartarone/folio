@@ -37,6 +37,8 @@ const packages = new Set([
   ...(await bundledPackages('src/webview/main.ts', 'browser')),
   'mermaid', // dist/mermaid/mermaid.min.js
   '@browsermt/bergamot-translator', // dist/bergamot/ (worker + WASM)
+  '@fontsource/atkinson-hyperlegible', // dist/fonts/
+  '@fontsource/opendyslexic', // dist/fonts/
 ]);
 
 let out = `# Third-party notices

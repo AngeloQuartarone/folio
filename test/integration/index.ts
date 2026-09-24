@@ -323,6 +323,48 @@ function defineTests(): void {
       }
     });
 
+    it('previews another Markdown file on hover, and goes back to a place in another document', async () => {
+      const api = await activate();
+      const uri = fixture('sample.md');
+      const ready = waitForMessage(api, (message) => message.type === 'ready');
+      await vscode.window.showTextDocument(uri, { viewColumn: vscode.ViewColumn.One });
+      api.preview.show(uri, vscode.ViewColumn.Beside);
+      await ready.catch(() => undefined);
+      const sent: HostMessage[] = [];
+      const original = api.preview.postMessage.bind(api.preview);
+      (api.preview as any).post = (message: HostMessage) => {
+        sent.push(message);
+        original(message);
+      };
+      try {
+        (api.preview as any).onMessage({ type: 'linkPreview', id: 7, sourceUri: uri.toString(), href: './other.md#second' });
+        await until(() => sent.some((message) => message.type === 'linkPreview'), 'a preview of other.md');
+        const preview = sent.find((message) => message.type === 'linkPreview');
+        assert.ok(preview?.type === 'linkPreview');
+        assert.equal(preview.id, 7);
+        assert.equal(preview.title, 'other.md › Second');
+        assert.match(preview.html, /<h2 id="second"/);
+        assert.doesNotMatch(preview.html, /<h1/, 'only the section the link points to');
+
+        (api.preview as any).onMessage({ type: 'linkPreview', id: 8, sourceUri: uri.toString(), href: 'https://example.com/a.md' });
+        await new Promise((resolve) => setTimeout(resolve, 300));
+        assert.ok(!sent.some((message) => message.type === 'linkPreview' && message.id === 8), 'no previews of web pages');
+
+        const other = fixture('other.md');
+        (api.preview as any).onMessage({ type: 'navigate', uri: other.toString(), line: 2 });
+        await until(() => vscode.window.activeTextEditor?.document.uri.toString() === other.toString(), 'other.md opens');
+        assert.equal(vscode.window.activeTextEditor?.selection.active.line, 2);
+        await until(() => api.preview.activeSourceUri?.toString() === other.toString(), 'the preview follows');
+
+        (api.preview as any).onMessage({ type: 'navigate', uri: 'command:workbench.action.quit', line: 0 });
+        await new Promise((resolve) => setTimeout(resolve, 300));
+        assert.equal(vscode.window.activeTextEditor?.document.uri.toString(), other.toString(), 'only Markdown files');
+      } finally {
+        delete (api.preview as any).post;
+        await vscode.window.showTextDocument(uri, { viewColumn: vscode.ViewColumn.One });
+      }
+    });
+
     it('remembers where the user stopped reading', async () => {
       const api = await activate();
       const uri = fixture('sample.md');

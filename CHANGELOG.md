@@ -15,6 +15,12 @@
   beside it (`folio.reading.outlineFit`: `once`, `always` to also give the
   room back when it closes, or `never`); where it still floats over the
   text, a click on the text closes it (`folio.reading.outlineAutoClose`).
+- Reading, more: fold sections from their heading; footnotes and link
+  targets (a heading, another Markdown file) previewed on hover; Back after
+  following a link, with the mouse's back button, Alt+← or a Back button;
+  keys to move through the document (j/k, J/K, g/G, t); focus on the
+  sentence being read; Atkinson Hyperlegible and OpenDyslexic fonts
+  (bundled); justified, hyphenated text.
 - Notes in the margin: highlight selected text with a note; notes follow
   their text when the document changes and are listed in the table of
   contents.

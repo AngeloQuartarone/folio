@@ -115,6 +115,16 @@ function copyVendorAssets() {
   ]) {
     cpSync(join(bergamot, file), join(dist, 'bergamot', file));
   }
+  // Reading fonts (folio.reading.font): Latin, regular and bold, upright and italic.
+  mkdirSync(join(dist, 'fonts'), { recursive: true });
+  for (const family of ['atkinson-hyperlegible', 'opendyslexic']) {
+    const files = join(root, 'node_modules/@fontsource', family, 'files');
+    for (const font of readdirSync(files)) {
+      if (/-latin-(400|700)-(normal|italic)\.woff2$/.test(font)) {
+        cpSync(join(files, font), join(dist, 'fonts', font));
+      }
+    }
+  }
   mkdirSync(join(dist, 'mermaid'), { recursive: true });
   cpSync(
     join(root, 'node_modules/mermaid/dist/mermaid.min.js'),

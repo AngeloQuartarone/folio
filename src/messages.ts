@@ -85,12 +85,16 @@ export type HostMessage =
       /** Keep the current scroll position instead of syncing to `line`. */
       preserveScroll: boolean;
       line?: number;
+      /** The document's language (ISO 639-1), when detected: for hyphenation. */
+      lang?: string;
     }
   | { type: 'scrollToLine'; line: number; topRatio?: number }
   | { type: 'translationSettings'; enabled: boolean }
   | { type: 'languages'; languages: LanguageStatus[] }
   /** Current values of every setting, after one changed. */
   | { type: 'settings'; sections: SettingSection[] }
+  /** The start of another Markdown file a link points to (see linkPreview below). */
+  | { type: 'linkPreview'; id: number; html: string; title: string }
   /** The notes of the previewed document (after loading and after each change). */
   | { type: 'notes'; sourceUri: string; notes: NoteData[] }
   | TranslationReply;
@@ -105,6 +109,10 @@ export type WebviewMessage =
    */
   | { type: 'selectSource'; sourceUri: string; line: number; endLine: number; text: string; occurrence: number }
   | { type: 'openLink'; sourceUri: string; href: string }
+  /** Hovering a link to another Markdown file: render the start of it. */
+  | { type: 'linkPreview'; id: number; sourceUri: string; href: string }
+  /** Back to a place in another Markdown document (after following a link). */
+  | { type: 'navigate'; uri: string; line: number }
   | { type: 'translate'; id: number; text: string; context: string }
   | { type: 'command'; command: WebviewCommand }
   | { type: 'languageModels'; action: 'download' | 'remove'; language: string }
@@ -164,12 +172,21 @@ export interface ReadingSettings {
   fontSize: number;
   lineHeight: 'compact' | 'comfortable' | 'airy';
   width: 'narrow' | 'medium' | 'wide' | 'full';
-  font: 'theme' | 'sans' | 'serif';
+  font: 'theme' | 'sans' | 'serif' | 'hyperlegible' | 'dyslexic';
+  /** Justified, hyphenated paragraphs. */
+  justify: boolean;
   outline: boolean;
   /** A click on the text closes the table of contents when it floats over it. */
   outlineAutoClose: boolean;
+  /** Sections fold with an arrow next to their heading. */
+  collapsible: boolean;
+  /** Footnotes and link targets shown when the pointer rests on them. */
+  hoverPreviews: boolean;
+  /** j/k, J/K, g/G, t and Alt+← move through the document. */
+  keyboard: boolean;
   progress: boolean;
   focusMode: boolean;
+  focusScope: 'paragraph' | 'sentence';
   resume: boolean;
   notes: boolean;
 }

@@ -10,8 +10,7 @@ import * as vscode from 'vscode';
 import { SECTION, getTranslationConfig } from '../config';
 import { LanguageStatus, TranslationReply, WebviewCommand, WebviewMessage } from '../messages';
 import { PreviewManager } from '../preview/previewManager';
-import { stripNotesBlock } from '../notes/notesBlock';
-import { stripFrontMatter } from '../render/plugins';
+import { proseSample } from '../render/language';
 import { DictionaryInfo, DictionaryStore, dictionaryFor } from './dictionary/dictionaryStore';
 import { languageName } from './languages';
 import { BergamotEngine } from './offline/engine';
@@ -447,11 +446,7 @@ export class TranslationController implements vscode.Disposable {
     const document = await vscode.workspace.openTextDocument(uri);
     const key = `${uri.toString()}@${document.version}`;
     if (this.documentLanguageSample?.key !== key) {
-      const text = stripNotesBlock(stripFrontMatter(document.getText()))
-        .replace(/^(```|~~~)[\s\S]*?^\1/gm, ' ')
-        .replace(/`[^`]*`/g, ' ')
-        .replace(/<[^>]+>|\]\([^)]*\)|[#>*_|[\]-]/g, ' ')
-        .slice(0, 4000);
+      const text = proseSample(document.getText());
       this.documentLanguageSample = { key, text };
     }
     return this.documentLanguageSample.text;

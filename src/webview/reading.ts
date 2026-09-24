@@ -48,6 +48,8 @@ export interface OutlineActions {
   copyNotes(): void;
   /** Runs `change`, which opens or closes the panel (in wide windows the text moves aside). */
   toggle(change: () => void): void;
+  /** Unfold the section hiding `element`, before going to it. */
+  reveal(element: Element): void;
 }
 
 export interface NoteEntry {
@@ -155,6 +157,10 @@ export class Outline {
     }
   }
 
+  toggle(): void {
+    this.setOpen(this.panel.hidden === true);
+  }
+
   showNotes(): void {
     this.tab = 'notes';
     this.setOpen(true);
@@ -170,7 +176,8 @@ export class Outline {
     const line = window.innerHeight * 0.3;
     let current = -1;
     this.headings.forEach((heading, index) => {
-      if (heading.getBoundingClientRect().top <= line) {
+      // Headings of a folded section have no position.
+      if (heading.getClientRects().length && heading.getBoundingClientRect().top <= line) {
         current = index;
       }
     });
@@ -264,7 +271,10 @@ export class Outline {
       link.style.setProperty('--level', String(Number(heading.tagName[1]) - top));
       link.textContent = heading.textContent?.trim() ?? '';
       link.title = link.textContent;
-      link.addEventListener('click', () => heading.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+      link.addEventListener('click', () => {
+        this.actions.reveal(heading);
+        heading.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
       return link;
     });
     if (!this.links.length) {
@@ -386,12 +396,23 @@ export class ReadingProgress {
   }
 }
 
-/** Focus mode: everything but the block being read is dimmed. */
+/**
+ * Focus mode: everything but the block being read is dimmed; with the
+ * "sentence" scope, inside that block everything but the sentence too (with
+ * the CSS Custom Highlight API, so the text is not wrapped in elements).
+ */
 export class FocusMode {
   private current: Element | undefined;
   private within: Element | undefined;
+  private readonly sentences = typeof CSS !== 'undefined' && 'highlights' in CSS;
 
-  constructor(private readonly root: HTMLElement) {}
+  constructor(
+    private readonly root: HTMLElement,
+    private readonly scope: 'paragraph' | 'sentence' = 'paragraph',
+  ) {
+    // The highlighted sentence gets the text colour back (the rest of its block is dimmed).
+    document.body.style.setProperty('--folio-text', getComputedStyle(root).color);
+  }
 
   onScroll(): void {
     const line = window.innerHeight * 0.42;
@@ -407,12 +428,15 @@ export class FocusMode {
       current = nearest(Array.from(block.children), line) ?? block;
     }
     if (current !== this.current || within !== this.within) {
-      this.current?.classList.remove('folio-current');
+      this.current?.classList.remove('folio-current', 'folio-sentence-block');
       this.within?.classList.remove('folio-within');
       current?.classList.add('folio-current');
       within?.classList.add('folio-within');
       this.current = current;
       this.within = within;
+    }
+    if (this.scope === 'sentence') {
+      this.highlightSentence(current, line);
     }
   }
 
@@ -422,6 +446,58 @@ export class FocusMode {
     this.within = undefined;
     this.onScroll();
   }
+
+  private highlightSentence(block: Element | undefined, line: number): void {
+    if (!this.sentences) {
+      return;
+    }
+    const range = block && /^(P|LI|DD|DT|BLOCKQUOTE)$/.test(block.tagName) ? sentenceAt(block, line) : undefined;
+    block?.classList.toggle('folio-sentence-block', !!range);
+    if (range) {
+      CSS.highlights.set('folio-sentence', new Highlight(range));
+    } else {
+      CSS.highlights.delete('folio-sentence');
+    }
+  }
+}
+
+/** The sentence of `block` on the line at height `y` of the window. */
+function sentenceAt(block: Element, y: number): Range | undefined {
+  const rect = block.getBoundingClientRect();
+  const caret = document.caretRangeFromPoint(rect.left + 4, Math.min(Math.max(y, rect.top + 4), rect.bottom - 4));
+  if (!caret || !block.contains(caret.startContainer)) {
+    return undefined;
+  }
+  const nodes: Text[] = [];
+  const starts: number[] = [];
+  let text = '';
+  const walker = document.createTreeWalker(block, NodeFilter.SHOW_TEXT);
+  for (let node = walker.nextNode() as Text | null; node; node = walker.nextNode() as Text | null) {
+    nodes.push(node);
+    starts.push(text.length);
+    text += node.data;
+  }
+  const index = nodes.indexOf(caret.startContainer as Text);
+  const at = index < 0 ? 0 : starts[index] + caret.startOffset;
+  // Line breaks of the Markdown source are not sentence ends.
+  const segments = new Intl.Segmenter(document.documentElement.lang || undefined, { granularity: 'sentence' }).segment(
+    text.replace(/[\r\n]/g, ' '),
+  );
+  const segment = segments.containing(Math.min(at, Math.max(0, text.length - 1)));
+  if (!segment || !segment.segment.trim()) {
+    return undefined;
+  }
+  const point = (offset: number): [Text, number] => {
+    let i = starts.length - 1;
+    while (i > 0 && starts[i] > offset) {
+      i--;
+    }
+    return [nodes[i], Math.min(offset - starts[i], nodes[i].data.length)];
+  };
+  const range = document.createRange();
+  range.setStart(...point(segment.index));
+  range.setEnd(...point(segment.index + segment.segment.trimEnd().length));
+  return range;
 }
 
 /** The element crossing the horizontal line `y`, or the closest one. */

@@ -18,6 +18,8 @@ import {
   getTranslationConfig,
 } from '../config';
 import { HostMessage, WebviewMessage } from '../messages';
+import { markdownExcerpt } from '../render/excerpt';
+import { documentLanguage } from '../render/language';
 import { MarkdownRenderer } from '../render/markdownRenderer';
 import { SlugRegistry } from '../render/slugify';
 import {
@@ -304,6 +306,7 @@ export class PreviewManager implements vscode.Disposable {
       sourceUri: uri.toString(),
       preserveScroll,
       line,
+      lang: getReadingConfig().justify ? documentLanguage(document.getText()) : undefined,
     });
   }
 
@@ -348,6 +351,14 @@ export class PreviewManager implements vscode.Disposable {
         break;
       case 'openLink':
         void this.openLink(message.href);
+        break;
+      case 'navigate':
+        void this.navigate(message.uri, message.line);
+        break;
+      case 'linkPreview':
+        if (message.sourceUri === this.sourceUri?.toString()) {
+          void this.linkPreview(message.id, message.href);
+        }
         break;
     }
     for (const listener of this.messageListeners) {
@@ -477,46 +488,106 @@ export class PreviewManager implements vscode.Disposable {
     this.highlightedEditor = undefined;
   }
 
+  /** The file a relative, root-relative or file: link points to, and its #fragment. */
+  private resolveLink(href: string): { target: vscode.Uri; fragment: string } | undefined {
+    if (!this.sourceUri || (/^[a-z][a-z0-9+.-]*:/i.test(href) && !/^file:/i.test(href))) {
+      return undefined; // command:, vscode:, javascript:, https: ... are not files
+    }
+    const [pathPart, fragment] = splitFragment(href);
+    if (/^file:/i.test(pathPart)) {
+      return { target: vscode.Uri.parse(pathPart, true), fragment };
+    }
+    if (pathPart.startsWith('/')) {
+      const folder = vscode.workspace.getWorkspaceFolder(this.sourceUri);
+      const target = folder
+        ? vscode.Uri.joinPath(folder.uri, decodeURIComponent(pathPart))
+        : vscode.Uri.file(decodeURIComponent(pathPart));
+      return { target, fragment };
+    }
+    return { target: vscode.Uri.joinPath(this.sourceUri, '..', decodeURIComponent(pathPart)), fragment };
+  }
+
   private async openLink(href: string): Promise<void> {
     if (!this.sourceUri) {
       return;
     }
-    let target: vscode.Uri;
     try {
       if (/^(https?|mailto):/i.test(href)) {
         await vscode.env.openExternal(vscode.Uri.parse(href, true));
         return;
       }
-      if (/^[a-z][a-z0-9+.-]*:/i.test(href) && !/^file:/i.test(href)) {
+      const link = this.resolveLink(href);
+      if (!link) {
         return; // command:, vscode:, javascript: ... are never followed
       }
-      const [pathPart, fragment] = splitFragment(href);
-      if (/^file:/i.test(pathPart)) {
-        target = vscode.Uri.parse(pathPart, true);
-      } else if (pathPart.startsWith('/')) {
-        const folder = vscode.workspace.getWorkspaceFolder(this.sourceUri);
-        target = folder
-          ? vscode.Uri.joinPath(folder.uri, decodeURIComponent(pathPart))
-          : vscode.Uri.file(decodeURIComponent(pathPart));
+      await vscode.workspace.fs.stat(link.target);
+      if (isMarkdownPath(link.target)) {
+        await this.openMarkdown(link.target, (text) => (link.fragment ? findHeadingLine(text, link.fragment) : 0));
       } else {
-        target = vscode.Uri.joinPath(this.sourceUri, '..', decodeURIComponent(pathPart));
-      }
-      await vscode.workspace.fs.stat(target);
-      if (/\.(md|markdown|mdown|mkd|mkdn)$/i.test(target.path)) {
-        const document = await vscode.workspace.openTextDocument(target);
-        const line = fragment ? findHeadingLine(document.getText(), fragment) : 0;
-        const column = this.sourceEditor()?.viewColumn ?? vscode.ViewColumn.One;
-        await vscode.window.showTextDocument(document, {
-          viewColumn: column,
-          selection: new vscode.Range(line, 0, line, 0),
-        });
-      } else {
-        await vscode.commands.executeCommand('vscode.open', target);
+        await vscode.commands.executeCommand('vscode.open', link.target);
       }
     } catch {
       void vscode.window.showWarningMessage(`Cannot open link: ${href}`);
     }
   }
+
+  /** Open a Markdown file in the source editor's column, at a line; the preview follows it. */
+  private async openMarkdown(target: vscode.Uri, lineOf: (text: string) => number): Promise<void> {
+    const document = await vscode.workspace.openTextDocument(target);
+    const line = Math.min(Math.max(0, lineOf(document.getText())), document.lineCount - 1);
+    const column = this.sourceEditor()?.viewColumn ?? vscode.ViewColumn.One;
+    await vscode.window.showTextDocument(document, {
+      viewColumn: column,
+      selection: new vscode.Range(line, 0, line, 0),
+    });
+  }
+
+  /** "Back" to a place in another document. */
+  private async navigate(uri: string, line: number): Promise<void> {
+    try {
+      const target = vscode.Uri.parse(uri, true);
+      if (!['file', 'untitled'].includes(target.scheme) || !isMarkdownPath(target) || !Number.isInteger(line)) {
+        return;
+      }
+      await this.openMarkdown(target, () => line);
+    } catch {
+      void vscode.window.showWarningMessage('Cannot go back: the document is no longer there.');
+    }
+  }
+
+  /**
+   * The start of the Markdown file (or of the section) a link points to,
+   * rendered, for the preview shown on hover.
+   */
+  private async linkPreview(id: number, href: string): Promise<void> {
+    const link = typeof href === 'string' ? this.resolveLink(href) : undefined;
+    if (!this.panel || !link || !isMarkdownPath(link.target) || !Number.isInteger(id)) {
+      return;
+    }
+    try {
+      const document = await vscode.workspace.openTextDocument(link.target);
+      const text = document.getText();
+      const snippet = markdownExcerpt(text, link.fragment ? findHeadingLine(text, link.fragment) : 0);
+      const webview = this.panel.webview;
+      const folder = vscode.Uri.joinPath(link.target, '..');
+      const result = this.renderer.render(snippet, {
+        // Relative images are relative to that file, not to the one previewed.
+        resolveImageSrc: (src) =>
+          /^[a-z][a-z0-9+.-]*:|^\/\/|^#/i.test(src) || src.startsWith('/')
+            ? src
+            : webview.asWebviewUri(vscode.Uri.joinPath(folder, decodeURIComponent(src))).toString(),
+      });
+      const heading = link.fragment ? /^#{1,6}\s+(.*?)\s*#*\s*$/.exec(text.split(/\r?\n/)[findHeadingLine(text, link.fragment)] ?? '') : null;
+      const title = [path.basename(link.target.fsPath), heading?.[1]].filter(Boolean).join(' › ');
+      this.post({ type: 'linkPreview', id, html: result.html, title });
+    } catch {
+      // A missing file has no preview.
+    }
+  }
+}
+
+export function isMarkdownPath(uri: vscode.Uri): boolean {
+  return /\.(md|markdown|mdown|mkd|mkdn)$/i.test(uri.path);
 }
 
 export function createRenderer(config: PreviewConfig): MarkdownRenderer {

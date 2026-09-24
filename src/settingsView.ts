@@ -120,7 +120,16 @@ const SECTIONS: SectionDefinition[] = [
           { value: 'theme', label: 'Theme' },
           { value: 'sans', label: 'Sans-serif' },
           { value: 'serif', label: 'Serif' },
+          { value: 'hyperlegible', label: 'Atkinson Hyperlegible' },
+          { value: 'dyslexic', label: 'OpenDyslexic' },
         ],
+      },
+      {
+        key: 'reading.justify',
+        label: 'Justify text',
+        description: 'Even margins on both sides, with long words hyphenated.',
+        kind: 'toggle',
+        default: false,
       },
       {
         key: 'reading.outline',
@@ -149,6 +158,27 @@ const SECTIONS: SectionDefinition[] = [
         default: true,
       },
       {
+        key: 'reading.collapsible',
+        label: 'Fold sections',
+        description: 'An arrow next to each heading folds its section.',
+        kind: 'toggle',
+        default: true,
+      },
+      {
+        key: 'reading.hoverPreviews',
+        label: 'Previews on hover',
+        description: 'Footnotes and link targets appear when the pointer rests on them.',
+        kind: 'toggle',
+        default: true,
+      },
+      {
+        key: 'reading.keyboard',
+        label: 'Keyboard navigation',
+        description: 'j/k paragraphs, J/K headings, g/G top and bottom, t contents, Alt+← back.',
+        kind: 'toggle',
+        default: true,
+      },
+      {
         key: 'reading.progress',
         label: 'Reading time and progress',
         description: 'How long the document takes to read, and a thin progress bar at the top.',
@@ -161,6 +191,17 @@ const SECTIONS: SectionDefinition[] = [
         description: 'Dim everything except the paragraph you are reading.',
         kind: 'toggle',
         default: false,
+      },
+      {
+        key: 'reading.focusScope',
+        label: 'Focus on',
+        description: 'What stays clear in focus mode.',
+        kind: 'select',
+        default: 'paragraph',
+        options: [
+          { value: 'paragraph', label: 'Paragraph' },
+          { value: 'sentence', label: 'Sentence' },
+        ],
       },
       {
         key: 'reading.resume',

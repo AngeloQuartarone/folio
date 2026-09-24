@@ -80,17 +80,22 @@ export function getPreviewConfig(): PreviewConfig {
 
 export type LineHeight = 'compact' | 'comfortable' | 'airy';
 export type ColumnWidth = 'narrow' | 'medium' | 'wide' | 'full';
-export type ReadingFont = 'theme' | 'sans' | 'serif';
+export type ReadingFont = 'theme' | 'sans' | 'serif' | 'hyperlegible' | 'dyslexic';
 
 export interface ReadingConfig {
   fontSize: number;
   lineHeight: LineHeight;
   width: ColumnWidth;
   font: ReadingFont;
+  justify: boolean;
   outline: boolean;
   outlineAutoClose: boolean;
+  collapsible: boolean;
+  hoverPreviews: boolean;
+  keyboard: boolean;
   progress: boolean;
   focusMode: boolean;
+  focusScope: 'paragraph' | 'sentence';
   resume: boolean;
   notes: boolean;
 }
@@ -106,11 +111,16 @@ export function getReadingConfig(): ReadingConfig {
     fontSize: Number.isFinite(size) ? Math.min(24, Math.max(13, Math.round(size))) : 16,
     lineHeight: oneOf(c.get('reading.lineHeight'), ['compact', 'comfortable', 'airy'] as const, 'comfortable'),
     width: oneOf(c.get('reading.width'), ['narrow', 'medium', 'wide', 'full'] as const, 'medium'),
-    font: oneOf(c.get('reading.font'), ['theme', 'sans', 'serif'] as const, 'theme'),
+    font: oneOf(c.get('reading.font'), ['theme', 'sans', 'serif', 'hyperlegible', 'dyslexic'] as const, 'theme'),
+    justify: c.get<boolean>('reading.justify', false),
     outline: c.get<boolean>('reading.outline', true),
     outlineAutoClose: c.get<boolean>('reading.outlineAutoClose', true),
+    collapsible: c.get<boolean>('reading.collapsible', true),
+    hoverPreviews: c.get<boolean>('reading.hoverPreviews', true),
+    keyboard: c.get<boolean>('reading.keyboard', true),
     progress: c.get<boolean>('reading.progress', true),
     focusMode: c.get<boolean>('reading.focusMode', false),
+    focusScope: oneOf(c.get('reading.focusScope'), ['paragraph', 'sentence'] as const, 'paragraph'),
     resume: c.get<boolean>('reading.resume', true),
     notes: c.get<boolean>('notes.enabled', true),
   };

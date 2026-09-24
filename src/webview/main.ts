@@ -9,9 +9,12 @@
 import DOMPurify from 'dompurify';
 import type { HostMessage, WebviewMessage, WebviewSettings } from '../messages';
 import { addCodeCopyButtons, copyFormatted, enableImageZoom, toast } from './documentTools';
+import { History, enableKeyboard } from './navigation';
 import { Notes } from './notes';
+import { LinkPreviews } from './peek';
 import { QuickSettings } from './quickSettings';
 import { FocusMode, Outline, ReadingProgress } from './reading';
+import { Sections } from './sections';
 import { SettingsPanel } from './settingsPanel';
 import { selectionInSource } from './sourceSelection';
 import { TranslationTooltip } from './translationTooltip';
@@ -53,8 +56,15 @@ const state = {
   },
 };
 
+const sections = reading.collapsible
+  ? new Sections(preview, state, () => {
+      scrollMap = null;
+      notes?.layout();
+      focus?.reset();
+    })
+  : undefined;
 const notes = reading.notes
-  ? new Notes(preview, post, () => sourceUri, (entries) => outline?.setNotes(entries))
+  ? new Notes(preview, post, () => sourceUri, (entries) => outline?.setNotes(entries), (element) => sections?.reveal(element))
   : undefined;
 const outline = reading.outline
   ? new Outline(preview, reading, state, post, {
@@ -65,10 +75,21 @@ const outline = reading.outline
         toast('Notes copied — paste them into your AI chat');
       },
       toggle: (change) => keepReadingPosition(change),
+      reveal: (element) => sections?.reveal(element),
     })
   : undefined;
 const progress = reading.progress ? new ReadingProgress(preview) : undefined;
-const focus = reading.focusMode ? new FocusMode(preview) : undefined;
+const focus = reading.focusMode ? new FocusMode(preview, reading.focusScope) : undefined;
+const history = new History(
+  state,
+  post,
+  () => (sourceUri ? { uri: sourceUri, line: topSourceLine() ?? 0 } : undefined),
+  (line) => scrollSyncToLine(line, 0),
+);
+const linkPreviews = reading.hoverPreviews ? new LinkPreviews(preview, post, () => sourceUri, sanitize) : undefined;
+if (reading.keyboard) {
+  enableKeyboard(preview, { back: () => history.back(), toggleOutline: () => outline?.toggle() });
+}
 
 const tooltip = new TranslationTooltip(preview, post, settings.translationEnabled, notes);
 const settingsPanel = new SettingsPanel(post, settings.sections, {
@@ -99,6 +120,12 @@ function update(message: Extract<HostMessage, { type: 'update' }>): void {
   sourceUri = message.sourceUri;
   totalLineCount = message.lineCount;
   preview.innerHTML = sanitize(message.html);
+  // Hyphenation (justified text) needs the language of the text.
+  if (message.lang) {
+    document.documentElement.lang = message.lang;
+  } else {
+    document.documentElement.removeAttribute('lang');
+  }
   afterRender();
   scrollMap = null;
   void renderMermaid();
@@ -116,6 +143,7 @@ function update(message: Extract<HostMessage, { type: 'update' }>): void {
 function afterRender(): void {
   addCodeCopyButtons(preview);
   progress?.refresh();
+  sections?.refresh(sourceUri);
   notes?.render();
   outline?.refresh();
   focus?.reset();
@@ -193,7 +221,8 @@ function buildScrollMap(): number[] | null {
 
   const elements = preview.querySelectorAll<HTMLElement>('[data-source-line]');
   for (const element of Array.from(elements)) {
-    if (!BLOCK_ELEMENTS.has(element.tagName)) {
+    // Blocks of a folded section have no position.
+    if (!BLOCK_ELEMENTS.has(element.tagName) || !element.getClientRects().length) {
       continue;
     }
     const line = parseInt(element.getAttribute('data-source-line') ?? '', 10) - 1;
@@ -433,8 +462,16 @@ window.addEventListener('click', (event) => {
   if (href.startsWith('#')) {
     const id = decodeURIComponent(href.slice(1));
     const target = document.getElementById(id) ?? document.getElementsByName(id)[0];
-    target?.scrollIntoView({ block: 'start' });
+    if (target) {
+      history.push();
+      sections?.reveal(target);
+      target.scrollIntoView({ block: 'start' });
+    }
     return;
+  }
+  // Another Markdown file opens in the preview: remember where to come back to.
+  if (/^(?![a-z][a-z0-9+.-]*:|\/\/)[^?#]*\.(md|markdown|mdown|mkd|mkdn)(#.*)?$/i.test(href)) {
+    history.push();
   }
   post({ type: 'openLink', sourceUri, href });
 }, true);
@@ -488,6 +525,9 @@ window.addEventListener('message', (event: MessageEvent<HostMessage>) => {
     case 'settings':
       quickSettings.setSections(message.sections);
       settingsPanel.setSections(message.sections);
+      break;
+    case 'linkPreview':
+      linkPreviews?.onReply(message);
       break;
     case 'notes':
       if (message.sourceUri === sourceUri || !sourceUri) {
