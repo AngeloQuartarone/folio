@@ -6,3 +6,4 @@ out/
 .DS_Store
 test/fixtures/*.pdf
 test/fixtures/*.html
+test/fixtures/*.folio.json

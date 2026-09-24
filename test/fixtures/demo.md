@@ -1,10 +1,10 @@
 ---
-title: Markdown Translate Preview — test document
+title: Folio — test document
 author: Test
 tags: [preview, translation]
 ---
 
-# Markdown Translate Preview
+# Folio
 
 This document exercises every feature of the extension. Open it with
 **Cmd+K V** (or **Ctrl+K V**), then select words in the preview to see their
@@ -88,7 +88,7 @@ opening the link. Text in `inline code` and in lists works too:
 
 ## 2. Formatting
 
-Plain text with **bold**, *italic*, ***bold italic***, ~~strikethrough~~,
+Plain text with **bold**, *italic*, *** ***, ~~strikethrough~~,
 ==highlighted==, H~2~O, E = mc^2^, and an emoji :smile: :rocket:.
 
 Definition list
@@ -213,8 +213,21 @@ found them. Context makes words much easier to remember than lists.
 Practice a little every day. Ten minutes of regular practice are worth more
 than two hours once a week.
 
+## 9. Reading aids
+
+Move the mouse: the **table of contents** button appears top left. Open it —
+the section you are reading is highlighted, and the header shows the reading
+time left. In **All settings → Reading** try a serif font, airy line spacing
+or focus mode.
+
+Select *a word or two in this sentence* and choose **Add note**: the text is
+highlighted with a pin in the margin, and the note is saved in
+`demo.md.folio.json` next to this file. Hover a code block for its **Copy**
+button, click the image in section 6 to zoom it, and use **Copy as formatted
+text** in the settings panel, then paste into an email.
+
 ### The end
 
 If you can read this in the preview, rendering, themes and scroll sync all
-work. Try **Markdown Translate: Select Preview Theme** and pick *sepia* for a
+work. Try **Folio: Select Preview Theme** and pick *sepia* for a
 warm reading theme, then **Export PDF**.

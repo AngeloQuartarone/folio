@@ -7,22 +7,22 @@ const renderer = new MarkdownRenderer({ breaks: false, math: true, mermaid: true
 const render = (text: string) => renderer.render(text).html;
 
 describe('MarkdownRenderer', () => {
-  it('tags blocks with 1-based data-source-line', () => {
-    const html = render('# Title\n\nParagraph\n\n- item');
-    assert.match(html, /<h1 id="title" data-source-line="1">/);
-    assert.match(html, /<p data-source-line="3">Paragraph/);
-    assert.match(html, /<ul data-source-line="5">/);
+  it('tags blocks with their 1-based first and last source line', () => {
+    const html = render('# Title\n\nParagraph\non two lines\n\n- item');
+    assert.match(html, /<h1 id="title" data-source-line="1" data-source-end="1">/);
+    assert.match(html, /<p data-source-line="3" data-source-end="4">Paragraph/);
+    assert.match(html, /<ul data-source-line="6" data-source-end="6">/);
   });
 
   it('renders GFM tables', () => {
     const html = render('| a | b |\n|---|---|\n| 1 | 2 |');
-    assert.match(html, /<table data-source-line="1">/);
+    assert.match(html, /<table data-source-line="1" data-source-end="3">/);
     assert.match(html, /<td>1<\/td>/);
   });
 
   it('highlights fenced code with Prism and keeps the source line', () => {
     const html = render('text\n\n```ts\nconst a = 1;\n```');
-    assert.match(html, /<pre data-source-line="3" class="language-ts"><code class="language-ts">/);
+    assert.match(html, /<pre data-source-line="3" data-source-end="5" class="language-ts"><code class="language-ts">/);
     assert.match(html, /<span class="token keyword">const<\/span>/);
   });
 
@@ -34,7 +34,7 @@ describe('MarkdownRenderer', () => {
 
   it('turns mermaid fences into diagram containers', () => {
     const result = renderer.render('```mermaid\ngraph TD; A-->B;\n```');
-    assert.match(result.html, /<div class="mermaid" data-source-line="1">graph TD; A--&gt;B;/);
+    assert.match(result.html, /<div class="mermaid" data-source-line="1" data-source-end="3">graph TD; A--&gt;B;/);
     assert.equal(result.hasMermaid, true);
   });
 

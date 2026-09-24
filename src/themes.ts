@@ -7,47 +7,15 @@
  * Illinois/NCSA License, Copyright (c) 2017 ~ 2023 Yiyi Wang.
  */
 
-export const PREVIEW_THEMES = [
-  'github-light.css',
-  'github-dark.css',
-  'sepia.css',
-  'newsprint.css',
-  'atom-light.css',
-  'atom-dark.css',
-  'atom-material.css',
-  'one-light.css',
-  'one-dark.css',
-  'solarized-light.css',
-  'solarized-dark.css',
-  'gothic.css',
-  'medium.css',
-  'monokai.css',
-  'night.css',
-  'vue.css',
-  'vscode.css',
-] as const;
+export const PREVIEW_THEMES = ['github-light.css', 'github-dark.css', 'sepia.css'] as const;
 
 export type PreviewTheme = (typeof PREVIEW_THEMES)[number];
 
 /** Names shown in the preview's quick settings. */
 export const PREVIEW_THEME_LABELS: Record<PreviewTheme, string> = {
-  'github-light.css': 'GitHub Light',
-  'github-dark.css': 'GitHub Dark',
-  'sepia.css': 'Sepia (reading)',
-  'newsprint.css': 'Newsprint',
-  'atom-light.css': 'Atom Light',
-  'atom-dark.css': 'Atom Dark',
-  'atom-material.css': 'Atom Material',
-  'one-light.css': 'One Light',
-  'one-dark.css': 'One Dark',
-  'solarized-light.css': 'Solarized Light',
-  'solarized-dark.css': 'Solarized Dark',
-  'gothic.css': 'Gothic',
-  'medium.css': 'Medium',
-  'monokai.css': 'Monokai',
-  'night.css': 'Night',
-  'vue.css': 'Vue',
-  'vscode.css': 'VS Code (editor colors)',
+  'github-light.css': 'Light',
+  'github-dark.css': 'Dark',
+  'sepia.css': 'Sepia',
 };
 
 export const CODE_BLOCK_THEMES = [
@@ -89,42 +57,15 @@ export type PreviewColorScheme =
 
 /** Code block theme picked when `codeBlockTheme` is `auto.css`. */
 const AUTO_CODE_BLOCK_THEME: Record<PreviewTheme, CodeBlockTheme> = {
-  'atom-dark.css': 'atom-dark.css',
-  'atom-light.css': 'atom-light.css',
-  'atom-material.css': 'atom-material.css',
-  'github-dark.css': 'github-dark.css',
   'github-light.css': 'github.css',
-  'gothic.css': 'github.css',
-  'medium.css': 'github.css',
-  'monokai.css': 'monokai.css',
-  'newsprint.css': 'pen-paper-coffee.css',
-  'night.css': 'darcula.css',
-  'one-dark.css': 'one-dark.css',
-  'one-light.css': 'one-light.css',
+  'github-dark.css': 'github-dark.css',
   'sepia.css': 'pen-paper-coffee.css',
-  'solarized-light.css': 'solarized-light.css',
-  'solarized-dark.css': 'solarized-dark.css',
-  'vue.css': 'vue.css',
-  'vscode.css': 'vscode.css',
 };
 
 /** Themes that ship as a light/dark pair. */
-const THEME_PAIRS: Array<[PreviewTheme, PreviewTheme]> = [
-  ['atom-light.css', 'atom-dark.css'],
-  ['github-light.css', 'github-dark.css'],
-  ['one-light.css', 'one-dark.css'],
-  ['solarized-light.css', 'solarized-dark.css'],
-];
+const THEME_PAIRS: Array<[PreviewTheme, PreviewTheme]> = [['github-light.css', 'github-dark.css']];
 
-const DARK_THEMES = new Set<PreviewTheme>([
-  'atom-dark.css',
-  'atom-material.css',
-  'github-dark.css',
-  'monokai.css',
-  'night.css',
-  'one-dark.css',
-  'solarized-dark.css',
-]);
+const DARK_THEMES = new Set<PreviewTheme>(['github-dark.css']);
 
 export function isPreviewTheme(value: unknown): value is PreviewTheme {
   return (PREVIEW_THEMES as readonly unknown[]).includes(value);
@@ -135,9 +76,8 @@ export function isCodeBlockTheme(value: unknown): value is CodeBlockTheme {
 }
 
 /**
- * Swap a paired theme to the variant matching `scheme`. Unpaired themes
- * (sepia, newsprint, monokai, ...) are returned unchanged: the user picked
- * them explicitly.
+ * Swap a paired theme to the variant matching `scheme`. Sepia is returned
+ * unchanged: the user picked it explicitly.
  */
 export function themeForColorScheme(
   theme: PreviewTheme,
@@ -176,30 +116,20 @@ export function resolveCodeBlockTheme(
     : codeBlockTheme;
 }
 
-/**
- * Whether a theme has a dark background. `vscode.css` follows the editor,
- * so its answer depends on `editorScheme`.
- */
-export function colorSchemeOfTheme(
-  theme: PreviewTheme,
-  editorScheme: ColorScheme,
-): ColorScheme {
-  if (theme === 'vscode.css') {
-    return editorScheme;
-  }
+/** Whether a theme has a dark background. */
+export function colorSchemeOfTheme(theme: PreviewTheme): ColorScheme {
   return DARK_THEMES.has(theme) ? 'dark' : 'light';
 }
 
 /**
- * Exports render outside VS Code, where the `--vscode-*` variables the
- * vscode themes rely on do not exist.
+ * Exports are for paper and sharing: always the Light theme, whatever the
+ * preview shows. They also render outside VS Code, where the `--vscode-*`
+ * variables the vscode code block theme relies on do not exist.
  */
 export function themesForExport(
-  previewTheme: PreviewTheme,
   codeBlockTheme: CodeBlockTheme,
 ): { previewTheme: PreviewTheme; codeBlockTheme: CodeBlockTheme } {
-  return {
-    previewTheme: previewTheme === 'vscode.css' ? 'github-light.css' : previewTheme,
-    codeBlockTheme: codeBlockTheme === 'vscode.css' ? 'default.css' : codeBlockTheme,
-  };
+  const previewTheme: PreviewTheme = 'github-light.css';
+  const code = resolveCodeBlockTheme(codeBlockTheme, previewTheme);
+  return { previewTheme, codeBlockTheme: code === 'vscode.css' ? 'default.css' : code };
 }

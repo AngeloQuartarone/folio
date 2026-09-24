@@ -22,7 +22,7 @@ class LocalBacking extends TranslatorBacking {
     // The options are also posted to the worker, so they must be cloneable
     // (no functions): the error handler is set afterwards.
     const backing = new LocalBacking({ workerUrl: workerPath, pivotLanguage: PIVOT_LANGUAGE });
-    backing.onerror = (error: unknown) => console.error('[markdown-translate] engine error:', error);
+    backing.onerror = (error: unknown) => console.error('[folio] engine error:', error);
     backing.store = store;
     return backing;
   }
@@ -53,7 +53,8 @@ class LocalBacking extends TranslatorBacking {
 }
 
 export interface TranslationEngine {
-  translate(from: string, to: string, text: string, signal?: AbortSignal): Promise<string>;
+  /** With `html`, tags in `text` are carried over to the matching words of the translation. */
+  translate(from: string, to: string, text: string, signal?: AbortSignal, html?: boolean): Promise<string>;
   dispose(): void;
 }
 
@@ -68,7 +69,7 @@ export class BergamotEngine implements TranslationEngine {
     private readonly idleMs = 5 * 60_000,
   ) {}
 
-  async translate(from: string, to: string, text: string, signal?: AbortSignal): Promise<string> {
+  async translate(from: string, to: string, text: string, signal?: AbortSignal, html = false): Promise<string> {
     clearTimeout(this.idleTimer);
     this.translator ??= new LatencyOptimisedTranslator(
       {},
@@ -76,7 +77,7 @@ export class BergamotEngine implements TranslationEngine {
     );
     try {
       const response = await this.translator.translate(
-        { from, to, text, html: false, qualityScores: false },
+        { from, to, text, html, qualityScores: false },
         { signal },
       );
       return response.target.text;

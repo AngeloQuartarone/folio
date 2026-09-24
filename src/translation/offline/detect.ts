@@ -20,6 +20,9 @@ export interface Detection {
 
 const CYRILLIC = /[Ѐ-ӿ]/;
 
+/** eld often calls one or two words "reliable" ("Sentences" → French). */
+const MIN_RELIABLE_WORDS = 3;
+
 /** Letters that only one of ru/uk/bg uses. */
 function cyrillicLanguage(text: string): string | undefined {
   if (/[іїєґ]/i.test(text)) {
@@ -44,5 +47,9 @@ export function detectLanguage(text: string): Detection {
     }
   }
   const result = eld.detect(sample);
-  return { language: result.language, reliable: !!result.language && result.isReliable() };
+  const words = sample.split(/\s+/).length;
+  return {
+    language: result.language,
+    reliable: !!result.language && result.isReliable() && words >= MIN_RELIABLE_WORDS,
+  };
 }

@@ -8,7 +8,12 @@
  */
 import DOMPurify from 'dompurify';
 import type { HostMessage, WebviewMessage, WebviewSettings } from '../messages';
+import { addCodeCopyButtons, copyFormatted, enableImageZoom } from './documentTools';
+import { Notes } from './notes';
 import { QuickSettings } from './quickSettings';
+import { FocusMode, Outline, ReadingProgress } from './reading';
+import { SettingsPanel } from './settingsPanel';
+import { selectionInSource } from './sourceSelection';
 import { TranslationTooltip } from './translationTooltip';
 
 declare function acquireVsCodeApi(): {
@@ -36,14 +41,54 @@ function post(message: WebviewMessage): void {
   vscode.postMessage(message);
 }
 
-const tooltip = new TranslationTooltip(preview, post, settings.translationEnabled);
-const quickSettings = new QuickSettings(post, settings);
+const reading = settings.reading;
+
+/** Webview state: survives the reloads caused by theme changes. */
+const state = {
+  get<T>(key: string): T | undefined {
+    return ((vscode.getState() as Record<string, unknown> | undefined) ?? {})[key] as T | undefined;
+  },
+  set(key: string, value: unknown): void {
+    vscode.setState({ ...((vscode.getState() as Record<string, unknown> | undefined) ?? {}), [key]: value });
+  },
+};
+
+const notes = reading.notes
+  ? new Notes(preview, post, () => sourceUri, (entries) => outline?.setNotes(entries))
+  : undefined;
+const outline = reading.outline
+  ? new Outline(
+      preview,
+      reading,
+      state,
+      (id) => notes?.open(id),
+      (id) => notes?.delete(id),
+      () => notes?.layout(),
+    )
+  : undefined;
+const progress = reading.progress ? new ReadingProgress(preview) : undefined;
+const focus = reading.focusMode ? new FocusMode(preview) : undefined;
+
+const tooltip = new TranslationTooltip(preview, post, settings.translationEnabled, notes);
+const settingsPanel = new SettingsPanel(post, settings.sections, {
+  get: () => state.get<string>('settingsSection'),
+  set: (section) => state.set('settingsSection', section),
+}, () => void copyFormatted(preview));
+const quickSettings = new QuickSettings(
+  post,
+  settings.sections,
+  () => settingsPanel.open(),
+  () => void copyFormatted(preview),
+);
+enableImageZoom(preview);
 
 // ---------------------------------------------------------------- rendering
 
 function sanitize(html: string): string {
   return DOMPurify.sanitize(html, {
-    ADD_ATTR: ['data-source-line', 'checked', 'disabled'],
+    ADD_ATTR: ['data-source-line', 'data-source-end', 'checked', 'disabled', 'encoding'],
+    // KaTeX keeps the TeX source in <annotation>; "Copy as formatted text" uses it.
+    ADD_TAGS: ['annotation'],
     FORBID_TAGS: ['style', 'form'],
   });
 }
@@ -53,6 +98,7 @@ function update(message: Extract<HostMessage, { type: 'update' }>): void {
   sourceUri = message.sourceUri;
   totalLineCount = message.lineCount;
   preview.innerHTML = sanitize(message.html);
+  afterRender();
   scrollMap = null;
   void renderMermaid();
 
@@ -63,6 +109,15 @@ function update(message: Extract<HostMessage, { type: 'update' }>): void {
     // Wait a frame so images with known sizes are laid out.
     requestAnimationFrame(() => scrollSyncToLine(message.line!, 0));
   }
+}
+
+/** Folio's additions to a freshly rendered document. */
+function afterRender(): void {
+  addCodeCopyButtons(preview);
+  progress?.refresh();
+  notes?.render();
+  outline?.refresh();
+  focus?.reset();
 }
 
 // ------------------------------------------------------------------ mermaid
@@ -246,8 +301,23 @@ function scrollSyncToLine(line: number, topRatio = 0.372): void {
   }
 }
 
+/**
+ * Only scrolls the user makes are sent to the editor: layout changes (a
+ * diagram or an image appearing) also scroll the page, and echoing those
+ * made editor and preview push each other down.
+ */
+let userScrollUntil = 0;
+for (const type of ['wheel', 'keydown', 'mousedown', 'touchmove']) {
+  window.addEventListener(type, () => (userScrollUntil = Date.now() + 1000), { passive: true, capture: true });
+}
+
 window.addEventListener('scroll', () => {
-  if (!settings.scrollSync || isAnimatingScroll || Date.now() < previewScrollDelay) {
+  if (
+    !settings.scrollSync ||
+    isAnimatingScroll ||
+    Date.now() < previewScrollDelay ||
+    Date.now() > userScrollUntil
+  ) {
     return;
   }
   if (scrollTimeout) {
@@ -261,11 +331,73 @@ window.addEventListener('resize', () => {
   scrollMap = null;
 });
 
+// ------------------------------------------------------------ reading aids
+
+let readingFrame = 0;
+let positionTimer: ReturnType<typeof setTimeout> | undefined;
+
+window.addEventListener(
+  'scroll',
+  () => {
+    cancelAnimationFrame(readingFrame);
+    readingFrame = requestAnimationFrame(() => {
+      progress?.onScroll();
+      outline?.onScroll();
+      focus?.onScroll();
+    });
+    // Remember where the user is, to reopen the document there.
+    if (reading.resume) {
+      clearTimeout(positionTimer);
+      positionTimer = setTimeout(() => {
+        const line = topSourceLine();
+        if (line !== undefined && sourceUri) {
+          post({ type: 'readingPosition', sourceUri, line });
+        }
+      }, 400);
+    }
+  },
+  { passive: true },
+);
+
+/** The source line at the top of the preview. */
+function topSourceLine(): number | undefined {
+  const map = buildScrollMap();
+  if (!map) {
+    return undefined;
+  }
+  const top = window.scrollY + 8;
+  let line = 0;
+  for (let i = 0; i < map.length && map[i] <= top; i++) {
+    line = i;
+  }
+  return line;
+}
+
 // ------------------------------------------------------------------- links
 
-document.addEventListener('click', (event) => {
-  const anchor = (event.target as HTMLElement | null)?.closest('a');
-  if (!anchor) {
+// VS Code's own webview script also handles clicks on links (on the window,
+// after us) and opens their resolved URL — for a relative link a
+// https://file+.vscode-resource… address — in the browser. Links are handled
+// here only: caught before it, in the capture phase, and stopped.
+function linkOf(event: MouseEvent): HTMLAnchorElement | null {
+  const target = event.target as Element | null;
+  return target?.closest?.('a[href]') ?? null;
+}
+
+window.addEventListener(
+  'auxclick',
+  (event) => {
+    if (linkOf(event)) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+    }
+  },
+  true,
+);
+
+window.addEventListener('click', (event) => {
+  const anchor = linkOf(event);
+  if (!anchor || !preview.contains(anchor)) {
     return;
   }
   const href = anchor.getAttribute('href');
@@ -273,6 +405,7 @@ document.addEventListener('click', (event) => {
     return;
   }
   event.preventDefault();
+  event.stopImmediatePropagation();
   if (!window.getSelection()?.isCollapsed) {
     return; // the user is selecting the link text (e.g. to translate it)
   }
@@ -283,6 +416,30 @@ document.addEventListener('click', (event) => {
     return;
   }
   post({ type: 'openLink', sourceUri, href });
+}, true);
+
+// ------------------------------------------------------ selection → editor
+
+// Select the same text in the source editor (the host does it only when the
+// file is already visible in an editor; it never opens it).
+let selectedInSource = false;
+document.addEventListener('mouseup', (event) => {
+  // A drag may end outside the preview; clicks in the tooltip or the
+  // settings panel leave the selection as it is.
+  if (event.button !== 0 || (event.target as Element | null)?.closest?.('.mtp-tooltip, .mtp-ui')) {
+    return;
+  }
+  // Let the browser finish updating the selection first.
+  setTimeout(() => {
+    const selection = selectionInSource(preview);
+    if (selection) {
+      selectedInSource = true;
+      post({ type: 'selectSource', sourceUri, ...selection });
+    } else if (selectedInSource) {
+      selectedInSource = false;
+      post({ type: 'selectSource', sourceUri, line: 0, endLine: 0, text: '', occurrence: 0 });
+    }
+  }, 0);
 });
 
 // ---------------------------------------------------------------- messages
@@ -303,7 +460,18 @@ window.addEventListener('message', (event: MessageEvent<HostMessage>) => {
       break;
     case 'translationSettings':
       tooltip.setEnabled(message.enabled);
-      quickSettings.setTranslationEnabled(message.enabled);
+      break;
+    case 'languages':
+      settingsPanel.setLanguages(message.languages);
+      break;
+    case 'settings':
+      quickSettings.setSections(message.sections);
+      settingsPanel.setSections(message.sections);
+      break;
+    case 'notes':
+      if (message.sourceUri === sourceUri || !sourceUri) {
+        notes?.setNotes(message.notes);
+      }
       break;
   }
 });

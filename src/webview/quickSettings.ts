@@ -3,13 +3,18 @@
  * Copyright (c) 2026 Angelo Quartarone.
  *
  * The button stays invisible until the mouse moves over the preview and
- * fades out again when idle. The panel only asks the host to change a
- * setting or run a command; the host validates every request.
+ * fades out again when idle. The panel holds only the everyday settings;
+ * "All settings" opens the full settings view. The panel only asks the host
+ * to change a setting or run a command; the host validates every request.
  */
-import type { Choice, WebviewCommand, WebviewMessage, WebviewSettings } from '../messages';
+import type { SettingSection, WebviewCommand } from '../messages';
+import { Post, button, settingRow } from './settingControls';
 
 const IDLE_MS = 2000;
 const SVG_NS = 'http://www.w3.org/2000/svg';
+
+/** The settings shown in the panel, in this order. */
+const QUICK_KEYS = ['previewTheme', 'translation.targetLanguage', 'translation.enabled', 'scrollSync'];
 
 // Material "settings" icon path (Apache-2.0, Google).
 const GEAR_PATH =
@@ -18,16 +23,15 @@ const GEAR_PATH =
 export class QuickSettings {
   private readonly button: HTMLButtonElement;
   private readonly panel: HTMLDivElement;
-  private readonly translationToggle: HTMLInputElement;
-  private readonly scrollSyncToggle: HTMLInputElement;
+  private readonly rows: HTMLDivElement;
   private idleTimer: ReturnType<typeof setTimeout> | undefined;
 
   constructor(
-    private readonly post: (message: WebviewMessage) => void,
-    settings: WebviewSettings,
+    private readonly post: Post,
+    sections: SettingSection[],
+    private readonly openAllSettings: () => void,
+    private readonly copyFormatted: () => void,
   ) {
-    const quick = settings.quickSettings;
-
     this.button = document.createElement('button');
     this.button.type = 'button';
     this.button.className = 'mtp-ui mtp-gear';
@@ -43,34 +47,33 @@ export class QuickSettings {
     this.panel.setAttribute('aria-label', 'Preview settings');
     this.panel.hidden = true;
 
-    this.panel.append(
-      row('Theme', select(quick.themes, quick.previewTheme, (value) =>
-        this.post({ type: 'setSetting', key: 'previewTheme', value }),
-      )),
-      row('Translate into', select(quick.languages, quick.targetLanguage, (value) =>
-        this.post({ type: 'setSetting', key: 'targetLanguage', value }),
-      )),
-    );
-    this.translationToggle = toggle(settings.translationEnabled, (value) =>
-      this.post({ type: 'setSetting', key: 'enabled', value }),
-    );
-    this.scrollSyncToggle = toggle(settings.scrollSync, (value) =>
-      this.post({ type: 'setSetting', key: 'scrollSync', value }),
-    );
-    this.panel.append(
-      row('Translation on selection', this.translationToggle),
-      row('Scroll sync', this.scrollSyncToggle),
-    );
+    this.rows = document.createElement('div');
+    this.rows.className = 'mtp-panel-rows';
+    this.setSections(sections);
 
     const actions = document.createElement('div');
     actions.className = 'mtp-panel-actions';
     actions.append(
       this.action('Export PDF', 'exportPdf'),
       this.action('Export HTML', 'exportHtml'),
-      this.action('Offline languages…', 'manageOfflineLanguages'),
-      this.action('All settings…', 'openSettings'),
+      button(
+        'Copy as formatted text',
+        () => {
+          this.close();
+          this.copyFormatted();
+        },
+        'mtp-button mtp-panel-wide',
+      ),
+      button(
+        'All settings…',
+        () => {
+          this.close();
+          this.openAllSettings();
+        },
+        'mtp-button mtp-panel-wide',
+      ),
     );
-    this.panel.append(actions);
+    this.panel.append(this.rows, actions);
 
     document.body.append(this.button, this.panel);
 
@@ -91,21 +94,22 @@ export class QuickSettings {
     this.button.addEventListener('focus', () => this.wake());
   }
 
-  /** Keep the toggle in sync when the setting changes elsewhere. */
-  setTranslationEnabled(enabled: boolean): void {
-    this.translationToggle.checked = enabled;
+  /** Show the current values (sent by the host after every change). */
+  setSections(sections: SettingSection[]): void {
+    const items = sections.flatMap((section) => section.items);
+    this.rows.replaceChildren(
+      ...QUICK_KEYS.flatMap((key) => {
+        const item = items.find((candidate) => candidate.key === key);
+        return item ? [settingRow(item, this.post, true)] : [];
+      }),
+    );
   }
 
   private action(label: string, command: WebviewCommand): HTMLButtonElement {
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.className = 'mtp-panel-button';
-    button.textContent = label;
-    button.addEventListener('click', () => {
+    return button(label, () => {
       this.post({ type: 'command', command });
       this.close();
     });
-    return button;
   }
 
   private wake(): void {
@@ -146,35 +150,4 @@ function gearIcon(): SVGSVGElement {
   path.setAttribute('fill', 'currentColor');
   svg.appendChild(path);
   return svg;
-}
-
-function row(label: string, control: HTMLElement): HTMLLabelElement {
-  const element = document.createElement('label');
-  element.className = 'mtp-panel-row';
-  const text = document.createElement('span');
-  text.textContent = label;
-  element.append(text, control);
-  return element;
-}
-
-function select(choices: Choice[], current: string, onChange: (value: string) => void): HTMLSelectElement {
-  const element = document.createElement('select');
-  for (const choice of choices) {
-    const option = document.createElement('option');
-    option.value = choice.value;
-    option.textContent = choice.label;
-    option.selected = choice.value === current;
-    element.appendChild(option);
-  }
-  element.addEventListener('change', () => onChange(element.value));
-  return element;
-}
-
-function toggle(checked: boolean, onChange: (value: boolean) => void): HTMLInputElement {
-  const element = document.createElement('input');
-  element.type = 'checkbox';
-  element.className = 'mtp-switch';
-  element.checked = checked;
-  element.addEventListener('change', () => onChange(element.checked));
-  return element;
 }

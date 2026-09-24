@@ -1,5 +1,5 @@
 /*
- * Typed access to the `markdownTranslate.*` settings.
+ * Typed access to the `folio.*` settings.
  * Copyright (c) 2026 Angelo Quartarone.
  */
 import * as vscode from 'vscode';
@@ -11,7 +11,7 @@ import {
   isPreviewTheme,
 } from './themes';
 
-export const SECTION = 'markdownTranslate';
+export const SECTION = 'folio';
 
 /** Settings that require rebuilding the preview when they change. */
 export const PREVIEW_SETTINGS = [
@@ -22,6 +22,8 @@ export const PREVIEW_SETTINGS = [
   'breakOnSingleNewLine',
   'math.enabled',
   'mermaid.enabled',
+  'reading',
+  'notes.enabled',
 ].map((key) => `${SECTION}.${key}`);
 
 export interface TranslationConfig {
@@ -36,10 +38,10 @@ export interface TranslationConfig {
 export function getTranslationConfig(): TranslationConfig {
   const c = vscode.workspace.getConfiguration(SECTION);
   return {
-    enabled: c.get<boolean>('enabled', true),
-    targetLanguage: c.get<string>('targetLanguage', 'it').trim() || 'it',
-    sourceLanguage: c.get<string>('sourceLanguage', 'auto').trim() || 'auto',
-    modelsPath: c.get<string>('modelsPath', '').trim(),
+    enabled: c.get<boolean>('translation.enabled', true),
+    targetLanguage: c.get<string>('translation.targetLanguage', 'it').trim() || 'it',
+    sourceLanguage: c.get<string>('translation.sourceLanguage', 'auto').trim() || 'auto',
+    modelsPath: c.get<string>('translation.modelsPath', '').trim(),
   };
 }
 
@@ -64,15 +66,51 @@ export function getPreviewConfig(): PreviewConfig {
     previewTheme: isPreviewTheme(previewTheme) ? previewTheme : 'github-light.css',
     codeBlockTheme: isCodeBlockTheme(codeBlockTheme) ? codeBlockTheme : 'auto.css',
     previewColorScheme:
-      scheme === 'selectedPreviewTheme' || scheme === 'systemColorScheme'
+      scheme === 'editorColorScheme' || scheme === 'systemColorScheme'
         ? scheme
-        : 'editorColorScheme',
+        : 'selectedPreviewTheme',
     scrollSync: c.get<boolean>('scrollSync', true),
     liveUpdateDebounceMs: Math.max(0, c.get<number>('liveUpdateDebounceMs', 300)),
     breakOnSingleNewLine: c.get<boolean>('breakOnSingleNewLine', false),
     math: c.get<boolean>('math.enabled', true),
     mermaid: c.get<boolean>('mermaid.enabled', true),
     chromePath: c.get<string>('chromePath', '').trim(),
+  };
+}
+
+export type LineHeight = 'compact' | 'comfortable' | 'airy';
+export type ColumnWidth = 'narrow' | 'medium' | 'wide' | 'full';
+export type ReadingFont = 'theme' | 'sans' | 'serif';
+
+export interface ReadingConfig {
+  fontSize: number;
+  lineHeight: LineHeight;
+  width: ColumnWidth;
+  font: ReadingFont;
+  outline: boolean;
+  progress: boolean;
+  focusMode: boolean;
+  resume: boolean;
+  notes: boolean;
+}
+
+function oneOf<T extends string>(value: unknown, choices: readonly T[], fallback: T): T {
+  return choices.includes(value as T) ? (value as T) : fallback;
+}
+
+export function getReadingConfig(): ReadingConfig {
+  const c = vscode.workspace.getConfiguration(SECTION);
+  const size = c.get<number>('reading.fontSize', 16);
+  return {
+    fontSize: Number.isFinite(size) ? Math.min(24, Math.max(13, Math.round(size))) : 16,
+    lineHeight: oneOf(c.get('reading.lineHeight'), ['compact', 'comfortable', 'airy'] as const, 'comfortable'),
+    width: oneOf(c.get('reading.width'), ['narrow', 'medium', 'wide', 'full'] as const, 'medium'),
+    font: oneOf(c.get('reading.font'), ['theme', 'sans', 'serif'] as const, 'theme'),
+    outline: c.get<boolean>('reading.outline', true),
+    progress: c.get<boolean>('reading.progress', true),
+    focusMode: c.get<boolean>('reading.focusMode', false),
+    resume: c.get<boolean>('reading.resume', true),
+    notes: c.get<boolean>('notes.enabled', true),
   };
 }
 

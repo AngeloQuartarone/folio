@@ -5,11 +5,12 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { detectLanguage } from '../../src/translation/offline/detect';
 import { ModelStore } from '../../src/translation/offline/modelStore';
-import { OfflineProvider, lowerCapitalized } from '../../src/translation/offline/offlineProvider';
+import { OfflineProvider, lowerCapitalized, markedText } from '../../src/translation/offline/offlineProvider';
 import {
   MODEL_PAIRS,
   ModelPair,
   SUPPORTED_LANGUAGES,
+  languageModels,
   modelChain,
   modelPair,
 } from '../../src/translation/offline/registry';
@@ -33,6 +34,11 @@ describe('offline registry', () => {
     assert.deepEqual(modelChain('en', 'it')?.map((p) => p.key), ['enit']);
     assert.deepEqual(modelChain('de', 'it')?.map((p) => p.key), ['deen', 'enit']);
     assert.equal(modelChain('nl', 'it'), undefined);
+  });
+
+  it('installs a language as both directions through English', () => {
+    assert.deepEqual(languageModels('it').map((p) => p.key), ['iten', 'enit']);
+    assert.deepEqual(languageModels('en'), []);
   });
 
   it('parses files, sizes and extra config', () => {
@@ -144,6 +150,55 @@ describe('OfflineProvider', () => {
     assert.equal(result.detectedLanguage, 'en');
   });
 
+  it('detects on the selection when it is longer than the context', async () => {
+    const provider = new OfflineProvider({ engine: echoEngine, store: allInstalled });
+    const text =
+      'Sentences The quick brown fox jumps over the lazy dog. The cat sleeps on the sofa all afternoon.';
+    const result = await provider.translate({ text, context: 'Sentences', targetLanguage: 'it' });
+    assert.equal(result.detectedLanguage, 'en');
+  });
+
+  it('translates the selection inside its sentence', async () => {
+    const seen: string[] = [];
+    const engine = {
+      async translate(_from: string, _to: string, text: string, _signal?: AbortSignal, html?: boolean) {
+        seen.push(`${html ? 'html' : 'text'}:${text}`);
+        return html ? 'La <b>riva</b> del fiume.' : 'banca';
+      },
+    };
+    const provider = new OfflineProvider({ engine, store: allInstalled });
+    const result = await provider.translate({
+      text: 'bank',
+      context: 'The river bank & the trees.',
+      targetLanguage: 'it',
+      sourceLanguage: 'en',
+    });
+    assert.equal(result.text, 'riva');
+    assert.deepEqual(seen, ['html:The river <b>bank</b> &amp; the trees.']);
+  });
+
+  it('falls back to the selection alone when the mark is lost', async () => {
+    const engine = {
+      async translate(_from: string, _to: string, _text: string, _signal?: AbortSignal, html?: boolean) {
+        return html ? 'La riva del fiume.' : 'banca';
+      },
+    };
+    const provider = new OfflineProvider({ engine, store: allInstalled });
+    const result = await provider.translate({ text: 'bank', context: 'The river bank.', targetLanguage: 'it', sourceLanguage: 'en' });
+    assert.equal(result.text, 'banca');
+  });
+
+  it('keeps only the marked words, without the punctuation the mark took in', () => {
+    assert.equal(markedText('Testo con <b>grassetto,</b> corsivo.', 'bold'), 'grassetto');
+    assert.equal(markedText('<b>Fine.</b>', 'End.'), 'Fine.');
+    assert.equal(markedText('a <b>due</b> e <b>tre</b>', 'two three'), 'due tre');
+    assert.equal(markedText('<b>A &amp; B</b>', 'A & B'), 'A & B');
+    assert.equal(markedText('nessun segno', 'mark'), undefined);
+    assert.equal(markedText('<b> , </b>', 'x'), undefined);
+    assert.equal(markedText('con <b>in grassetto, in grassetto,</b> e', 'bold italic'), 'in grassetto');
+    assert.equal(markedText('<b>piano piano</b>', 'slowly'), 'piano piano');
+  });
+
   it('lower-cases capitalized single words and pivots hop by hop', async () => {
     const seen: string[] = [];
     const engine = {
@@ -232,5 +287,6 @@ describe('detectLanguage', () => {
 
   it('marks single words as unreliable', () => {
     assert.equal(detectLanguage('sofa').reliable, false);
+    assert.equal(detectLanguage('Sentences').reliable, false);
   });
 });

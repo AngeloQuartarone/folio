@@ -9,8 +9,9 @@ import type { MarkdownIt } from 'markdown-it';
 import { SlugRegistry } from './slugify';
 
 /**
- * Tag every block-level opening tag with `data-source-line` (1-based) so
- * the webview can map scroll positions back to editor lines.
+ * Tag every block-level opening tag with its first (`data-source-line`) and
+ * last (`data-source-end`) source line, 1-based, so the webview can map
+ * scroll positions and selections back to the editor.
  */
 export function sourceMap(md: MarkdownIt): void {
   const renderToken = md.renderer.renderToken.bind(md.renderer);
@@ -18,6 +19,7 @@ export function sourceMap(md: MarkdownIt): void {
     const token = tokens[idx];
     if (token.type.endsWith('_open') && token.map) {
       token.attrSet('data-source-line', `${token.map[0] + 1}`);
+      token.attrSet('data-source-end', `${token.map[1]}`);
     }
     return renderToken(tokens, idx, options);
   };

@@ -15,6 +15,12 @@ const EDGE = 8;
 
 const CONTEXT_BLOCKS = 'p, li, td, th, h1, h2, h3, h4, h5, h6, blockquote, dd, dt, figcaption, pre';
 
+/** What the tooltip needs from the notes (see notes.ts). */
+export interface NoteComposer {
+  canAnnotate(range: Range): boolean;
+  compose(range: Range): void;
+}
+
 interface Anchor {
   /** Document coordinates of the selection's bounding box. */
   top: number;
@@ -27,15 +33,22 @@ export class TranslationTooltip {
   private readonly element: HTMLDivElement;
   private readonly label: HTMLDivElement;
   private readonly body: HTMLDivElement;
+  private readonly meanings: HTMLDivElement;
   private readonly action: HTMLButtonElement;
+  private readonly noteButton: HTMLButtonElement;
   private anchor: Anchor | undefined;
+  /** The selection the tooltip is about, for "Add note". */
+  private range: Range | undefined;
   private requestId = 0;
   private pendingAction: WebviewMessage | undefined;
+  /** Open the other meanings as soon as they arrive (after a dictionary download). */
+  private expandMeanings = false;
 
   constructor(
     private readonly root: HTMLElement,
     private readonly post: (message: WebviewMessage) => void,
     private enabled: boolean,
+    private readonly notes?: NoteComposer,
   ) {
     this.element = document.createElement('div');
     this.element.className = 'mtp-tooltip';
@@ -46,6 +59,9 @@ export class TranslationTooltip {
     this.label.className = 'mtp-tooltip-label';
     this.body = document.createElement('div');
     this.body.className = 'mtp-tooltip-text';
+    this.meanings = document.createElement('div');
+    this.meanings.className = 'mtp-meanings';
+    this.meanings.hidden = true;
     this.action = document.createElement('button');
     this.action.type = 'button';
     this.action.className = 'mtp-tooltip-action';
@@ -62,7 +78,19 @@ export class TranslationTooltip {
         this.hide();
       }
     });
-    this.element.append(this.label, this.body, this.action);
+    this.noteButton = document.createElement('button');
+    this.noteButton.type = 'button';
+    this.noteButton.className = 'mtp-tooltip-note';
+    this.noteButton.textContent = 'Add note';
+    this.noteButton.hidden = true;
+    this.noteButton.addEventListener('click', () => {
+      const range = this.range;
+      this.hide();
+      if (range) {
+        this.notes?.compose(range);
+      }
+    });
+    this.element.append(this.label, this.body, this.meanings, this.action, this.noteButton);
     document.body.appendChild(this.element);
 
     document.addEventListener('mousedown', (event) => {
@@ -99,6 +127,9 @@ export class TranslationTooltip {
       this.show('same', `Already in ${reply.targetLabel}`, '');
     } else {
       this.show('ok', `${reply.sourceLabel} → ${reply.targetLabel}`, reply.text);
+      const download = reply.action?.command === 'downloadDictionary' ? reply.action.label : undefined;
+      this.showMeanings(reply.alternatives ?? [], download);
+      this.position();
     }
   }
 
@@ -109,7 +140,7 @@ export class TranslationTooltip {
   }
 
   private onMouseUp(event: MouseEvent): void {
-    if (!this.enabled || event.button !== 0 || this.element.contains(event.target as Node)) {
+    if ((!this.enabled && !this.notes) || event.button !== 0 || this.element.contains(event.target as Node)) {
       return;
     }
     // Let the browser finish updating the selection (a click inside an
@@ -118,6 +149,7 @@ export class TranslationTooltip {
   }
 
   private onSelection(): void {
+    this.expandMeanings = false;
     const selection = window.getSelection();
     if (!selection || selection.isCollapsed || !selection.rangeCount) {
       return;
@@ -131,6 +163,7 @@ export class TranslationTooltip {
       return;
     }
 
+    this.range = range.cloneRange();
     const rect = range.getBoundingClientRect();
     this.anchor = {
       top: rect.top + window.scrollY,
@@ -140,6 +173,13 @@ export class TranslationTooltip {
     };
     const id = ++this.requestId;
 
+    if (!this.enabled) {
+      // Translation off: only the "Add note" button.
+      if (this.notes?.canAnnotate(range)) {
+        this.show('note', '', '');
+      }
+      return;
+    }
     if (text.length > MAX_SELECTION) {
       this.show('error', 'Selection too long', `Select at most ${MAX_SELECTION} characters.`);
       return;
@@ -167,20 +207,74 @@ export class TranslationTooltip {
   }
 
   private show(
-    state: 'loading' | 'ok' | 'same' | 'error',
+    state: 'loading' | 'ok' | 'same' | 'error' | 'note',
     label: string,
     text: string,
     action?: { label: string; message: WebviewMessage },
   ): void {
     this.element.dataset['state'] = state;
+    this.meanings.hidden = true;
+    this.meanings.replaceChildren();
     this.label.textContent = label;
     this.body.textContent = text;
     this.body.hidden = !text;
     this.pendingAction = action?.message;
     this.action.hidden = !action;
     this.action.textContent = action?.label ?? '';
+    this.noteButton.hidden = !(this.range && this.notes?.canAnnotate(this.range));
     this.element.hidden = false;
     this.position();
+  }
+
+  /**
+   * A discreet "Other meanings" button under the translation; the meanings
+   * only appear when it is clicked. Without the dictionary, the button
+   * downloads it first (`downloadLabel` says how big it is).
+   */
+  private showMeanings(meanings: string[], downloadLabel?: string): void {
+    if (!meanings.length && !downloadLabel) {
+      return;
+    }
+    const toggle = document.createElement('button');
+    toggle.type = 'button';
+    toggle.className = 'mtp-meanings-toggle';
+    toggle.setAttribute('aria-expanded', 'false');
+    toggle.textContent = downloadLabel ?? 'Other meanings';
+
+    const list = document.createElement('div');
+    list.className = 'mtp-meanings-list';
+    list.hidden = true;
+    for (const meaning of meanings) {
+      const item = document.createElement('span');
+      item.className = 'mtp-meaning';
+      item.textContent = meaning;
+      list.append(item);
+    }
+    const source = document.createElement('span');
+    source.className = 'mtp-meanings-source';
+    source.textContent = 'Wiktionary';
+    source.title = 'From Wiktionary (CC BY-SA) via WikDict';
+    list.append(source);
+
+    const setExpanded = (expanded: boolean) => {
+      toggle.setAttribute('aria-expanded', String(expanded));
+      list.hidden = !expanded;
+      this.position();
+    };
+    toggle.addEventListener('click', () => {
+      if (downloadLabel) {
+        this.expandMeanings = true;
+        this.post({ type: 'command', command: 'downloadDictionary' });
+        this.show('loading', 'Downloading dictionary…', '');
+      } else {
+        setExpanded(toggle.getAttribute('aria-expanded') !== 'true');
+      }
+    });
+    this.meanings.replaceChildren(toggle, list);
+    this.meanings.hidden = false;
+    if (this.expandMeanings && meanings.length) {
+      setExpanded(true);
+    }
   }
 
   /** Below the selection, flipped above if needed, never outside the window. */

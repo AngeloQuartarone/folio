@@ -5,7 +5,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  *
- * Modified for Markdown Translate Preview (2026, Angelo Quartarone):
+ * Modified for Folio (2026, Angelo Quartarone):
  * - the node:worker_threads shim is a local class instead of being
  *   installed on globalThis (the extension host is shared with other
  *   extensions);

@@ -2,16 +2,46 @@
 
 ## 0.1.0 (unreleased)
 
+- **Folio**: the extension's new name and identity, a calm Markdown reader
+  (formerly Markdown Translate Preview). Settings are now `folio.*` and
+  commands `Folio: …`; former settings and downloaded models are carried
+  over on first start.
+- Reading: typography settings (text size, line spacing, column width,
+  font), a table of contents with the current section highlighted, reading
+  time and a progress bar, focus mode, and resume reading where you stopped.
+- Notes in the margin: highlight selected text with a note, saved next to
+  the document in `<file>.folio.json`; notes follow their text when the
+  document changes and are listed in the table of contents.
+- Copy buttons on code blocks, image zoom, and "Copy as formatted text" of
+  the whole document (for email, Word or Google Docs; math as TeX).
 - First version, derived from Markdown Preview Enhanced 0.8.36 / crossnote 0.9.39
   (see UPSTREAM.md) and rebuilt on a minimal markdown-it engine.
-- Preview with live update, scroll sync, 17 preview themes (new: Sepia) and
+- Preview with live update, scroll sync, 3 preview themes (Light, Dark in the VS Code theme
+  colors, Sepia) and
   24 code block themes.
+- Text selected in the preview is selected and highlighted in the source
+  editor, when that editor is visible (the file is never opened for it).
 - KaTeX math, Mermaid diagrams, GitHub alerts, footnotes, emoji, task lists.
 - Offline translation of selected text in a tooltip: Bergamot WASM engine in
   a worker thread, local language detection (eld), 11 languages, models
   downloaded once on request (or supplied in a folder), in-memory cache.
   No API keys and no cloud services.
+- PDF and HTML exports always use the Light theme.
+- Clicking a link in the preview no longer also opens its internal
+  vscode-resource address in the browser.
+- Scroll sync no longer drifts the preview down on its own: only scrolls
+  made by the user are synced, and the editor does not echo them back.
+- Selections are translated inside their sentence, so words get the meaning
+  that fits the context (the sentence is part of the cache key).
+- Single words can also show their other meanings, behind an "Other
+  meanings" button, from an offline Wiktionary dictionary (WikDict),
+  downloaded on request.
+- A calmer, macOS-like interface: translucent tooltip and panels, segmented
+  theme picker, a settings window with sections; a centred reading column
+  and softer typography in the preview.
 - Quick settings panel in the preview (discreet gear button): theme, target
-  language, translation and scroll sync toggles, exports.
+  language, translation and scroll sync toggles, exports; and a full settings
+  view with every setting in sections, including the offline languages
+  (download or remove each one).
 - The built-in Markdown preview button is hidden (configurable).
 - Export to PDF (local Chrome/Edge/Chromium/Brave) and self-contained HTML.

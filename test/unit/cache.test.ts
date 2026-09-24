@@ -15,6 +15,13 @@ describe('TranslationCache', () => {
     assert.equal(cache.get('Cat', 'it'), undefined, 'text is case-sensitive');
   });
 
+  it('keys on the sentence around the text', () => {
+    const cache = new TranslationCache();
+    cache.set('bank', 'it', result('riva'), 'The river bank.');
+    assert.equal(cache.get('bank', 'it', 'The river bank.')?.text, 'riva');
+    assert.equal(cache.get('bank', 'it', 'Money in the bank.'), undefined);
+  });
+
   it('evicts the least recently used entry', () => {
     const cache = new TranslationCache(2);
     cache.set('a', 'it', result('1'));
@@ -82,6 +89,20 @@ describe('TranslationService', () => {
     const service = new TranslationService(async () => countingProvider());
     await assert.rejects(service.translate({ text: '  ', targetLanguage: 'it' }), /Nothing/);
     await assert.rejects(service.translate({ text: 'x'.repeat(501), targetLanguage: 'it' }), /500/);
+  });
+
+  it('passes the source language and the document sample to the provider', async () => {
+    let seen: unknown;
+    const service = new TranslationService(async () => ({
+      id: 'spy',
+      displayName: 'Spy',
+      async translate(request) {
+        seen = [request.sourceLanguage, request.fallbackText];
+        return result('x');
+      },
+    }));
+    await service.translate({ text: 'x', targetLanguage: 'it', sourceLanguage: 'de', fallbackText: 'doc' });
+    assert.deepEqual(seen, ['de', 'doc']);
   });
 
   it('truncates the context passed to the provider', async () => {

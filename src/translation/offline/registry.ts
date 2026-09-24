@@ -75,6 +75,16 @@ export function modelPair(key: string): ModelPair | undefined {
 }
 
 /**
+ * The models that let `language` be translated from and into (through
+ * English). Empty for English itself.
+ */
+export function languageModels(language: string): ModelPair[] {
+  return [language + PIVOT_LANGUAGE, PIVOT_LANGUAGE + language]
+    .map((key) => BY_KEY.get(key))
+    .filter((pair): pair is ModelPair => !!pair);
+}
+
+/**
  * The model chain for `from` → `to`: a direct model, or two models through
  * English. Undefined when no chain exists.
  */

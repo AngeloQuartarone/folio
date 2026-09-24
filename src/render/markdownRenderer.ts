@@ -102,7 +102,7 @@ export class MarkdownRenderer {
     this.md.renderer.rules.fence = (tokens, idx, options, env, self) => {
       const token = tokens[idx];
       const language = parseFenceLanguage(token.info);
-      const line = token.map ? ` data-source-line="${token.map[0] + 1}"` : '';
+      const line = sourceLines(token.map);
 
       if (language === 'mermaid' && this.options.mermaid) {
         return `<div class="mermaid"${line}>${escapeHtml(token.content)}</div>\n`;
@@ -125,7 +125,7 @@ export class MarkdownRenderer {
 
     this.md.renderer.rules.code_block = (tokens, idx) => {
       const token = tokens[idx];
-      const line = token.map ? ` data-source-line="${token.map[0] + 1}"` : '';
+      const line = sourceLines(token.map);
       return `<pre${line} class="language-text"><code class="language-text">${escapeHtml(
         token.content,
       )}</code></pre>\n`;
@@ -183,4 +183,8 @@ export function escapeHtml(text: string): string {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
+}
+
+function sourceLines(map: [number, number] | null): string {
+  return map ? ` data-source-line="${map[0] + 1}" data-source-end="${map[1]}"` : '';
 }

@@ -1,4 +1,4 @@
-// Build script for Markdown Translate Preview.
+// Build script for Folio.
 //
 //   node scripts/build.mjs            production build into dist/
 //   node scripts/build.mjs --watch    rebuild on change (sourcemaps, no minify)

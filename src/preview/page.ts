@@ -49,6 +49,7 @@ export function buildPreviewPage(options: PageOptions): string {
     "object-src 'none'",
   ].join('; ');
 
+  const reading = options.settings.reading;
   const settings: WebviewSettings = {
     ...options.settings,
     mermaidScriptUri: asset('mermaid', 'mermaid.min.js'),
@@ -68,7 +69,7 @@ export function buildPreviewPage(options: PageOptions): string {
 <link rel="stylesheet" href="${asset('styles', 'style-template.css')}">
 <link rel="stylesheet" href="${asset('styles', 'preview.css')}">
 </head>
-<body class="preview-container" data-color-scheme="${options.colorScheme}" data-preview-theme="${options.previewTheme.replace(/\.css$/, '')}">
+<body class="preview-container" data-color-scheme="${options.colorScheme}" data-preview-theme="${options.previewTheme.replace(/\.css$/, '')}" data-reading-font="${reading.font}" data-line-height="${reading.lineHeight}" data-width="${reading.width}"${reading.focusMode ? ' data-focus-mode' : ''} style="--folio-font-size: ${reading.fontSize}px">
 <div class="crossnote markdown-preview" data-for="preview" id="preview"></div>
 <script nonce="${nonce}" src="${asset('webview', 'preview.js')}"></script>
 </body>

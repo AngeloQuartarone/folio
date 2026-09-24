@@ -21,6 +21,12 @@ describe('sentenceAround', () => {
     assert.ok(sentenceAround(long, 2500, 2504).length <= 1000);
   });
 
+  it('reads through the line breaks of the source', () => {
+    const text = 'Plain text with bold, italic,\nstrikethrough and more. Next one.';
+    const start = text.indexOf('bold');
+    assert.equal(sentenceAround(text, start, start + 4), 'Plain text with bold, italic, strikethrough and more.');
+  });
+
   it('handles empty input', () => {
     assert.equal(sentenceAround('', 0, 0), '');
   });

@@ -1,71 +1,100 @@
-# Markdown Translate Preview
+<p align="center"><img src="media/icon.png" width="96" alt=""></p>
 
-A lean Markdown preview for Visual Studio Code with carefully styled themes,
-editor ↔ preview scroll sync, PDF/HTML export and **offline translation**:
-select words in the preview and their translation appears right below — no
-account, no API key, no cloud service.
+# Folio — a calm Markdown reader
 
-It is an independent, slimmed-down project derived from
+**Folio** is a Markdown preview for Visual Studio Code made for *reading*:
+quiet themes in the colors of paper, your editor or the night; a table of
+contents that follows you; focus mode; notes in the margin; and **offline
+translation** of whatever you select — no account, no API key, no cloud.
+
+It is an independent project derived from
 [Markdown Preview Enhanced](https://github.com/shd101wyy/vscode-markdown-preview-enhanced)
 (see [Credits](#credits)).
 
 ## Features
 
-- **Translate a selection, offline**: select one or more words in the preview
-  and a tooltip shows the translation, labelled
-  *detected language → target language*. Translation runs on your computer
-  with the [Bergamot](https://browser.mt/) engine (the one behind Firefox's
-  offline translations); the language is detected locally from the
-  surrounding sentence. 11 languages: English, Italian, French, German,
-  Spanish, Portuguese, Russian, Ukrainian, Bulgarian, Czech, Estonian.
-- **Live preview** in a side panel that follows the active Markdown editor and
-  updates as you type.
-- **Everything GitHub renders**: tables, task lists, fenced code with syntax
-  highlighting (Prism, ~400 languages), footnotes, emoji `:smile:`,
-  `~sub~`/`^sup^`/`==mark==`, definition lists, abbreviations, GitHub alerts
-  (`> [!NOTE]` …), raw HTML (sanitized), heading anchors, front matter (hidden).
-- **Math** with KaTeX: `$…$`, `$$…$$` and ```` ```math ```` blocks.
-- **Mermaid** diagrams in ```` ```mermaid ```` blocks (loaded only when a
-  document contains one).
-- **Images relative to the Markdown file** (and `/path` relative to the
-  workspace root).
-- **Scroll sync** in both directions.
-- **Themes**: 17 preview themes including GitHub light/dark, a warm
-  **Sepia** reading theme, Newsprint, Solarized, One, Atom and a `vscode`
-  theme that follows your editor colors; 24 code block themes, or `auto` to
-  match the preview theme. Light/dark variants can follow the editor or the OS.
-- **Export PDF** (via your installed Chrome/Edge/Chromium/Brave, no extra
-  download) and **Export HTML** (single self-contained file).
+### Reading
+
+- **Themes**: Light, Dark (in the colors of your VS Code theme) and a warm
+  **Sepia** paper theme, with a centred reading column and soft typography.
+  Light/Dark can follow the editor or the system.
+- **Typography**: text size, line spacing, column width and font (the
+  theme's, sans-serif or serif).
+- **Table of contents**: a button in the top-left corner opens the headings,
+  with the section you are reading highlighted; click one to go there.
+- **Reading time and progress**: "8 min read" above the document, the time
+  left in the table of contents, and a thin progress bar at the top.
+- **Focus mode**: everything but the paragraph you are reading fades out.
+- **Resume reading**: each document reopens where you stopped (when the
+  preview is not following an editor).
+
+### Understanding
+
+- **Translate a selection, offline**: select words in the preview and their
+  translation appears right below, labelled *detected language → target
+  language*. The selection is translated inside its sentence, so words get
+  the meaning that fits (*bank* in "the river bank" → riva). 11 languages,
+  with the [Bergamot](https://browser.mt/) engine behind Firefox's offline
+  translations.
+- **Other meanings** of a single word, one click away, from an offline
+  Wiktionary dictionary.
+
+### Working with the document
+
+- **Notes in the margin**: select text, choose **Add note**, write. The text
+  is highlighted with a pin in the margin; click it to read, edit or delete
+  the note. All notes are listed in the table of contents. They are saved
+  next to the document, in `<file>.folio.json`, and follow the text when the
+  document changes.
+- **Selection sync**: text selected in the preview is selected and
+  highlighted in the source, when the file is open in an editor next to it
+  (the file is never opened for this).
+- **Copy buttons** on code blocks, **image zoom** on click.
+- **Copy as formatted text**: the whole document, ready to paste into an
+  email, Word or Google Docs.
+- **Export PDF** (with your installed Chrome/Edge/Chromium/Brave) and
+  **Export HTML** (one self-contained file), always in the Light theme.
+
+### Everything GitHub renders
+
+Tables, task lists, fenced code with syntax highlighting (Prism, ~400
+languages, 24 code themes), footnotes, emoji `:smile:`, `~sub~`/`^sup^`/`==mark==`,
+definition lists, abbreviations, GitHub alerts (`> [!NOTE]` …), raw HTML
+(sanitized), heading anchors, front matter (hidden), **math** with KaTeX and
+**Mermaid** diagrams. Images resolve relative to the Markdown file (and
+`/path` to the workspace root). Scroll sync works in both directions.
 
 ## Usage
 
 | Command | Default shortcut |
 | --- | --- |
-| Markdown Translate: Open Preview to the Side | `Ctrl+K V` / `Cmd+K V` |
-| Markdown Translate: Open Preview | `Ctrl+Shift+V` / `Cmd+Shift+V` |
-| Markdown Translate: Select Preview Theme | |
-| Markdown Translate: Select Code Block Theme | |
-| Markdown Translate: Sync Preview to Cursor | |
-| Markdown Translate: Toggle Scroll Sync | |
-| Markdown Translate: Export PDF | |
-| Markdown Translate: Export HTML | |
-| Markdown Translate: Manage Offline Languages | |
-| Markdown Translate: Set Target Language | |
-| Markdown Translate: Toggle Translation Tooltips | |
+| Folio: Open Preview to the Side | `Ctrl+K V` / `Cmd+K V` |
+| Folio: Open Preview | `Ctrl+Shift+V` / `Cmd+Shift+V` |
+| Folio: Select Preview Theme | |
+| Folio: Select Code Block Theme | |
+| Folio: Sync Preview to Cursor | |
+| Folio: Toggle Scroll Sync | |
+| Folio: Export PDF | |
+| Folio: Export HTML | |
+| Folio: Manage Offline Languages | |
+| Folio: Set Target Language | |
+| Folio: Toggle Translation Tooltips | |
 
 The preview button is also in the editor title bar, and the export commands in
 the editor context menu. Exports are written next to the Markdown file.
 
-**Quick settings in the preview**: move the mouse over the preview and a small
-gear appears in the top-right corner (it fades out again when the mouse is
-idle). It opens a panel to change the theme and the target language, turn
-translation and scroll sync on or off, export PDF/HTML, manage offline
-languages or open all settings.
+**Inside the preview**, move the mouse and two quiet buttons appear: the
+table of contents (top left) and the settings (top right). The settings
+panel holds the everyday settings — theme, target language, translation and
+scroll sync — with export and copy. **All settings…** opens a settings
+window with every option in sections: Appearance, Reading, Translation,
+Offline languages, Preview and Export.
 
 ## Translation
 
 Everything happens on your computer. The only time the extension uses the
-network is to download a language model, **once, and only when you ask**:
+network is to download a language model or a dictionary, **once, and only
+when you ask**:
 
 1. Open a preview and select some text.
 2. The first time for a language pair the tooltip says the model is not
@@ -73,17 +102,37 @@ network is to download a language model, **once, and only when you ask**:
    downloaded (SHA-256 verified) and the translation appears.
 3. From then on that pair works offline.
 
-You can also download or remove models in advance with
-**Markdown Translate: Manage Offline Languages**. Pairs without a direct model
-(e.g. German → Italian) go through English and need both models
-(German → English and English → Italian).
+You can also download or remove languages in advance, in **All settings → Offline languages** or with **Folio: Manage Offline
+Languages**. Installing a language
+downloads its two models (to and from English); English itself is built in.
+Pairs without a direct model (e.g. German → Italian) go through English and
+need both models (German → English and English → Italian).
+
+**Translation in context**: the selection is translated inside its
+sentence, and only the matching part of the translation is shown, so the
+model picks the meaning that fits (*bank* in "the river bank" → riva, not
+banca; *bold* in "text in bold" → grassetto).
+
+**Other meanings of a word**: when you select a single word, a discreet
+**Other meanings** button under the translation opens its other meanings
+from a dictionary (e.g. *bold* → grassetto, and also audace · ardito ·
+coraggioso). The
+dictionary of each language pair (from [WikDict](https://www.wikdict.com),
+built from Wiktionary; 1–27 MB, e.g. English → Italian 15 MB) is downloaded
+the first time you click **Other meanings** in the tooltip, and is removed
+with its language. Dictionaries are direct (French → Italian needs no
+English step) and exist for every language except Estonian and Ukrainian.
+They list base forms, so *banks* or *went* only get the main translation.
+Needs VS Code 1.101 or later (for its built-in SQLite). To stay offline, put
+`<from>-<to>.sqlite3` files from
+`https://download.wikdict.com/dictionaries/sqlite/2/` in a `dictionaries/`
+subfolder of the models folder.
 
 **Never touch the network**: download the model files yourself (the URLs are
 in [`src/translation/offline/models.json`](src/translation/offline/models.json)),
 put them in a folder with one subfolder per pair — e.g. `enit/model.enit.intgemm.alphas.bin`,
 `enit/lex.50.50.enit.s2t.bin`, `enit/vocab.enit.spm` — and set
-`markdownTranslate.modelsPath` to that folder. The extension then only reads
-from it.
+`folio.translation.modelsPath` to that folder. Folio then only reads from it.
 
 How it works: the webview sends the selection to the extension; the
 Bergamot WASM engine runs in a worker thread of the extension host and
@@ -100,25 +149,38 @@ selection. If the text is already in the target language a small
 
 | Setting | Default | Description |
 | --- | --- | --- |
-| `markdownTranslate.enabled` | `true` | Show the translation tooltip on selection. |
-| `markdownTranslate.targetLanguage` | `it` | Language to translate into (one of the 11 above). |
-| `markdownTranslate.sourceLanguage` | `auto` | Language of your documents, or `auto` to detect it from the sentence (falling back to the whole document). |
-| `markdownTranslate.modelsPath` | `""` | Folder with the models; empty = extension storage. |
-| `markdownTranslate.previewTheme` | `github-light.css` | Preview theme. |
-| `markdownTranslate.codeBlockTheme` | `auto.css` | Code block theme; `auto` matches the preview theme. |
-| `markdownTranslate.previewColorScheme` | `editorColorScheme` | Switch paired themes (github, atom, one, solarized) to light/dark following the editor (`editorColorScheme`), the OS (`systemColorScheme`), or never (`selectedPreviewTheme`). |
-| `markdownTranslate.scrollSync` | `true` | Synchronize editor and preview scrolling. |
-| `markdownTranslate.liveUpdateDebounceMs` | `300` | Delay before the preview updates after an edit. |
-| `markdownTranslate.breakOnSingleNewLine` | `false` | Render single line breaks as `<br>`. |
-| `markdownTranslate.math.enabled` | `true` | Render math with KaTeX. |
-| `markdownTranslate.mermaid.enabled` | `true` | Render Mermaid diagrams. |
-| `markdownTranslate.hideBuiltInPreviewButton` | `true` | Hide the built-in Markdown preview button so only this extension's button shows. |
-| `markdownTranslate.chromePath` | `""` | Browser used for PDF export; detected automatically when empty. |
+| `folio.previewTheme` | `github-light.css` | `github-light.css` (Light), `github-dark.css` (Dark) or `sepia.css`. |
+| `folio.previewColorScheme` | `selectedPreviewTheme` | Keep the theme you pick, or follow the editor (`editorColorScheme`) or the OS (`systemColorScheme`). |
+| `folio.codeBlockTheme` | `auto.css` | Code block theme; `auto` matches the preview theme. |
+| `folio.reading.fontSize` | `16` | Text size in pixels (13–24). |
+| `folio.reading.lineHeight` | `comfortable` | `compact`, `comfortable` or `airy`. |
+| `folio.reading.width` | `medium` | Reading column: `narrow`, `medium`, `wide` or `full`. |
+| `folio.reading.font` | `theme` | `theme`, `sans` or `serif`. |
+| `folio.reading.outline` | `true` | Table of contents button. |
+| `folio.reading.progress` | `true` | Reading time and progress bar. |
+| `folio.reading.focusMode` | `false` | Dim everything but the paragraph being read. |
+| `folio.reading.resume` | `true` | Reopen documents where you stopped reading. |
+| `folio.notes.enabled` | `true` | Notes on selected text (saved in `<file>.folio.json`). |
+| `folio.translation.enabled` | `true` | Show the translation tooltip on selection. |
+| `folio.translation.targetLanguage` | `it` | Language to translate into (one of the 11 above). |
+| `folio.translation.sourceLanguage` | `auto` | Language of your documents, or `auto` to detect it. |
+| `folio.translation.modelsPath` | `""` | Folder with the models and dictionaries; empty = extension storage. |
+| `folio.scrollSync` | `true` | Synchronize editor and preview scrolling. |
+| `folio.liveUpdateDebounceMs` | `300` | Delay before the preview updates after an edit. |
+| `folio.breakOnSingleNewLine` | `false` | Render single line breaks as `<br>`. |
+| `folio.math.enabled` | `true` | Render math with KaTeX. |
+| `folio.mermaid.enabled` | `true` | Render Mermaid diagrams. |
+| `folio.hideBuiltInPreviewButton` | `true` | Hide VS Code's own Markdown preview button. |
+| `folio.chromePath` | `""` | Browser used for PDF export; detected automatically when empty. |
+
+Coming from **Markdown Translate Preview** (Folio's former name)? Your
+`markdownTranslate.*` settings and downloaded models are carried over the
+first time Folio starts.
 
 ## Installation
 
 From a `.vsix` file: **Extensions** view → `…` menu → **Install from VSIX…**,
-or `code --install-extension markdown-translate-preview-<version>.vsix`.
+or `code --install-extension folio-<version>.vsix`.
 
 ### Build from source
 
@@ -129,7 +191,7 @@ npm install
 npm run build          # bundle into dist/
 npm test               # type check + unit tests
 npm run test:integration   # runs the extension inside a downloaded VS Code
-npm run package        # creates markdown-translate-preview-<version>.vsix
+npm run package        # creates folio-<version>.vsix
 ```
 
 Press **F5** in VS Code to start an Extension Development Host (the `npm: watch`
@@ -139,10 +201,10 @@ task rebuilds on change).
 
 - Selections are limited to about 500 characters.
 - Offline models cover 11 languages; other languages show a clear message.
-  Quality is good for sentences and lower for isolated words, which the
-  engine translates without their context.
+  Quality is good for sentences; on lists of loose words (no real sentence)
+  the engine can repeat or drop words.
 - Language detection on a very short sentence can be wrong; set
-  `markdownTranslate.sourceLanguage` if your documents are always in the
+  `folio.translation.sourceLanguage` if your documents are always in the
   same language.
 - The model list is the Bergamot registry of 2022 shipped with the
   extension; newer or additional models are not picked up automatically.
@@ -150,13 +212,15 @@ task rebuilds on change).
   the engine is running.
 - PDF export needs a Chromium-based browser installed locally. Page size
   follows the browser default (A4 or Letter depending on locale); margins are
-  fixed. When the theme follows the editor/OS, exports use the light variant.
+  fixed. Exports always use the Light theme, whatever the preview shows.
 - The HTML export is a single self-contained file: styles, KaTeX fonts and,
   when the document has diagrams, Mermaid are inlined (the file gets about
   5 MB larger in that case).
 - Scripts inside the Markdown never run: the preview and the exports use a
   strict Content Security Policy, and raw HTML is sanitized in the preview.
 - Only one preview panel at a time (it follows the active Markdown editor).
+- Notes need a document saved on disk (they live in `<file>.folio.json`);
+  a note whose text was deleted from the document is listed as not found.
 - Not available in VS Code for the Web.
 
 ## Adding a translation engine
@@ -179,7 +243,7 @@ Offline translation uses the [Bergamot translator](https://github.com/browsermt/
 [eld](https://github.com/nitotm/efficient-language-detector-js) (Apache-2.0)
 for language detection. The
 preview and code block themes, the scroll sync algorithm and parts of the
-Markdown pipeline come from those projects. Markdown Translate Preview is not
+Markdown pipeline come from those projects. Folio is not
 affiliated with or endorsed by their author.
 
 See [LICENSE.md](LICENSE.md), [UPSTREAM.md](UPSTREAM.md) (exact upstream

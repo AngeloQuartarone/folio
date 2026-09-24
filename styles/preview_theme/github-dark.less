@@ -1,5 +1,45 @@
 @import 'github.less';
 
+// Neutral greys (VS Code "Dark Modern") for the derived colors, then the
+// editor's own background and text colors on top, so the preview matches
+// the VS Code theme. The fallbacks apply in exports, outside VS Code.
+@bg: #1f1f1f;
+@fg: #cccccc;
+@surface: rgba(255, 255, 255, 0.06);
+@line: rgba(255, 255, 255, 0.14);
+
 html {
-  .github(#ccc, #24292e, #08c);
+  .github(@fg, @bg, #4daafc);
+
+  body {
+    color: var(--vscode-editor-foreground, @fg);
+    background-color: var(--vscode-editor-background, @bg);
+
+    a {
+      color: var(--vscode-textLink-foreground, #4daafc);
+    }
+
+    blockquote {
+      background-color: @surface;
+      border-left-color: @line;
+    }
+
+    hr {
+      background-color: @line;
+    }
+
+    table th,
+    table td {
+      border-color: @line;
+    }
+
+    code,
+    kbd {
+      background-color: @surface;
+    }
+
+    kbd {
+      border-color: @line;
+    }
+  }
 }

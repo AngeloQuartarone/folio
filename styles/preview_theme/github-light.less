@@ -1,5 +1,13 @@
 @import 'github.less';
 
+// Light: white paper with Notion's warm greys instead of GitHub's blue-greys.
 html {
-  .github(#333, #fff, #08c);
+  .github(#37352f, #ffffff, #2383e2);
+
+  body {
+    blockquote {
+      background-color: transparent;
+      border-left-color: #37352f;
+    }
+  }
 }

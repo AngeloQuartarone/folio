@@ -9,12 +9,13 @@ export class TranslationCache {
 
   constructor(private readonly maxEntries = 500) {}
 
-  static key(text: string, targetLanguage: string): string {
-    return `${targetLanguage.trim().toLowerCase()}\u0000${text}`;
+  /** The sentence around the text is part of the key: it changes the meaning. */
+  static key(text: string, targetLanguage: string, context = ''): string {
+    return `${targetLanguage.trim().toLowerCase()}\u0000${text}\u0000${context}`;
   }
 
-  get(text: string, targetLanguage: string): TranslationResult | undefined {
-    const key = TranslationCache.key(text, targetLanguage);
+  get(text: string, targetLanguage: string, context?: string): TranslationResult | undefined {
+    const key = TranslationCache.key(text, targetLanguage, context);
     const value = this.entries.get(key);
     if (value !== undefined) {
       // Refresh recency.
@@ -24,8 +25,8 @@ export class TranslationCache {
     return value;
   }
 
-  set(text: string, targetLanguage: string, value: TranslationResult): void {
-    const key = TranslationCache.key(text, targetLanguage);
+  set(text: string, targetLanguage: string, value: TranslationResult, context?: string): void {
+    const key = TranslationCache.key(text, targetLanguage, context);
     this.entries.delete(key);
     this.entries.set(key, value);
     while (this.entries.size > this.maxEntries) {

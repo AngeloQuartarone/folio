@@ -14,23 +14,25 @@ import {
   SECTION,
   editorColorScheme,
   getPreviewConfig,
+  getReadingConfig,
   getTranslationConfig,
 } from '../config';
 import { HostMessage, WebviewMessage } from '../messages';
 import { MarkdownRenderer } from '../render/markdownRenderer';
 import { SlugRegistry } from '../render/slugify';
-import { languageName } from '../translation/languages';
-import { SUPPORTED_LANGUAGES } from '../translation/offline/registry';
 import {
-  PREVIEW_THEMES,
-  PREVIEW_THEME_LABELS,
   colorSchemeOfTheme,
   resolveCodeBlockTheme,
   resolvePreviewTheme,
 } from '../themes';
+import { settingsSections } from '../settingsView';
 import { buildPreviewPage } from './page';
+import { findRenderedText } from './sourceMatch';
 
-export const PREVIEW_VIEW_TYPE = 'markdownTranslate.preview';
+const POSITIONS_KEY = 'folio.readingPositions';
+const MAX_POSITIONS = 200;
+
+export const PREVIEW_VIEW_TYPE = 'folio.preview';
 
 export function isMarkdownDocument(document: vscode.TextDocument): boolean {
   return document.languageId === 'markdown';
@@ -45,16 +47,34 @@ export class PreviewManager implements vscode.Disposable {
   private updateTimer: ReturnType<typeof setTimeout> | undefined;
   /** Ignore editor scroll events caused by our own revealRange until then. */
   private editorScrollDelay = 0;
+  /** The line the preview last asked the editor to centre (see onEditorScroll). */
+  private revealedLine: number | undefined;
+  /** Marks, in the source editor, the text selected in the preview. */
+  private readonly sourceHighlight = vscode.window.createTextEditorDecorationType({
+    backgroundColor: new vscode.ThemeColor('editor.findMatchHighlightBackground'),
+    overviewRulerColor: new vscode.ThemeColor('editorOverviewRuler.findMatchForeground'),
+    overviewRulerLane: vscode.OverviewRulerLane.Center,
+    rangeBehavior: vscode.DecorationRangeBehavior.ClosedClosed,
+  });
+  private highlightedEditor: vscode.TextEditor | undefined;
+  /** The selection we set in the source editor ourselves (not a user action). */
+  private ownSelection: { selection: vscode.Selection; until: number } | undefined;
   private readonly disposables: vscode.Disposable[] = [];
   private readonly panelDisposables: vscode.Disposable[] = [];
   private readonly messageListeners: Array<
     (message: WebviewMessage, panel: vscode.WebviewPanel) => void
   > = [];
 
-  constructor(private readonly extensionUri: vscode.Uri) {
+  constructor(
+    private readonly extensionUri: vscode.Uri,
+    /** Where the user stopped reading each document (folio.reading.resume). */
+    private readonly positions?: vscode.Memento,
+  ) {
     this.disposables.push(
+      this.sourceHighlight,
       vscode.workspace.onDidChangeTextDocument((event) => {
         if (this.isSource(event.document.uri)) {
+          this.clearSourceHighlight();
           this.scheduleUpdate();
         }
       }),
@@ -79,6 +99,8 @@ export class PreviewManager implements vscode.Disposable {
         if (PREVIEW_SETTINGS.some((key) => event.affectsConfiguration(key))) {
           this.renderer = createRenderer(this.config);
           this.reload();
+        } else {
+          this.post({ type: 'settings', sections: previewSettingsSections() });
         }
       }),
       vscode.window.onDidChangeActiveColorTheme(() => {
@@ -171,9 +193,9 @@ export class PreviewManager implements vscode.Disposable {
       editorScheme,
       this.systemColorScheme,
     );
-    const colorScheme = colorSchemeOfTheme(previewTheme, editorScheme);
+    const colorScheme = colorSchemeOfTheme(previewTheme);
     const translation = getTranslationConfig();
-    this.panel.title = `Preview ${path.basename(this.sourceUri.fsPath)}`;
+    this.panel.title = `${path.basename(this.sourceUri.fsPath)} · Folio`;
     this.panel.webview.html = buildPreviewPage({
       webview: this.panel.webview,
       extensionUri: this.extensionUri,
@@ -185,12 +207,8 @@ export class PreviewManager implements vscode.Disposable {
         scrollSync: this.config.scrollSync,
         mermaidTheme: colorScheme === 'dark' ? 'dark' : 'default',
         translationEnabled: translation.enabled,
-        quickSettings: {
-          previewTheme: this.config.previewTheme,
-          themes: PREVIEW_THEMES.map((value) => ({ value, label: PREVIEW_THEME_LABELS[value] })),
-          targetLanguage: translation.targetLanguage,
-          languages: SUPPORTED_LANGUAGES.map((value) => ({ value, label: languageName(value) })),
-        },
+        sections: previewSettingsSections(),
+        reading: getReadingConfig(),
       },
     });
   }
@@ -212,6 +230,7 @@ export class PreviewManager implements vscode.Disposable {
   }
 
   private onPanelDisposed(): void {
+    this.clearSourceHighlight();
     this.panel = undefined;
     this.sourceUri = undefined;
     clearTimeout(this.updateTimer);
@@ -273,14 +292,37 @@ export class PreviewManager implements vscode.Disposable {
       },
     });
     const editor = this.sourceEditor();
+    let line = editor ? Math.floor(topVisibleLine(editor) ?? 0) : undefined;
+    // Without an editor to follow, reopen where the user stopped reading.
+    if (!preserveScroll && getReadingConfig().resume && (!editor || !this.config.scrollSync)) {
+      line = this.readingPosition(uri) ?? line;
+    }
     this.post({
       type: 'update',
       html: result.html,
       lineCount: result.lineCount,
       sourceUri: uri.toString(),
       preserveScroll,
-      line: editor ? Math.floor(topVisibleLine(editor) ?? 0) : undefined,
+      line,
     });
+  }
+
+  private readingPosition(uri: vscode.Uri): number | undefined {
+    return this.positions?.get<Record<string, number>>(POSITIONS_KEY)?.[uri.toString()];
+  }
+
+  private saveReadingPosition(uri: string, line: number): void {
+    if (!this.positions || !this.sourceUri || uri !== this.sourceUri.toString() || !Number.isInteger(line) || line < 0) {
+      return;
+    }
+    const all = { ...this.positions.get<Record<string, number>>(POSITIONS_KEY) };
+    delete all[uri]; // re-inserted last: the oldest documents are dropped first
+    all[uri] = line;
+    const keys = Object.keys(all);
+    for (const key of keys.slice(0, Math.max(0, keys.length - MAX_POSITIONS))) {
+      delete all[key];
+    }
+    void this.positions.update(POSITIONS_KEY, all);
   }
 
   private onMessage(message: WebviewMessage): void {
@@ -298,6 +340,12 @@ export class PreviewManager implements vscode.Disposable {
       case 'revealLine':
         this.revealLine(message.sourceUri, message.line);
         break;
+      case 'selectSource':
+        this.selectInSource(message);
+        break;
+      case 'readingPosition':
+        this.saveReadingPosition(message.sourceUri, message.line);
+        break;
       case 'openLink':
         void this.openLink(message.href);
         break;
@@ -310,6 +358,16 @@ export class PreviewManager implements vscode.Disposable {
   }
 
   private onEditorSelection(event: vscode.TextEditorSelectionChangeEvent): void {
+    const own = this.ownSelection;
+    if (own && Date.now() < own.until && event.selections[0]?.isEqual(own.selection)) {
+      // Set by selectInSource: scrolling the preview back would move the
+      // text the user just selected there.
+      this.ownSelection = undefined;
+      return;
+    }
+    if (event.textEditor === this.highlightedEditor) {
+      this.clearSourceHighlight();
+    }
     if (!this.config.scrollSync || !this.isSource(event.textEditor.document.uri)) {
       return;
     }
@@ -342,8 +400,15 @@ export class PreviewManager implements vscode.Disposable {
       line = bottom;
     } else {
       line = Math.floor((top + bottom) / 2);
+      // The editor settling on the line the preview just asked for: sending
+      // it back would start a loop that slowly drifts the preview.
+      if (this.revealedLine !== undefined && Math.abs(line - this.revealedLine) <= 1) {
+        return;
+      }
     }
-    this.post({ type: 'scrollToLine', line: Math.floor(line) });
+    this.revealedLine = undefined;
+    // The middle line goes to the middle of the preview, as in revealLine.
+    this.post({ type: 'scrollToLine', line: Math.floor(line), topRatio: 0.5 });
   }
 
   private revealLine(uri: string, line: number): void {
@@ -356,10 +421,60 @@ export class PreviewManager implements vscode.Disposable {
     }
     const sourceLine = Math.min(Math.max(Math.floor(line), 0), editor.document.lineCount - 1);
     this.editorScrollDelay = Date.now() + 500;
+    this.revealedLine = sourceLine;
     editor.revealRange(
       new vscode.Range(sourceLine, 0, sourceLine + 1, 0),
       vscode.TextEditorRevealType.InCenter,
     );
+  }
+
+  /**
+   * Select in the source editor the text selected in the preview. Only an
+   * editor already visible next to the preview is used: the file is never
+   * opened, and the focus stays in the preview.
+   */
+  private selectInSource(message: Extract<WebviewMessage, { type: 'selectSource' }>): void {
+    const { line, endLine, text, occurrence } = message;
+    if (
+      !this.sourceUri ||
+      message.sourceUri !== this.sourceUri.toString() ||
+      typeof text !== 'string' ||
+      ![line, endLine, occurrence].every(Number.isInteger)
+    ) {
+      return;
+    }
+    const editor = this.sourceEditor();
+    if (!editor || !text) {
+      this.clearSourceHighlight();
+      return;
+    }
+    const document = editor.document;
+    const first = Math.min(Math.max(line, 0), document.lineCount - 1);
+    const block = document.validateRange(new vscode.Range(first, 0, Math.max(endLine, first + 1), 0));
+    const match = findRenderedText(document.getText(block), text, Math.max(occurrence, 0));
+    if (!match) {
+      this.clearSourceHighlight();
+      return;
+    }
+    const offset = document.offsetAt(block.start);
+    const selection = new vscode.Selection(
+      document.positionAt(offset + match.start),
+      document.positionAt(offset + match.end),
+    );
+    if (this.highlightedEditor !== editor) {
+      this.clearSourceHighlight();
+    }
+    this.ownSelection = { selection, until: Date.now() + 500 };
+    editor.selection = selection;
+    editor.setDecorations(this.sourceHighlight, [selection]);
+    this.highlightedEditor = editor;
+    this.editorScrollDelay = Date.now() + 500;
+    editor.revealRange(selection, vscode.TextEditorRevealType.InCenterIfOutsideViewport);
+  }
+
+  private clearSourceHighlight(): void {
+    this.highlightedEditor?.setDecorations(this.sourceHighlight, []);
+    this.highlightedEditor = undefined;
   }
 
   private async openLink(href: string): Promise<void> {
@@ -459,4 +574,9 @@ function bottomVisibleLine(editor: vscode.TextEditor): number | undefined {
   const text =
     lineNumber < editor.document.lineCount ? editor.document.lineAt(lineNumber).text : '';
   return lineNumber + range.end.character / (text.length + 2);
+}
+
+function previewSettingsSections() {
+  const config = vscode.workspace.getConfiguration(SECTION);
+  return settingsSections((key) => config.get(key));
 }

@@ -39,13 +39,14 @@ pre[class*='language-'] {
   padding: 1em;
   margin: 0.5em 0;
   overflow: auto;
-  background: #161b22;
+  // Neutral, over the editor background (not GitHub's blue-grey).
+  background: rgba(255, 255, 255, 0.04);
 }
 :not(pre) > code[class*='language-'] {
   padding: 0.1em 0.3em;
   border-radius: 0.3em;
   color: #c9d1d9;
-  background: #343942;
+  background: rgba(255, 255, 255, 0.1);
 }
 /* Line highlighting — structure, layering, and the default band live in
  * style-template.css, which raises the code above the bands; this theme

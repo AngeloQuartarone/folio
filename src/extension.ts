@@ -1,5 +1,5 @@
 /*
- * Markdown Translate Preview — entry point.
+ * Folio — entry point.
  * Copyright (c) 2026 Angelo Quartarone.
  * Based on Markdown Preview Enhanced by Yiyi Wang (University of
  * Illinois/NCSA License). See LICENSE.md and UPSTREAM.md.
@@ -7,9 +7,12 @@
 import * as vscode from 'vscode';
 import { SECTION } from './config';
 import { exportDocument } from './export/exportCommands';
+import { migrateLegacyModels, migrateLegacySettings } from './legacy';
+import { NotesController } from './notes/notesController';
 import { PreviewManager, isMarkdownDocument } from './preview/previewManager';
 import { WebviewMessage } from './messages';
-import { CODE_BLOCK_THEMES, PREVIEW_THEMES, isPreviewTheme } from './themes';
+import { isKnownSetting, pathSetting, validSetting } from './settingsView';
+import { CODE_BLOCK_THEMES, PREVIEW_THEMES, PREVIEW_THEME_LABELS } from './themes';
 import { languageName } from './translation/languages';
 import { SUPPORTED_LANGUAGES } from './translation/offline/registry';
 import { TranslationController } from './translation/translationController';
@@ -20,8 +23,11 @@ export interface ExtensionApi {
 }
 
 export function activate(context: vscode.ExtensionContext): ExtensionApi {
-  const preview = new PreviewManager(context.extensionUri);
+  migrateLegacyModels(context);
+  void migrateLegacySettings(context);
+  const preview = new PreviewManager(context.extensionUri, context.workspaceState);
   const translation = new TranslationController(context, preview);
+  new NotesController(preview);
   context.subscriptions.push(preview, translation);
 
   // VS Code's built-in Markdown extension hides its own preview buttons
@@ -68,7 +74,7 @@ export function activate(context: vscode.ExtensionContext): ExtensionApi {
   });
 
   command('selectPreviewTheme', () =>
-    pickSetting('previewTheme', PREVIEW_THEMES, 'Preview theme'),
+    pickSetting('previewTheme', PREVIEW_THEMES, 'Preview theme', PREVIEW_THEME_LABELS),
   );
 
   command('selectCodeBlockTheme', () =>
@@ -87,14 +93,14 @@ export function activate(context: vscode.ExtensionContext): ExtensionApi {
 
   command('toggleTranslation', async () => {
     const config = vscode.workspace.getConfiguration(SECTION);
-    const value = !config.get<boolean>('enabled', true);
-    await config.update('enabled', value, vscode.ConfigurationTarget.Global);
+    const value = !config.get<boolean>('translation.enabled', true);
+    await config.update('translation.enabled', value, vscode.ConfigurationTarget.Global);
     void vscode.window.setStatusBarMessage(`Translation tooltips ${value ? 'on' : 'off'}`, 2000);
   });
 
   command('setTargetLanguage', async () => {
     const config = vscode.workspace.getConfiguration(SECTION);
-    const current = config.get<string>('targetLanguage', 'it');
+    const current = config.get<string>('translation.targetLanguage', 'it');
     const picked = await vscode.window.showQuickPick(
       SUPPORTED_LANGUAGES.map((code) => ({
         label: languageName(code),
@@ -104,57 +110,63 @@ export function activate(context: vscode.ExtensionContext): ExtensionApi {
       { title: 'Translate into' },
     );
     if (picked) {
-      await config.update('targetLanguage', picked.code, vscode.ConfigurationTarget.Global);
+      await config.update('translation.targetLanguage', picked.code, vscode.ConfigurationTarget.Global);
     }
   });
 
-  preview.onDidReceiveMessage((message) => void onQuickSettings(message, context.extension.id));
+  preview.onDidReceiveMessage((message) => void onSettingsMessage(message, context.extension.id));
 
   return { preview, translation };
 }
 
 /**
- * Requests from the preview's quick settings panel. Only these keys and
- * values are accepted; everything else is ignored.
+ * Settings requests from the preview. Values are checked against the
+ * settings description; paths are only chosen with VS Code's dialog.
  */
-async function onQuickSettings(message: WebviewMessage, extensionId: string): Promise<void> {
+async function onSettingsMessage(message: WebviewMessage, extensionId: string): Promise<void> {
   const config = vscode.workspace.getConfiguration(SECTION);
   const target = vscode.ConfigurationTarget.Global;
-  if (message.type === 'setSetting') {
-    switch (message.key) {
-      case 'previewTheme':
-        if (isPreviewTheme(message.value)) {
-          await config.update('previewTheme', message.value, target);
-        }
-        break;
-      case 'targetLanguage':
-        if (SUPPORTED_LANGUAGES.includes(message.value)) {
-          await config.update('targetLanguage', message.value, target);
-        }
-        break;
-      case 'enabled':
-      case 'scrollSync':
-        if (typeof message.value === 'boolean') {
-          await config.update(message.key, message.value, target);
-        }
-        break;
+  switch (message.type) {
+    case 'setSetting': {
+      const value = validSetting(message.key, message.value);
+      if (value !== undefined) {
+        await config.update(message.key, value, target);
+      }
+      break;
     }
-    return;
-  }
-  if (message.type === 'command') {
-    switch (message.command) {
-      case 'exportPdf':
-      case 'exportHtml':
-      case 'manageOfflineLanguages':
-        await vscode.commands.executeCommand(`${SECTION}.${message.command}`);
+    case 'resetSetting':
+      if (isKnownSetting(message.key)) {
+        await config.update(message.key, undefined, target);
+      }
+      break;
+    case 'choosePath': {
+      const path = pathSetting(message.key);
+      if (!path) {
         break;
-      case 'openSettings':
-        await vscode.commands.executeCommand(
-          'workbench.action.openSettings',
-          `@ext:${extensionId}`,
-        );
-        break;
+      }
+      const picked = await vscode.window.showOpenDialog({
+        canSelectFolders: path.folder,
+        canSelectFiles: !path.folder,
+        canSelectMany: false,
+        openLabel: 'Select',
+      });
+      if (picked?.[0]) {
+        await config.update(message.key, picked[0].fsPath, target);
+      }
+      break;
     }
+    case 'command':
+      switch (message.command) {
+        case 'exportPdf':
+        case 'exportHtml':
+        case 'manageOfflineLanguages':
+          await vscode.commands.executeCommand(`${SECTION}.${message.command}`);
+          break;
+        case 'openSettings':
+          await vscode.commands.executeCommand('workbench.action.openSettings', `@ext:${extensionId}`);
+          break;
+      }
+      break;
   }
 }
 
@@ -181,17 +193,23 @@ function markdownUri(uri?: vscode.Uri, fallback?: vscode.Uri): vscode.Uri | unde
   return undefined;
 }
 
-async function pickSetting(key: string, values: readonly string[], title: string): Promise<void> {
+async function pickSetting(
+  key: string,
+  values: readonly string[],
+  title: string,
+  labels: Record<string, string> = {},
+): Promise<void> {
   const config = vscode.workspace.getConfiguration(SECTION);
   const current = config.get<string>(key);
+  const label = (value: string) => labels[value] ?? value.replace(/\.css$/, '');
   const items = values.map((value) => ({
-    label: value.replace(/\.css$/, ''),
+    label: label(value),
     description: value === current ? 'current' : undefined,
     value,
   }));
   const picked = await vscode.window.showQuickPick(items, {
     title,
-    placeHolder: current?.replace(/\.css$/, ''),
+    placeHolder: current && label(current),
   });
   if (picked) {
     await config.update(key, picked.value, vscode.ConfigurationTarget.Global);

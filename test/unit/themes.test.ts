@@ -13,8 +13,8 @@ describe('themes', () => {
       'github-dark.css',
     );
     assert.equal(
-      resolvePreviewTheme('one-dark.css', 'systemColorScheme', 'dark', 'light'),
-      'one-light.css',
+      resolvePreviewTheme('github-dark.css', 'systemColorScheme', 'dark', 'light'),
+      'github-light.css',
     );
   });
 
@@ -33,15 +33,14 @@ describe('themes', () => {
   });
 
   it('knows which themes are dark', () => {
-    assert.equal(colorSchemeOfTheme('github-dark.css', 'light'), 'dark');
-    assert.equal(colorSchemeOfTheme('sepia.css', 'dark'), 'light');
-    assert.equal(colorSchemeOfTheme('vscode.css', 'dark'), 'dark');
+    assert.equal(colorSchemeOfTheme('github-dark.css'), 'dark');
+    assert.equal(colorSchemeOfTheme('github-light.css'), 'light');
+    assert.equal(colorSchemeOfTheme('sepia.css'), 'light');
   });
 
-  it('replaces vscode themes for export', () => {
-    assert.deepEqual(themesForExport('vscode.css', 'vscode.css'), {
-      previewTheme: 'github-light.css',
-      codeBlockTheme: 'default.css',
-    });
+  it('always exports in the Light theme', () => {
+    assert.deepEqual(themesForExport('auto.css'), { previewTheme: 'github-light.css', codeBlockTheme: 'github.css' });
+    assert.deepEqual(themesForExport('vscode.css'), { previewTheme: 'github-light.css', codeBlockTheme: 'default.css' });
+    assert.deepEqual(themesForExport('okaidia.css'), { previewTheme: 'github-light.css', codeBlockTheme: 'okaidia.css' });
   });
 });

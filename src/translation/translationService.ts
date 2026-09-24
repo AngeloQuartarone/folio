@@ -35,10 +35,11 @@ export class TranslationService {
       );
     }
     if (!targetLanguage) {
-      throw new TranslationError('config', 'Set "markdownTranslate.targetLanguage".');
+      throw new TranslationError('config', 'Set "folio.translation.targetLanguage".');
     }
 
-    const cached = this.cache.get(text, targetLanguage);
+    const context = request.context?.trim().slice(0, MAX_CONTEXT_LENGTH) || undefined;
+    const cached = this.cache.get(text, targetLanguage, context);
     if (cached) {
       return { ...cached, fromCache: true };
     }
@@ -47,12 +48,14 @@ export class TranslationService {
     const result = await provider.translate(
       {
         text,
-        context: request.context?.trim().slice(0, MAX_CONTEXT_LENGTH) || undefined,
+        context,
         targetLanguage,
+        sourceLanguage: request.sourceLanguage,
+        fallbackText: request.fallbackText,
       },
       signal,
     );
-    this.cache.set(text, targetLanguage, result);
+    this.cache.set(text, targetLanguage, result, context);
     return { ...result, fromCache: false };
   }
 }

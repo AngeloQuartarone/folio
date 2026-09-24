@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3a332b"/>
+      <stop offset="1" stop-color="#211d19"/>
+    </linearGradient>
+    <linearGradient id="page" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fbf5e8"/>
+      <stop offset="1" stop-color="#efe3c8"/>
+    </linearGradient>
+  </defs>
+  <rect x="12" y="12" width="232" height="232" rx="54" fill="url(#bg)"/>
+  <!-- An open book: two pages meeting at the spine. -->
+  <path d="M128 78 C108 66 80 62 52 68 L52 186 C80 180 108 184 128 196 Z" fill="url(#page)"/>
+  <path d="M128 78 C148 66 176 62 204 68 L204 186 C176 180 148 184 128 196 Z" fill="url(#page)"/>
+  <path d="M128 78 L128 196" stroke="#d6c6a4" stroke-width="2"/>
+  <g stroke="#c9b58c" stroke-width="5" stroke-linecap="round">
+    <path d="M70 96 C88 93 100 94 112 98"/>
+    <path d="M70 116 C88 113 100 114 112 118"/>
+    <path d="M70 136 C88 133 100 134 112 138"/>
+    <path d="M70 156 C84 153 94 154 104 157"/>
+    <path d="M144 98 C156 94 168 93 186 96"/>
+    <path d="M144 118 C156 114 168 113 186 116"/>
+    <path d="M144 138 C156 134 168 133 186 136"/>
+  </g>
+  <!-- The note pin. -->
+  <path d="M170 152 m-14 0 a14 14 0 1 1 14 14 l-14 0 z" fill="#e9b949" transform="rotate(-45 170 152)"/>
+</svg>

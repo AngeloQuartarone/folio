@@ -6,12 +6,10 @@ import { mkdtempSync, renameSync, rmSync, writeFileSync, copyFileSync } from 'no
 import { tmpdir } from 'node:os';
 import * as path from 'node:path';
 import * as vscode from 'vscode';
-import { SECTION, editorColorScheme, getPreviewConfig } from '../config';
+import { SECTION, getPreviewConfig } from '../config';
 import { createRenderer } from '../preview/previewManager';
 import {
   colorSchemeOfTheme,
-  resolveCodeBlockTheme,
-  resolvePreviewTheme,
   themesForExport,
 } from '../themes';
 import { findChrome, printToPdf } from './chrome';
@@ -31,13 +29,8 @@ export async function exportDocument(
   const document = await vscode.workspace.openTextDocument(uri);
   const config = getPreviewConfig();
 
-  // Exports are meant for paper and sharing: when the theme follows the
-  // editor/system, paired themes use their light variant. A theme chosen
-  // explicitly (selectedPreviewTheme, or an unpaired one like monokai) is kept.
-  const editorScheme = editorColorScheme();
-  const resolved = resolvePreviewTheme(config.previewTheme, config.previewColorScheme, 'light', 'light');
-  const themes = themesForExport(resolved, resolveCodeBlockTheme(config.codeBlockTheme, resolved));
-  const colorScheme = colorSchemeOfTheme(themes.previewTheme, editorScheme);
+  const themes = themesForExport(config.codeBlockTheme);
+  const colorScheme = colorSchemeOfTheme(themes.previewTheme);
 
   const sourcePath = uri.fsPath;
   const baseDir = path.dirname(sourcePath);
@@ -73,7 +66,7 @@ export async function exportDocument(
     if (!chrome) {
       const action = await vscode.window.showErrorMessage(
         'PDF export needs Google Chrome, Chromium, Microsoft Edge or Brave. ' +
-          'Install one or set "markdownTranslate.chromePath".',
+          'Install one or set "folio.chromePath".',
         'Open Settings',
       );
       if (action) {

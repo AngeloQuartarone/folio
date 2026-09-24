@@ -1,6 +1,6 @@
 # License
 
-Markdown Translate Preview is distributed under the University of
+Folio is distributed under the University of
 Illinois/NCSA Open Source License, the license of the projects it is based on.
 
 ```
@@ -8,7 +8,7 @@ Copyright (c) 2026  Angelo Quartarone
 All rights reserved.
 
 Developed by:     Angelo Quartarone
-                  Markdown Translate Preview
+                  Folio
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal with the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 

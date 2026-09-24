@@ -1,0 +1,379 @@
+/*
+ * Reading aids: table of contents, reading time and progress, focus mode.
+ * Copyright (c) 2026 Angelo Quartarone.
+ */
+import type { NoteData, ReadingSettings } from '../messages';
+
+const SVG_NS = 'http://www.w3.org/2000/svg';
+const WORDS_PER_MINUTE = 230;
+const IDLE_MS = 2000;
+
+// Outline "list" icon (24×24, stroked).
+const LIST_PATH = 'M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01';
+
+export interface StateStore {
+  get<T>(key: string): T | undefined;
+  set(key: string, value: unknown): void;
+}
+
+/** Words of the document, without code blocks. */
+function wordCount(root: HTMLElement): number {
+  const clone = root.cloneNode(true) as HTMLElement;
+  clone.querySelectorAll('pre, .mermaid, .katex-mathml, .folio-reading-time').forEach((element) => element.remove());
+  return (clone.textContent ?? '').split(/\s+/).filter(Boolean).length;
+}
+
+function minutes(words: number): number {
+  return Math.max(1, Math.round(words / WORDS_PER_MINUTE));
+}
+
+/** How far the page is scrolled, 0 to 1. */
+function scrollProgress(): number {
+  const max = document.documentElement.scrollHeight - window.innerHeight;
+  return max > 0 ? Math.min(1, Math.max(0, window.scrollY / max)) : 1;
+}
+
+export interface NoteEntry {
+  note: NoteData;
+  /** False when its text is no longer in the document. */
+  found: boolean;
+}
+
+/**
+ * The table of contents: a button in the top-left corner and a floating
+ * panel with the headings (the one being read is highlighted) and, when
+ * notes are on, a second tab with the notes of the document.
+ */
+export class Outline {
+  private readonly button: HTMLButtonElement;
+  private readonly panel: HTMLElement;
+  private readonly meta: HTMLElement;
+  private readonly list: HTMLElement;
+  private readonly tabs: HTMLElement;
+  private headings: HTMLElement[] = [];
+  private links: HTMLElement[] = [];
+  private notes: NoteEntry[] = [];
+  private tab: 'contents' | 'notes' = 'contents';
+  private words = 0;
+  private idleTimer: ReturnType<typeof setTimeout> | undefined;
+
+  constructor(
+    private readonly root: HTMLElement,
+    private readonly settings: ReadingSettings,
+    private readonly state: StateStore,
+    private readonly openNote: (id: string) => void,
+    private readonly deleteNote: (id: string) => void,
+    /** The panel moves the text aside in wide windows. */
+    private readonly onToggle: () => void = () => undefined,
+  ) {
+    this.button = document.createElement('button');
+    this.button.type = 'button';
+    this.button.className = 'mtp-ui folio-outline-button';
+    this.button.title = 'Contents';
+    this.button.setAttribute('aria-label', 'Table of contents');
+    this.button.setAttribute('aria-expanded', 'false');
+    this.button.append(icon(LIST_PATH));
+    this.button.addEventListener('click', () => this.setOpen(this.panel.hidden === true));
+
+    this.panel = document.createElement('aside');
+    this.panel.className = 'mtp-ui folio-outline';
+    this.panel.setAttribute('aria-label', 'Table of contents');
+    this.panel.hidden = true;
+
+    const header = document.createElement('div');
+    header.className = 'folio-outline-header';
+    this.meta = document.createElement('div');
+    this.meta.className = 'folio-outline-meta';
+    const close = document.createElement('button');
+    close.type = 'button';
+    close.className = 'folio-outline-close';
+    close.setAttribute('aria-label', 'Close');
+    close.addEventListener('click', () => this.setOpen(false));
+    header.append(this.meta, close);
+
+    this.tabs = document.createElement('div');
+    this.tabs.className = 'mtp-segmented folio-outline-tabs';
+    this.tabs.hidden = !settings.notes;
+
+    this.list = document.createElement('nav');
+    this.list.className = 'folio-outline-list';
+
+    this.panel.append(header, this.tabs, this.list);
+    document.body.append(this.button, this.panel);
+
+    document.addEventListener('mousemove', () => this.wake());
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && !this.panel.hidden) {
+        this.setOpen(false);
+      }
+    });
+    if (this.state.get<boolean>('outlineOpen')) {
+      this.setOpen(true);
+    }
+  }
+
+  /** Rebuild after the document was rendered. */
+  refresh(): void {
+    this.headings = Array.from(this.root.querySelectorAll<HTMLElement>('h1[id], h2[id], h3[id], h4[id]'));
+    this.words = wordCount(this.root);
+    this.render();
+  }
+
+  setNotes(notes: NoteEntry[]): void {
+    this.notes = notes;
+    this.renderTabs();
+    if (this.tab === 'notes') {
+      this.render();
+    }
+  }
+
+  showNotes(): void {
+    this.tab = 'notes';
+    this.setOpen(true);
+    this.render();
+  }
+
+  /** Highlight the heading of the section being read, update the time left. */
+  onScroll(): void {
+    this.updateMeta();
+    if (this.tab !== 'contents' || this.panel.hidden) {
+      return;
+    }
+    const line = window.innerHeight * 0.3;
+    let current = -1;
+    this.headings.forEach((heading, index) => {
+      if (heading.getBoundingClientRect().top <= line) {
+        current = index;
+      }
+    });
+    this.links.forEach((link, index) => link.classList.toggle('folio-current', index === current));
+  }
+
+  private setOpen(open: boolean): void {
+    this.panel.hidden = !open;
+    this.button.setAttribute('aria-expanded', String(open));
+    document.body.classList.toggle('folio-outline-open', open);
+    this.state.set('outlineOpen', open);
+    this.onToggle();
+    if (open) {
+      this.render();
+    }
+    this.wake();
+  }
+
+  private wake(): void {
+    this.button.classList.add('mtp-awake');
+    clearTimeout(this.idleTimer);
+    this.idleTimer = setTimeout(() => {
+      if (this.panel.hidden && document.activeElement !== this.button) {
+        this.button.classList.remove('mtp-awake');
+      }
+    }, IDLE_MS);
+  }
+
+  private renderTabs(): void {
+    if (!this.settings.notes) {
+      return;
+    }
+    const make = (id: 'contents' | 'notes', label: string) => {
+      const tab = document.createElement('button');
+      tab.type = 'button';
+      tab.className = 'mtp-segment';
+      tab.textContent = label;
+      tab.setAttribute('aria-checked', String(this.tab === id));
+      tab.addEventListener('click', () => {
+        this.tab = id;
+        this.renderTabs();
+        this.render();
+      });
+      return tab;
+    };
+    this.tabs.replaceChildren(make('contents', 'Contents'), make('notes', `Notes${this.notes.length ? ` · ${this.notes.length}` : ''}`));
+  }
+
+  private render(): void {
+    this.renderTabs();
+    this.updateMeta();
+    if (this.panel.hidden) {
+      return;
+    }
+    if (this.tab === 'notes') {
+      this.renderNotes();
+      return;
+    }
+    const levels = this.headings.map((heading) => Number(heading.tagName[1]));
+    const top = Math.min(...levels, 6);
+    this.links = this.headings.map((heading) => {
+      const link = document.createElement('button');
+      link.type = 'button';
+      link.className = 'folio-outline-item';
+      link.style.setProperty('--level', String(Number(heading.tagName[1]) - top));
+      link.textContent = heading.textContent?.trim() ?? '';
+      link.title = link.textContent;
+      link.addEventListener('click', () => heading.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+      return link;
+    });
+    if (!this.links.length) {
+      const empty = document.createElement('p');
+      empty.className = 'folio-outline-empty';
+      empty.textContent = 'This document has no headings.';
+      this.list.replaceChildren(empty);
+      return;
+    }
+    this.list.replaceChildren(...this.links);
+    this.onScroll();
+  }
+
+  private renderNotes(): void {
+    if (!this.notes.length) {
+      const empty = document.createElement('p');
+      empty.className = 'folio-outline-empty';
+      empty.textContent = 'Select some text and choose “Add note” to write a note on it.';
+      this.list.replaceChildren(empty);
+      return;
+    }
+    this.list.replaceChildren(
+      ...this.notes.map(({ note, found }) => {
+        const item = document.createElement('div');
+        item.className = 'folio-outline-note';
+        item.dataset['found'] = String(found);
+        const quote = document.createElement('div');
+        quote.className = 'folio-outline-quote';
+        quote.textContent = note.quote;
+        const text = document.createElement('div');
+        text.className = 'folio-outline-note-text';
+        text.textContent = note.text || '(empty note)';
+        item.append(quote, text);
+        if (found) {
+          item.tabIndex = 0;
+          item.addEventListener('click', () => this.openNote(note.id));
+          item.addEventListener('keydown', (event) => event.key === 'Enter' && this.openNote(note.id));
+        } else {
+          const lost = document.createElement('div');
+          lost.className = 'folio-outline-lost';
+          lost.textContent = 'Its text is no longer in the document.';
+          const remove = document.createElement('button');
+          remove.type = 'button';
+          remove.className = 'mtp-link';
+          remove.textContent = 'Delete';
+          remove.addEventListener('click', () => this.deleteNote(note.id));
+          lost.append(' ', remove);
+          item.append(lost);
+        }
+        return item;
+      }),
+    );
+  }
+
+  private updateMeta(): void {
+    const total = minutes(this.words);
+    if (!this.settings.progress || !this.words) {
+      this.meta.textContent = 'Contents';
+      return;
+    }
+    const left = Math.round(total * (1 - scrollProgress()));
+    this.meta.textContent = left > 0 && left < total ? `${total} min read · ${left} min left` : `${total} min read`;
+  }
+}
+
+/** The reading time above the document and a thin progress bar at the top. */
+export class ReadingProgress {
+  private readonly bar: HTMLElement;
+
+  constructor(private readonly root: HTMLElement) {
+    this.bar = document.createElement('div');
+    this.bar.className = 'mtp-ui folio-progress';
+    this.bar.setAttribute('aria-hidden', 'true');
+    document.body.append(this.bar);
+  }
+
+  refresh(): void {
+    const words = wordCount(this.root);
+    if (words >= WORDS_PER_MINUTE / 2) {
+      const label = document.createElement('div');
+      label.className = 'folio-reading-time';
+      label.textContent = `${minutes(words)} min read`;
+      this.root.prepend(label);
+    }
+    this.onScroll();
+  }
+
+  onScroll(): void {
+    this.bar.style.transform = `scaleX(${scrollProgress()})`;
+  }
+}
+
+/** Focus mode: everything but the block being read is dimmed. */
+export class FocusMode {
+  private current: Element | undefined;
+  private within: Element | undefined;
+
+  constructor(private readonly root: HTMLElement) {}
+
+  onScroll(): void {
+    const line = window.innerHeight * 0.42;
+    const blocks = Array.from(this.root.children).filter(
+      (element) => !element.classList.contains('folio-reading-time'),
+    );
+    const block = nearest(blocks, line);
+    let current = block;
+    let within: Element | undefined;
+    // In a list, only the item being read.
+    if (block && (block.tagName === 'UL' || block.tagName === 'OL')) {
+      within = block;
+      current = nearest(Array.from(block.children), line) ?? block;
+    }
+    if (current !== this.current || within !== this.within) {
+      this.current?.classList.remove('folio-current');
+      this.within?.classList.remove('folio-within');
+      current?.classList.add('folio-current');
+      within?.classList.add('folio-within');
+      this.current = current;
+      this.within = within;
+    }
+  }
+
+  /** After a render the elements are new. */
+  reset(): void {
+    this.current = undefined;
+    this.within = undefined;
+    this.onScroll();
+  }
+}
+
+/** The element crossing the horizontal line `y`, or the closest one. */
+function nearest(elements: Element[], y: number): Element | undefined {
+  let best: Element | undefined;
+  let bestDistance = Infinity;
+  for (const element of elements) {
+    const rect = element.getBoundingClientRect();
+    if (!rect.height) {
+      continue;
+    }
+    const distance = y < rect.top ? rect.top - y : y > rect.bottom ? y - rect.bottom : 0;
+    if (distance < bestDistance) {
+      best = element;
+      bestDistance = distance;
+      if (!distance) {
+        break;
+      }
+    }
+  }
+  return best;
+}
+
+function icon(path: string): SVGSVGElement {
+  const svg = document.createElementNS(SVG_NS, 'svg');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('width', '16');
+  svg.setAttribute('height', '16');
+  svg.setAttribute('aria-hidden', 'true');
+  const element = document.createElementNS(SVG_NS, 'path');
+  element.setAttribute('d', path);
+  element.setAttribute('fill', 'none');
+  element.setAttribute('stroke', 'currentColor');
+  element.setAttribute('stroke-width', '2');
+  element.setAttribute('stroke-linecap', 'round');
+  svg.append(element);
+  return svg;
+}

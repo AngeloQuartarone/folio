@@ -16,6 +16,9 @@ export function sentenceAround(text: string, start: number, end: number, locale?
   start = Math.max(0, Math.min(start, text.length));
   end = Math.max(start, Math.min(end, text.length));
 
+  // Rendered paragraphs keep the line breaks of the Markdown source, which
+  // are not sentence ends; spaces keep the offsets unchanged.
+  text = text.replace(/[\r\n]/g, ' ');
   const pieces: string[] = [];
   for (const { index, segment } of sentences(text, locale)) {
     const segmentEnd = index + segment.length;

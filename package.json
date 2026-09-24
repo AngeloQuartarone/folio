@@ -1,20 +1,31 @@
 {
-  "name": "markdown-translate-preview",
-  "displayName": "Markdown Translate Preview",
-  "description": "A lean Markdown preview with themes, scroll sync, PDF export and offline translation of selected text.",
+  "name": "folio",
+  "displayName": "Folio — Markdown Reader",
+  "description": "A calm Markdown reader for VS Code: reading themes, table of contents, focus mode, notes in the margin and offline translation of what you select.",
   "version": "0.1.0",
   "publisher": "your-publisher-id",
   "license": "SEE LICENSE IN LICENSE.md",
+  "icon": "media/icon.png",
+  "galleryBanner": {
+    "color": "#2b2621",
+    "theme": "dark"
+  },
   "private": true,
   "engines": {
     "vscode": "^1.85.0"
   },
   "categories": [
-    "Other"
+    "Other",
+    "Visualization"
   ],
   "keywords": [
     "markdown",
     "preview",
+    "reader",
+    "reading",
+    "focus",
+    "table of contents",
+    "notes",
     "translate",
     "translation",
     "offline",
@@ -27,75 +38,75 @@
   "contributes": {
     "commands": [
       {
-        "command": "markdownTranslate.openPreviewToTheSide",
+        "command": "folio.openPreviewToTheSide",
         "title": "Open Preview to the Side",
-        "category": "Markdown Translate",
+        "category": "Folio",
         "icon": {
           "light": "./media/preview-right-light.svg",
           "dark": "./media/preview-right-dark.svg"
         }
       },
       {
-        "command": "markdownTranslate.openPreview",
+        "command": "folio.openPreview",
         "title": "Open Preview",
-        "category": "Markdown Translate"
+        "category": "Folio"
       },
       {
-        "command": "markdownTranslate.syncPreview",
+        "command": "folio.syncPreview",
         "title": "Sync Preview to Cursor",
-        "category": "Markdown Translate"
+        "category": "Folio"
       },
       {
-        "command": "markdownTranslate.toggleScrollSync",
+        "command": "folio.toggleScrollSync",
         "title": "Toggle Scroll Sync",
-        "category": "Markdown Translate"
+        "category": "Folio"
       },
       {
-        "command": "markdownTranslate.selectPreviewTheme",
+        "command": "folio.selectPreviewTheme",
         "title": "Select Preview Theme",
-        "category": "Markdown Translate"
+        "category": "Folio"
       },
       {
-        "command": "markdownTranslate.selectCodeBlockTheme",
+        "command": "folio.selectCodeBlockTheme",
         "title": "Select Code Block Theme",
-        "category": "Markdown Translate"
+        "category": "Folio"
       },
       {
-        "command": "markdownTranslate.exportPdf",
+        "command": "folio.exportPdf",
         "title": "Export PDF",
-        "category": "Markdown Translate"
+        "category": "Folio"
       },
       {
-        "command": "markdownTranslate.exportHtml",
+        "command": "folio.exportHtml",
         "title": "Export HTML",
-        "category": "Markdown Translate"
+        "category": "Folio"
       },
       {
-        "command": "markdownTranslate.setTargetLanguage",
+        "command": "folio.setTargetLanguage",
         "title": "Set Target Language",
-        "category": "Markdown Translate"
+        "category": "Folio"
       },
       {
-        "command": "markdownTranslate.toggleTranslation",
+        "command": "folio.toggleTranslation",
         "title": "Toggle Translation Tooltips",
-        "category": "Markdown Translate"
+        "category": "Folio"
       },
       {
-        "command": "markdownTranslate.manageOfflineLanguages",
+        "command": "folio.manageOfflineLanguages",
         "title": "Manage Offline Languages",
-        "category": "Markdown Translate"
+        "category": "Folio"
       }
     ],
     "configuration": {
-      "title": "Markdown Translate Preview",
+      "title": "Folio",
       "properties": {
-        "markdownTranslate.enabled": {
+        "folio.translation.enabled": {
           "type": "boolean",
           "default": true,
           "order": 0,
           "description": "Show a translation tooltip when you select text in the preview."
         },
-        "markdownTranslate.targetLanguage": {
+        "folio.translation.targetLanguage": {
           "type": "string",
           "enum": [
             "bg",
@@ -125,9 +136,9 @@
           ],
           "default": "it",
           "order": 1,
-          "markdownDescription": "Language to translate into. Translation runs offline; the model for each language pair (about 22 MB) is downloaded once, only when you click **Download** in the tooltip or run **Markdown Translate: Manage Offline Languages**."
+          "markdownDescription": "Language to translate into. Translation runs offline; the model for each language pair (about 22 MB) is downloaded once, only when you click **Download** in the tooltip or run **Folio: Manage Offline Languages**."
         },
-        "markdownTranslate.sourceLanguage": {
+        "folio.translation.sourceLanguage": {
           "type": "string",
           "enum": [
             "auto",
@@ -161,38 +172,29 @@
           "order": 2,
           "description": "Language of your documents. \"auto\" detects it from the selected sentence (falling back to the whole document)."
         },
-        "markdownTranslate.modelsPath": {
+        "folio.translation.modelsPath": {
           "type": "string",
           "default": "",
           "order": 3,
           "scope": "machine",
           "markdownDescription": "Folder with the offline translation models, one subfolder per pair (e.g. `enit/`). Leave empty to use the extension storage. Copy the files here yourself if you never want the extension to download anything."
         },
-        "markdownTranslate.previewTheme": {
+        "folio.previewTheme": {
           "type": "string",
           "enum": [
             "github-light.css",
             "github-dark.css",
-            "sepia.css",
-            "newsprint.css",
-            "atom-light.css",
-            "atom-dark.css",
-            "atom-material.css",
-            "one-light.css",
-            "one-dark.css",
-            "solarized-light.css",
-            "solarized-dark.css",
-            "gothic.css",
-            "medium.css",
-            "monokai.css",
-            "night.css",
-            "vue.css",
-            "vscode.css"
+            "sepia.css"
+          ],
+          "enumItemLabels": [
+            "Light",
+            "Dark",
+            "Sepia"
           ],
           "default": "github-light.css",
-          "description": "Theme of the preview. \"sepia\" is a warm reading theme; \"vscode\" follows the editor colors."
+          "description": "Theme of the preview: light, dark, or sepia (a warm reading theme)."
         },
-        "markdownTranslate.codeBlockTheme": {
+        "folio.codeBlockTheme": {
           "type": "string",
           "enum": [
             "auto.css",
@@ -224,7 +226,7 @@
           "default": "auto.css",
           "description": "Syntax highlighting theme of code blocks. \"auto\" picks the one matching the preview theme."
         },
-        "markdownTranslate.previewColorScheme": {
+        "folio.previewColorScheme": {
           "type": "string",
           "enum": [
             "selectedPreviewTheme",
@@ -233,45 +235,124 @@
           ],
           "enumDescriptions": [
             "Always use the selected preview theme.",
-            "Switch paired themes (github, atom, one, solarized) to their light/dark variant following the editor theme.",
-            "Switch paired themes following the operating system appearance."
+            "Switch between Light and Dark following the editor theme (Sepia stays as is).",
+            "Switch between Light and Dark following the operating system appearance."
           ],
-          "default": "editorColorScheme",
-          "description": "How light and dark variants of the preview theme are chosen."
+          "default": "selectedPreviewTheme",
+          "description": "Whether Light/Dark follow the editor or the operating system instead of the theme you pick."
         },
-        "markdownTranslate.scrollSync": {
+        "folio.reading.fontSize": {
+          "type": "number",
+          "default": 16,
+          "minimum": 13,
+          "maximum": 24,
+          "description": "Text size of the preview, in pixels."
+        },
+        "folio.reading.lineHeight": {
+          "type": "string",
+          "enum": [
+            "compact",
+            "comfortable",
+            "airy"
+          ],
+          "enumItemLabels": [
+            "Compact",
+            "Comfortable",
+            "Airy"
+          ],
+          "default": "comfortable",
+          "description": "Space between the lines of text."
+        },
+        "folio.reading.width": {
+          "type": "string",
+          "enum": [
+            "narrow",
+            "medium",
+            "wide",
+            "full"
+          ],
+          "enumItemLabels": [
+            "Narrow",
+            "Medium",
+            "Wide",
+            "Full width"
+          ],
+          "default": "medium",
+          "description": "Width of the reading column."
+        },
+        "folio.reading.font": {
+          "type": "string",
+          "enum": [
+            "theme",
+            "sans",
+            "serif"
+          ],
+          "enumItemLabels": [
+            "Theme",
+            "Sans-serif",
+            "Serif"
+          ],
+          "default": "theme",
+          "description": "Font of the text: the theme's own, or always sans-serif or serif."
+        },
+        "folio.reading.outline": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show the table of contents button, with the section you are reading highlighted."
+        },
+        "folio.reading.progress": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show the reading time and a reading progress bar."
+        },
+        "folio.reading.focusMode": {
+          "type": "boolean",
+          "default": false,
+          "description": "Dim everything except the paragraph you are reading."
+        },
+        "folio.reading.resume": {
+          "type": "boolean",
+          "default": true,
+          "description": "Reopen each document where you stopped reading, when the preview is not following an editor."
+        },
+        "folio.notes.enabled": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Add notes to text selected in the preview. Notes are saved next to the document, in `<file>.folio.json`."
+        },
+        "folio.scrollSync": {
           "type": "boolean",
           "default": true,
           "description": "Synchronize scrolling between the editor and the preview."
         },
-        "markdownTranslate.liveUpdateDebounceMs": {
+        "folio.liveUpdateDebounceMs": {
           "type": "number",
           "default": 300,
           "minimum": 0,
           "description": "Delay in milliseconds before the preview updates after an edit."
         },
-        "markdownTranslate.breakOnSingleNewLine": {
+        "folio.breakOnSingleNewLine": {
           "type": "boolean",
           "default": false,
           "description": "Render a single line break as <br> (GitHub does not)."
         },
-        "markdownTranslate.math.enabled": {
+        "folio.math.enabled": {
           "type": "boolean",
           "default": true,
           "description": "Render $...$ and $$...$$ math with KaTeX."
         },
-        "markdownTranslate.mermaid.enabled": {
+        "folio.mermaid.enabled": {
           "type": "boolean",
           "default": true,
           "description": "Render ```mermaid code blocks as diagrams."
         },
-        "markdownTranslate.chromePath": {
+        "folio.chromePath": {
           "type": "string",
           "default": "",
           "scope": "machine",
           "description": "Path of Chrome, Chromium, Edge or Brave used for PDF export. Leave empty to detect it automatically."
         },
-        "markdownTranslate.hideBuiltInPreviewButton": {
+        "folio.hideBuiltInPreviewButton": {
           "type": "boolean",
           "default": true,
           "description": "Hide the preview buttons of VS Code's built-in Markdown preview (editor title bar, explorer and tab menus), so only this extension's button is shown."
@@ -280,13 +361,13 @@
     },
     "keybindings": [
       {
-        "command": "markdownTranslate.openPreviewToTheSide",
+        "command": "folio.openPreviewToTheSide",
         "key": "ctrl+k v",
         "mac": "cmd+k v",
         "when": "editorLangId == markdown"
       },
       {
-        "command": "markdownTranslate.openPreview",
+        "command": "folio.openPreview",
         "key": "ctrl+shift+v",
         "mac": "cmd+shift+v",
         "when": "editorLangId == markdown"
@@ -295,42 +376,42 @@
     "menus": {
       "editor/title": [
         {
-          "command": "markdownTranslate.openPreviewToTheSide",
+          "command": "folio.openPreviewToTheSide",
           "when": "editorLangId == markdown",
           "group": "navigation"
         }
       ],
       "editor/context": [
         {
-          "command": "markdownTranslate.openPreviewToTheSide",
+          "command": "folio.openPreviewToTheSide",
           "when": "editorLangId == markdown",
-          "group": "markdownTranslate@1"
+          "group": "folio@1"
         },
         {
-          "command": "markdownTranslate.exportPdf",
+          "command": "folio.exportPdf",
           "when": "editorLangId == markdown",
-          "group": "markdownTranslate@2"
+          "group": "folio@2"
         },
         {
-          "command": "markdownTranslate.exportHtml",
+          "command": "folio.exportHtml",
           "when": "editorLangId == markdown",
-          "group": "markdownTranslate@3"
+          "group": "folio@3"
         }
       ],
       "explorer/context": [
         {
-          "command": "markdownTranslate.openPreviewToTheSide",
+          "command": "folio.openPreviewToTheSide",
           "when": "resourceLangId == markdown",
           "group": "navigation"
         }
       ],
       "commandPalette": [
         {
-          "command": "markdownTranslate.openPreviewToTheSide",
+          "command": "folio.openPreviewToTheSide",
           "when": "editorLangId == markdown"
         },
         {
-          "command": "markdownTranslate.openPreview",
+          "command": "folio.openPreview",
           "when": "editorLangId == markdown"
         }
       ]
