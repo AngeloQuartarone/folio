@@ -1,5 +1,5 @@
 {
-  "name": "folio",
+  "name": "folio-markdown-reader",
   "displayName": "Folio — Markdown Reader",
   "description": "A calm Markdown reader for VS Code: reading themes, table of contents, focus mode, notes in the margin and offline translation of what you select.",
   "version": "0.1.0",

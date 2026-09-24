@@ -13,7 +13,7 @@ import * as vscode from 'vscode';
 import type { ExtensionApi } from '../../src/extension';
 import type { HostMessage, TranslationReply, WebviewMessage } from '../../src/messages';
 
-const EXTENSION_ID = 'your-publisher-id.folio';
+const EXTENSION_ID = 'angeloquartarone.folio-markdown-reader';
 
 function fixture(name: string): vscode.Uri {
   const folder = vscode.workspace.workspaceFolders![0].uri;

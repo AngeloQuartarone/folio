@@ -274,9 +274,9 @@ dictionary).
 **From the Marketplace**: open the **Extensions** view
 (<kbd>Ctrl+Shift+X</kbd> / <kbd>Cmd+Shift+X</kbd>), search for **Folio**
 and click **Install**, or open the
-[Marketplace page](https://marketplace.visualstudio.com/items?itemName=angeloquartarone.folio).
+[Marketplace page](https://marketplace.visualstudio.com/items?itemName=angeloquartarone.folio-markdown-reader).
 
-**From a `.vsix` file** (e.g. `folio-0.1.0.vsix`):
+**From a `.vsix` file** (e.g. `folio-markdown-reader-0.1.0.vsix`):
 
 1. Save the `.vsix` file somewhere on your computer.
 2. In VS Code, open the **Extensions** view: click the Extensions icon in
@@ -312,7 +312,7 @@ npm install
 npm run build          # bundle into dist/
 npm test               # type check + unit tests
 npm run test:integration   # runs the extension inside a downloaded VS Code
-npm run package        # creates folio-<version>.vsix
+npm run package        # creates folio-markdown-reader-<version>.vsix
 ```
 
 Press **F5** in VS Code to start an Extension Development Host (the `npm: watch`
