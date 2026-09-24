@@ -268,9 +268,15 @@ first time Folio starts.
 
 ## Installation
 
-Folio is distributed as a single file, `folio-<version>.vsix`
-(e.g. `folio-0.1.0.vsix`). You need VS Code 1.85 or later (1.101 or later
-for the **Other meanings** dictionary); nothing else.
+You need VS Code 1.85 or later (1.101 or later for the **Other meanings**
+dictionary).
+
+**From the Marketplace**: open the **Extensions** view
+(<kbd>Ctrl+Shift+X</kbd> / <kbd>Cmd+Shift+X</kbd>), search for **Folio**
+and click **Install**, or open the
+[Marketplace page](https://marketplace.visualstudio.com/items?itemName=angeloquartarone.folio).
+
+**From a `.vsix` file** (e.g. `folio-0.1.0.vsix`):
 
 1. Save the `.vsix` file somewhere on your computer.
 2. In VS Code, open the **Extensions** view: click the Extensions icon in
@@ -291,8 +297,9 @@ Folio takes over the <kbd>Ctrl+Shift+V</kbd> / <kbd>Cmd+Shift+V</kbd> and
 built-in preview stays available from the Command Palette
 (**Markdown: Open Preview**).
 
-**Update**: install the new `.vsix` the same way; it replaces the old
-version and keeps your settings and downloaded models.
+**Update**: from the Marketplace, VS Code updates Folio by itself; with a
+`.vsix`, install the new file the same way. Your settings and downloaded
+models are kept.
 **Uninstall**: find **Folio** in the Extensions view → gear icon →
 **Uninstall**.
 

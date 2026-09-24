@@ -3,7 +3,7 @@
   "displayName": "Folio — Markdown Reader",
   "description": "A calm Markdown reader for VS Code: reading themes, table of contents, focus mode, notes in the margin and offline translation of what you select.",
   "version": "0.1.0",
-  "publisher": "your-publisher-id",
+  "publisher": "angeloquartarone",
   "license": "SEE LICENSE IN LICENSE.md",
   "repository": {
     "type": "git",
@@ -645,7 +645,7 @@
     "test:unit": "node scripts/build.mjs --tests && mocha \"out/test/unit/**/*.test.js\"",
     "test:integration": "npm run build && node scripts/build.mjs --tests && node scripts/run-integration-tests.mjs",
     "vscode:prepublish": "npm run build",
-    "package": "vsce package --no-dependencies --allow-missing-repository --no-rewrite-relative-links"
+    "package": "vsce package --no-dependencies"
   },
   "dependencies": {
     "@vscode/markdown-it-katex": "^1.1.2",
