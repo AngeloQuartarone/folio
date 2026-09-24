@@ -63,8 +63,8 @@ export class Outline {
     private readonly state: StateStore,
     private readonly openNote: (id: string) => void,
     private readonly deleteNote: (id: string) => void,
-    /** The panel moves the text aside in wide windows. */
-    private readonly onToggle: () => void = () => undefined,
+    /** The panel moves the text aside in wide windows: `change` opens or closes it. */
+    private readonly onToggle: (change: () => void) => void = (change) => change(),
   ) {
     this.button = document.createElement('button');
     this.button.type = 'button';
@@ -150,11 +150,12 @@ export class Outline {
   }
 
   private setOpen(open: boolean): void {
-    this.panel.hidden = !open;
-    this.button.setAttribute('aria-expanded', String(open));
-    document.body.classList.toggle('folio-outline-open', open);
+    this.onToggle(() => {
+      this.panel.hidden = !open;
+      this.button.setAttribute('aria-expanded', String(open));
+      document.body.classList.toggle('folio-outline-open', open);
+    });
     this.state.set('outlineOpen', open);
-    this.onToggle();
     if (open) {
       this.render();
     }
@@ -299,7 +300,8 @@ export class ReadingProgress {
   }
 
   onScroll(): void {
-    this.bar.style.transform = `scaleX(${scrollProgress()})`;
+    // Width, not scaleX: a scaled bar would squash its rounded end.
+    this.bar.style.width = `${(scrollProgress() * 100).toFixed(2)}%`;
   }
 }
 

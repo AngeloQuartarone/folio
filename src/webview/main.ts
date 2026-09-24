@@ -63,7 +63,7 @@ const outline = reading.outline
       state,
       (id) => notes?.open(id),
       (id) => notes?.delete(id),
-      () => notes?.layout(),
+      (change) => keepReadingPosition(change),
     )
   : undefined;
 const progress = reading.progress ? new ReadingProgress(preview) : undefined;
@@ -358,6 +358,26 @@ window.addEventListener(
   },
   { passive: true },
 );
+
+/**
+ * Run `change` (which moves or narrows the text column) and scroll so the
+ * block that was at the top of the window stays where it was.
+ */
+function keepReadingPosition(change: () => void): void {
+  const blocks = Array.from(preview.querySelectorAll<HTMLElement>('[data-source-line]'));
+  const anchor = blocks.find((block) => block.getBoundingClientRect().bottom > 0);
+  const before = anchor?.getBoundingClientRect().top;
+  change();
+  scrollMap = null;
+  if (anchor && before !== undefined) {
+    const shift = anchor.getBoundingClientRect().top - before;
+    if (Math.abs(shift) > 1) {
+      previewScrollDelay = Date.now() + 200;
+      window.scrollBy(0, shift);
+    }
+  }
+  notes?.layout();
+}
 
 /** The source line at the top of the preview. */
 function topSourceLine(): number | undefined {

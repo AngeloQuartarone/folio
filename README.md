@@ -21,9 +21,11 @@ It is an independent project derived from
 - **Typography**: text size, line spacing, column width and font (the
   theme's, sans-serif or serif).
 - **Table of contents**: a button in the top-left corner opens the headings,
-  with the section you are reading highlighted; click one to go there.
+  with the section you are reading highlighted; click one to go there. In
+  a wide enough pane it opens as a sidebar beside the text, which moves over
+  to make room; in narrow panes it floats above the text.
 - **Reading time and progress**: "8 min read" above the document, the time
-  left in the table of contents, and a thin progress bar at the top.
+  left in the table of contents, and a progress bar at the top.
 - **Focus mode**: everything but the paragraph you are reading fades out.
 - **Resume reading**: each document reopens where you stopped (when the
   preview is not following an editor).

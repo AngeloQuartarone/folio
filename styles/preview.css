@@ -1412,10 +1412,30 @@ body.mtp-settings-open {
   font-size: 12px;
 }
 
-/* In wide panes the table of contents sits in the margin, beside the text. */
-@media (min-width: 1100px) {
-  body.folio-outline-open:not([data-width='full']) .crossnote[data-for='preview'] {
-    transform: translateX(110px);
+/* Wide enough, the open table of contents is a sidebar: the text moves over
+   (or narrows) to make room instead of sliding underneath it. Narrower
+   panes keep it floating above the text. */
+@media (min-width: 880px) {
+  body.folio-outline-open:not([for='html-export']) {
+    box-sizing: border-box;
+    padding-left: 288px;
+  }
+
+  body.folio-outline-open .folio-outline {
+    animation-name: folio-dock;
+  }
+}
+
+@keyframes folio-dock {
+  from {
+    opacity: 0;
+    transform: translateX(-12px);
+  }
+}
+
+@media print {
+  body.folio-outline-open:not([for='html-export']) {
+    padding-left: 0;
   }
 }
 
@@ -1424,13 +1444,12 @@ body.mtp-settings-open {
   position: fixed;
   top: 0;
   left: 0;
-  right: 0;
   z-index: 1003;
-  height: 2px;
+  width: 0;
+  height: 4px;
+  border-radius: 0 2px 2px 0;
   background: var(--mtp-accent);
-  opacity: 0.55;
-  transform: scaleX(0);
-  transform-origin: left;
+  opacity: 0.85;
   pointer-events: none;
 }
 

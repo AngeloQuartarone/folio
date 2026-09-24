@@ -9,6 +9,8 @@
 - Reading: typography settings (text size, line spacing, column width,
   font), a table of contents with the current section highlighted, reading
   time and a progress bar, focus mode, and resume reading where you stopped.
+  The table of contents opens as a sidebar beside the text in wide panes
+  (the text moves over and keeps your place) and floats in narrow ones.
 - Notes in the margin: highlight selected text with a note, saved next to
   the document in `<file>.folio.json`; notes follow their text when the
   document changes and are listed in the table of contents.
