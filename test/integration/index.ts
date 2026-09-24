@@ -463,13 +463,67 @@ function defineTests(): void {
         const bank = await translateThroughHost(api, 'bank', 'The river bank was covered in flowers.');
         assert.equal(bank.status === 'ok' && bank.text, 'riva', 'the sentence picks the meaning');
 
-        const word = await translateThroughHost(api, 'Gift', 'Das ist ein Gift, trink es nicht.');
-        assert.equal(word.status === 'ok' && word.text, 'veleno');
+        // German needs its own model (German → English), not always installed.
+        if (existsSync(path.join(modelsDir!, 'deen'))) {
+          const word = await translateThroughHost(api, 'Gift', 'Das ist ein Gift, trink es nicht.');
+          assert.equal(word.status === 'ok' && word.text, 'veleno');
+        }
 
         const same = await translateThroughHost(api, 'gatto', 'Il gatto dorme sul divano.');
         assert.equal(same.status === 'ok' && same.sameLanguage, true);
       } finally {
         for (const key of ['translation.modelsPath', 'translation.targetLanguage']) {
+          await config.update(key, undefined, vscode.ConfigurationTarget.Global);
+        }
+      }
+    });
+
+    it('translates a whole document block by block, keeping bold, links and code', async function () {
+      const modelsDir = process.env['MTP_MODELS_DIR'];
+      if (!modelsDir) {
+        this.skip();
+      }
+      const api = await activate();
+      const config = vscode.workspace.getConfiguration('folio');
+      const uri = fixture('sample.md');
+      const sent: HostMessage[] = [];
+      const original = api.preview.postMessage.bind(api.preview);
+      api.preview.postMessage = (message: HostMessage) => {
+        sent.push(message);
+        original(message);
+      };
+      try {
+        await config.update('translation.modelsPath', modelsDir, vscode.ConfigurationTarget.Global);
+        await config.update('translation.targetLanguage', 'it', vscode.ConfigurationTarget.Global);
+        await config.update('translation.sourceLanguage', 'en', vscode.ConfigurationTarget.Global);
+        const ready = waitForMessage(api, (message) => message.type === 'ready');
+        api.preview.show(uri, vscode.ViewColumn.Beside);
+        await ready.catch(() => undefined);
+        (api.preview as any).onMessage({
+          type: 'translateDocument',
+          sourceUri: api.preview.activeSourceUri!.toString(),
+          requestId: 3,
+          blocks: [
+            { id: 1, html: 'The <strong>cat</strong> sleeps on the <a href="#sofa">sofa</a> all afternoon.' },
+            { id: 2, html: 'Run <span data-folio-keep="0"></span> to install the extension.' },
+          ],
+        });
+        const replies = () => sent.filter((message) => message.type === 'documentTranslation' && message.requestId === 3);
+        await until(() => replies().some((message) => message.type === 'documentTranslation' && message.status === 'done'), 'the document is translated', 60_000);
+        const byId = (id: number) => {
+          const reply = replies().find((message) => message.type === 'documentTranslation' && message.id === id);
+          return reply?.type === 'documentTranslation' ? reply.html ?? '' : '';
+        };
+        const started = replies()[0];
+        assert.ok(started?.type === 'documentTranslation' && started.status === 'started');
+        assert.equal(started.type === 'documentTranslation' && `${started.sourceLabel} → ${started.targetLabel}`, 'English → Italian');
+        console.log('      translated:', byId(1), '|', byId(2));
+        assert.match(byId(1), /<strong>gatto<\/strong>/i);
+        assert.match(byId(1), /<a href="#sofa">[^<]+<\/a>/);
+        assert.match(byId(2), /<span data-folio-keep="0"><\/span>/, 'code placeholders survive');
+      } finally {
+        api.preview.postMessage = original;
+        for (const key of ['translation.modelsPath', 'translation.targetLanguage', 'translation.sourceLanguage']) {
           await config.update(key, undefined, vscode.ConfigurationTarget.Global);
         }
       }

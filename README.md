@@ -58,6 +58,13 @@ It is an independent project derived from
   translations.
 - **Other meanings** of a single word, one click away, from an offline
   Wiktionary dictionary.
+- **Translate the whole document**, offline: every paragraph, heading, list
+  item and table cell gets its translation right below it, in a quieter
+  colour, with its bold, italics and links; code and math stay as they are.
+  The part you are looking at is translated first, and each translation
+  appears as soon as it is ready. Start it from the settings panel
+  (**Translate document**) or with *Folio: Translate Document*; the small
+  pill at the top shows the progress, and its × shows the original only.
 
 ### Working with the document
 

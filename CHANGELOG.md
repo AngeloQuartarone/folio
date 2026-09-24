@@ -21,6 +21,10 @@
   keys to move through the document (j/k, J/K, g/G, t); focus on the
   sentence being read; Atkinson Hyperlegible and OpenDyslexic fonts
   (bundled); justified, hyphenated text.
+- Translate the whole document offline, each translation below its
+  original (bold, italics and links kept; code and math left alone), the
+  visible part first; from the settings panel or *Folio: Translate
+  Document*.
 - Rendering: `[[wiki links]]` (pages found anywhere in the workspace,
   `![[image]]` embeds), front matter shown as a header on request, and a
   stylesheet of your own for the preview and exports.

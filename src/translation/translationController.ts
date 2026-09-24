@@ -8,14 +8,14 @@
  */
 import * as vscode from 'vscode';
 import { SECTION, getTranslationConfig } from '../config';
-import { LanguageStatus, TranslationReply, WebviewCommand, WebviewMessage } from '../messages';
+import { HostMessage, LanguageStatus, TranslationReply, WebviewCommand, WebviewMessage } from '../messages';
 import { PreviewManager } from '../preview/previewManager';
 import { proseSample } from '../render/language';
 import { DictionaryInfo, DictionaryStore, dictionaryFor } from './dictionary/dictionaryStore';
 import { languageName } from './languages';
 import { BergamotEngine } from './offline/engine';
 import { ModelStore } from './offline/modelStore';
-import { OfflineProvider } from './offline/offlineProvider';
+import { DocumentRoute, OfflineProvider } from './offline/offlineProvider';
 import {
   ModelPair,
   PIVOT_LANGUAGE,
@@ -39,7 +39,12 @@ export class TranslationController implements vscode.Disposable {
   /** The dictionary offered in the last tooltip. */
   private lastDictionary: DictionaryInfo | undefined;
   private engine!: BergamotEngine;
+  private provider!: OfflineProvider;
   private service!: TranslationService;
+  /** "Translate document": the job running, the request to retry after a download, translated blocks. */
+  private documentJob: AbortController | undefined;
+  private documentRequest: Extract<WebviewMessage, { type: 'translateDocument' }> | undefined;
+  private readonly documentCache = new Map<string, string>();
   private inFlight: AbortController | undefined;
   /** The last request, retried after its models are downloaded. */
   private lastRequest: PendingRequest | undefined;
@@ -81,6 +86,7 @@ export class TranslationController implements vscode.Disposable {
 
   dispose(): void {
     this.inFlight?.abort();
+    this.documentJob?.abort();
     this.engine.dispose();
     this.dictionaries.dispose();
     this.disposables.forEach((d) => d.dispose());
@@ -190,6 +196,8 @@ export class TranslationController implements vscode.Disposable {
     ).fsPath;
     this.engine = new BergamotEngine(this.store, workerPath);
     const provider = new OfflineProvider({ engine: this.engine, store: this.store });
+    this.provider = provider;
+    this.documentCache.clear();
     this.service = new TranslationService(async () => provider);
   }
 
@@ -254,6 +262,15 @@ export class TranslationController implements vscode.Disposable {
       await this.runWebviewCommand(message.command);
       return;
     }
+    if (message.type === 'translateDocument') {
+      await this.translateDocument(message);
+      return;
+    }
+    if (message.type === 'stopDocumentTranslation') {
+      this.documentJob?.abort();
+      this.documentRequest = undefined;
+      return;
+    }
     if (message.type !== 'translate' || !getTranslationConfig().enabled) {
       return;
     }
@@ -303,6 +320,86 @@ export class TranslationController implements vscode.Disposable {
       }
     }
     this.preview.postMessage(reply);
+  }
+
+  /**
+   * "Translate document": the blocks the preview sent, one after the other
+   * (in the order sent: the visible ones first), each posted back as soon as
+   * it is done. A new request replaces the one running.
+   */
+  private async translateDocument(request: Extract<WebviewMessage, { type: 'translateDocument' }>): Promise<void> {
+    this.documentJob?.abort();
+    const job = new AbortController();
+    this.documentJob = job;
+    const uri = this.preview.activeSourceUri;
+    if (!uri || request.sourceUri !== uri.toString() || !Array.isArray(request.blocks)) {
+      return;
+    }
+    const post = (reply: Omit<Extract<HostMessage, { type: 'documentTranslation' }>, 'type' | 'requestId'>) =>
+      this.preview.postMessage({ type: 'documentTranslation', requestId: request.requestId, ...reply });
+    const config = getTranslationConfig();
+    try {
+      const document = await vscode.workspace.openTextDocument(uri);
+      const route = this.provider.route({
+        targetLanguage: config.targetLanguage,
+        sourceLanguage: config.sourceLanguage,
+        sample: proseSample(document.getText()),
+      });
+      post({ status: 'started', sourceLabel: languageName(route.source), targetLabel: languageName(route.target), same: route.same });
+      if (!route.same) {
+        for (const block of request.blocks.slice(0, 5000)) {
+          if (job.signal.aborted) {
+            return;
+          }
+          if (!Number.isInteger(block?.id) || typeof block.html !== 'string' || block.html.length > 20_000) {
+            continue;
+          }
+          post({ status: 'block', id: block.id, html: await this.translateBlock(route, block.html, job.signal) });
+        }
+      }
+      if (!job.signal.aborted) {
+        post({ status: 'done' });
+      }
+    } catch (error) {
+      if (job.signal.aborted) {
+        return;
+      }
+      const reply = this.errorReply(0, error);
+      if (reply.status === 'error') {
+        // Retried once the models are downloaded (see runWebviewCommand).
+        this.documentRequest = reply.action?.command === 'downloadModels' ? request : undefined;
+        post({ status: 'error', message: reply.message, action: reply.action });
+      }
+    } finally {
+      if (this.documentJob === job) {
+        this.documentJob = undefined;
+      }
+    }
+  }
+
+  private async translateBlock(route: DocumentRoute, html: string, signal: AbortSignal): Promise<string> {
+    const key = `${route.source}>${route.target}\u0000${html}`;
+    const cached = this.documentCache.get(key);
+    if (cached !== undefined) {
+      return cached;
+    }
+    for (let attempt = 0; ; attempt++) {
+      try {
+        const translated = await this.provider.translateHtml(route, html, signal);
+        this.documentCache.set(key, translated);
+        if (this.documentCache.size > 5000) {
+          this.documentCache.delete(this.documentCache.keys().next().value!);
+        }
+        return translated;
+      } catch (error) {
+        // A selection translated meanwhile supersedes the block: try it again.
+        if (error instanceof TranslationError && error.code === 'cancelled' && !signal.aborted && attempt < 5) {
+          await new Promise((resolve) => setTimeout(resolve, 250));
+          continue;
+        }
+        throw error;
+      }
+    }
   }
 
   /**
@@ -401,9 +498,14 @@ export class TranslationController implements vscode.Disposable {
         const request = this.lastRequest;
         const downloaded = pairs.length > 0 && (await this.download(pairs));
         this.postLanguages();
+        const documentRequest = this.documentRequest;
+        this.documentRequest = undefined;
+        if (downloaded && documentRequest) {
+          void this.translateDocument(documentRequest);
+        }
         if (downloaded && request) {
           await this.translate(request); // the tooltip is waiting for this id
-        } else if (request) {
+        } else if (request && !documentRequest) {
           this.preview.postMessage({
             type: 'translation',
             id: request.id,

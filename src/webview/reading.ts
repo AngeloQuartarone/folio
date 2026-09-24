@@ -27,7 +27,7 @@ export interface StateStore {
 /** Words of the document, without code blocks. */
 function wordCount(root: HTMLElement): number {
   const clone = root.cloneNode(true) as HTMLElement;
-  clone.querySelectorAll('pre, .mermaid, .katex-mathml, .folio-reading-time').forEach((element) => element.remove());
+  clone.querySelectorAll('pre, .mermaid, .katex-mathml, .folio-reading-time, .folio-translation').forEach((element) => element.remove());
   return (clone.textContent ?? '').split(/\s+/).filter(Boolean).length;
 }
 

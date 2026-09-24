@@ -95,6 +95,24 @@ export type HostMessage =
   | { type: 'settings'; sections: SettingSection[] }
   /** The start of another Markdown file a link points to (see linkPreview below). */
   | { type: 'linkPreview'; id: number; html: string; title: string }
+  /** Progress of "Translate document": each block as it is done, then the end (or an error). */
+  | {
+      type: 'documentTranslation';
+      requestId: number;
+      status: 'started' | 'block' | 'done' | 'error';
+      /** status "block": the block and its translation (HTML). */
+      id?: number;
+      html?: string;
+      /** status "started": e.g. "English", "Italian"; `same` when there is nothing to translate. */
+      sourceLabel?: string;
+      targetLabel?: string;
+      same?: boolean;
+      /** status "error". */
+      message?: string;
+      action?: { label: string; command: WebviewCommand };
+    }
+  /** "Folio: Translate Document" from the command palette. */
+  | { type: 'toggleDocumentTranslation' }
   /** The notes of the previewed document (after loading and after each change). */
   | { type: 'notes'; sourceUri: string; notes: NoteData[] }
   | TranslationReply;
@@ -111,6 +129,9 @@ export type WebviewMessage =
   | { type: 'openLink'; sourceUri: string; href: string }
   /** Hovering a link to another Markdown file: render the start of it. */
   | { type: 'linkPreview'; id: number; sourceUri: string; href: string }
+  /** Translate these blocks of the document (HTML), in this order; replaces any earlier request. */
+  | { type: 'translateDocument'; sourceUri: string; requestId: number; blocks: Array<{ id: number; html: string }> }
+  | { type: 'stopDocumentTranslation' }
   /** Back to a place in another Markdown document (after following a link). */
   | { type: 'navigate'; uri: string; line: number }
   | { type: 'translate'; id: number; text: string; context: string }

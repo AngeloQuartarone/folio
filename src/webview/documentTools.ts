@@ -5,7 +5,7 @@
  */
 
 /** Elements added by Folio, never part of copied or searched text. */
-export const FOLIO_UI = '.folio-reading-time, .folio-copy, .folio-note-pin, .folio-fold';
+export const FOLIO_UI = '.folio-reading-time, .folio-copy, .folio-note-pin, .folio-fold, .folio-translation';
 
 // ------------------------------------------------------------------ toast
 

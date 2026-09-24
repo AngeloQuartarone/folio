@@ -9,6 +9,7 @@
 import DOMPurify from 'dompurify';
 import type { HostMessage, WebviewMessage, WebviewSettings } from '../messages';
 import { addCodeCopyButtons, copyFormatted, enableImageZoom, toast } from './documentTools';
+import { DocumentTranslation } from './documentTranslation';
 import { History, enableKeyboard } from './navigation';
 import { Notes } from './notes';
 import { LinkPreviews } from './peek';
@@ -86,6 +87,10 @@ const history = new History(
   () => (sourceUri ? { uri: sourceUri, line: topSourceLine() ?? 0 } : undefined),
   (line) => scrollSyncToLine(line, 0),
 );
+const documentTranslation = new DocumentTranslation(preview, post, () => sourceUri, sanitize, state, () => {
+  scrollMap = null;
+  notes?.layout();
+});
 const linkPreviews = reading.hoverPreviews ? new LinkPreviews(preview, post, () => sourceUri, sanitize) : undefined;
 if (reading.keyboard) {
   enableKeyboard(preview, { back: () => history.back(), toggleOutline: () => outline?.toggle() });
@@ -101,6 +106,7 @@ const quickSettings = new QuickSettings(
   settings.sections,
   () => settingsPanel.open(),
   () => void copyFormatted(preview),
+  () => documentTranslation.toggle(),
 );
 enableImageZoom(preview);
 
@@ -147,6 +153,7 @@ function afterRender(): void {
   notes?.render();
   outline?.refresh();
   focus?.reset();
+  documentTranslation.refresh();
 }
 
 // ------------------------------------------------------------------ mermaid
@@ -528,6 +535,12 @@ window.addEventListener('message', (event: MessageEvent<HostMessage>) => {
       break;
     case 'linkPreview':
       linkPreviews?.onReply(message);
+      break;
+    case 'documentTranslation':
+      documentTranslation.onReply(message);
+      break;
+    case 'toggleDocumentTranslation':
+      documentTranslation.toggle();
       break;
     case 'notes':
       if (message.sourceUri === sourceUri || !sourceUri) {

@@ -31,6 +31,7 @@ export class QuickSettings {
     sections: SettingSection[],
     private readonly openAllSettings: () => void,
     private readonly copyFormatted: () => void,
+    private readonly translateDocument: () => void,
   ) {
     this.button = document.createElement('button');
     this.button.type = 'button';
@@ -56,6 +57,14 @@ export class QuickSettings {
     actions.append(
       this.action('Export PDF', 'exportPdf'),
       this.action('Export HTML', 'exportHtml'),
+      button(
+        'Translate document',
+        () => {
+          this.close();
+          this.translateDocument();
+        },
+        'mtp-button mtp-panel-wide',
+      ),
       button(
         'Copy as formatted text',
         () => {

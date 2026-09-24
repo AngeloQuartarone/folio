@@ -82,6 +82,11 @@
         "category": "Folio"
       },
       {
+        "command": "folio.translateDocument",
+        "title": "Translate Document",
+        "category": "Folio"
+      },
+      {
         "command": "folio.setTargetLanguage",
         "title": "Set Target Language",
         "category": "Folio"

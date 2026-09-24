@@ -94,6 +94,22 @@ export function activate(context: vscode.ExtensionContext): ExtensionApi {
 
   command('manageOfflineLanguages', () => translation.manageLanguages());
 
+  // Translate the whole document in the preview (again: show the original only).
+  command('translateDocument', async (uri?: vscode.Uri) => {
+    if (!preview.webviewPanel) {
+      const target = markdownUri(uri);
+      if (!target) {
+        return;
+      }
+      const ready = new Promise<void>((resolve) =>
+        preview.onDidReceiveMessage((message) => message.type === 'ready' && resolve()),
+      );
+      preview.show(target, vscode.ViewColumn.Beside, true);
+      await ready;
+    }
+    preview.postMessage({ type: 'toggleDocumentTranslation' });
+  });
+
   command('copyNotesForAI', (uri?: vscode.Uri) => notes.copyForAI(markdownUri(uri, preview.activeSourceUri)));
 
   command('toggleTranslation', async () => {

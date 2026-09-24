@@ -14,6 +14,14 @@ import { Detection, detectLanguage } from './detect';
 import type { TranslationEngine } from './engine';
 import { ModelPair, SUPPORTED_LANGUAGES, formatSize, modelChain } from './registry';
 
+/** The languages a whole document is translated with. */
+export interface DocumentRoute {
+  source: string;
+  target: string;
+  /** The document already is in the target language. */
+  same: boolean;
+}
+
 export interface OfflineProviderDeps {
   engine: Pick<TranslationEngine, 'translate'>;
   store: { missing(pairs: ModelPair[]): ModelPair[] };
@@ -27,15 +35,7 @@ export class OfflineProvider implements TranslationProvider {
   constructor(private readonly deps: OfflineProviderDeps) {}
 
   async translate(request: TranslationRequest, signal?: AbortSignal): Promise<TranslationResult> {
-    const target = baseLanguage(request.targetLanguage);
-    if (!SUPPORTED_LANGUAGES.includes(target)) {
-      throw new TranslationError(
-        'unsupportedLanguage',
-        `Offline translation into ${languageName(target)} is not available. ` +
-          `Supported: ${SUPPORTED_LANGUAGES.map((code) => languageName(code)).join(', ')}.`,
-      );
-    }
-
+    const target = this.targetLanguage(request.targetLanguage);
     const source = this.sourceLanguage(request);
     if (!source) {
       throw new TranslationError(
@@ -46,6 +46,57 @@ export class OfflineProvider implements TranslationProvider {
     if (source === target) {
       return { text: request.text, detectedLanguage: source, sameLanguage: true };
     }
+    const chain = this.installedChain(source, target);
+
+    const selection = request.text.trim();
+    const text =
+      (await this.translateInContext(source, target, selection, request.context, signal)) ??
+      (/\s/.test(selection)
+        ? await this.deps.engine.translate(source, target, request.text, signal)
+        : await this.translateWord(chain, selection, signal));
+    return { text, detectedLanguage: source, sameLanguage: false };
+  }
+
+  /**
+   * The languages a whole document is translated with: the source fixed by
+   * the user or detected on `sample` (its prose), after the same checks as
+   * a selection (supported languages, models installed).
+   */
+  route(options: { targetLanguage: string; sourceLanguage?: string; sample: string }): DocumentRoute {
+    const target = this.targetLanguage(options.targetLanguage);
+    const fixed = options.sourceLanguage && baseLanguage(options.sourceLanguage);
+    const source = fixed && fixed !== 'auto' ? fixed : (this.deps.detect ?? detectLanguage)(options.sample).language;
+    if (!source) {
+      throw new TranslationError(
+        'undetected',
+        'Could not detect the language of the document. Set "folio.translation.sourceLanguage".',
+      );
+    }
+    if (source !== target) {
+      this.installedChain(source, target);
+    }
+    return { source, target, same: source === target };
+  }
+
+  /** A block of the document as HTML: its inline tags (bold, links…) are carried over. */
+  translateHtml(route: DocumentRoute, html: string, signal?: AbortSignal): Promise<string> {
+    return this.deps.engine.translate(route.source, route.target, html, signal, true);
+  }
+
+  private targetLanguage(requested: string): string {
+    const target = baseLanguage(requested);
+    if (!SUPPORTED_LANGUAGES.includes(target)) {
+      throw new TranslationError(
+        'unsupportedLanguage',
+        `Offline translation into ${languageName(target)} is not available. ` +
+          `Supported: ${SUPPORTED_LANGUAGES.map((code) => languageName(code)).join(', ')}.`,
+      );
+    }
+    return target;
+  }
+
+  /** The models from `source` to `target` (through English when needed), all on disk. */
+  private installedChain(source: string, target: string): ModelPair[] {
     const chain = SUPPORTED_LANGUAGES.includes(source) ? modelChain(source, target) : undefined;
     if (!chain) {
       throw new TranslationError(
@@ -53,7 +104,6 @@ export class OfflineProvider implements TranslationProvider {
         `${languageName(source)} → ${languageName(target)} is not available offline.`,
       );
     }
-
     const missing = this.deps.store.missing(chain);
     if (missing.length) {
       const size = missing.reduce((total, pair) => total + pair.size, 0);
@@ -65,14 +115,7 @@ export class OfflineProvider implements TranslationProvider {
         missing.map((pair) => pair.key),
       );
     }
-
-    const selection = request.text.trim();
-    const text =
-      (await this.translateInContext(source, target, selection, request.context, signal)) ??
-      (/\s/.test(selection)
-        ? await this.deps.engine.translate(source, target, request.text, signal)
-        : await this.translateWord(chain, selection, signal));
-    return { text, detectedLanguage: source, sameLanguage: false };
+    return chain;
   }
 
   /**
