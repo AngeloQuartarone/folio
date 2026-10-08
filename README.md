@@ -55,6 +55,10 @@ It is an independent project derived from
   table of contents button takes you back to where you were.
 - **Keyboard**: `j`/`k` next/previous paragraph, `J`/`K` next/previous
   heading, `g`/`G` top/bottom, `t` table of contents.
+- **Text size from the keyboard**: `+` and `-` make the text one pixel
+  larger or smaller, `0` brings it back to the default, without opening the
+  settings (also *Folio: Increase / Decrease / Reset Text Size*, to give
+  them shortcuts of your own).
 - **Resume reading**: each document reopens where you stopped (when the
   preview is not following an editor).
 
@@ -142,6 +146,9 @@ And a few things GitHub does not:
 | Folio: Open Source | |
 | Folio: Translate Document | |
 | Folio: Toggle Focus Mode | |
+| Folio: Increase Text Size | `+` in the preview |
+| Folio: Decrease Text Size | `-` in the preview |
+| Folio: Reset Text Size | `0` in the preview |
 | Folio: Copy Notes for AI | |
 | Folio: Select Preview Theme | |
 | Folio: Select Code Block Theme | |
@@ -235,7 +242,7 @@ selection. If the text is already in the target language a small
 | `folio.reading.outlineAutoClose` | `true` | Close the table of contents with a click on the text when it floats over it. |
 | `folio.reading.collapsible` | `true` | Fold a section with the arrow next to its heading. |
 | `folio.reading.hoverPreviews` | `true` | Footnotes and link targets on hover. |
-| `folio.reading.keyboard` | `true` | `j`/`k`, `J`/`K`, `g`/`G`, `t` and `Alt+←` move through the document. |
+| `folio.reading.keyboard` | `true` | `j`/`k`, `J`/`K`, `g`/`G`, `t` and `Alt+←` move through the document; `+`/`-`/`0` change the text size. |
 | `folio.reading.progress` | `true` | Reading time and progress bar. |
 | `folio.reading.focusMode` | `false` | Dim everything but the paragraph being read. |
 | `folio.reading.focusScope` | `section` | What focus mode keeps clear: `section` (a heading with its paragraphs), `paragraph` or `sentence`. |

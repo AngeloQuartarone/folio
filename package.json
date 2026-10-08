@@ -78,6 +78,21 @@
         "category": "Folio"
       },
       {
+        "command": "folio.increaseTextSize",
+        "title": "Increase Text Size",
+        "category": "Folio"
+      },
+      {
+        "command": "folio.decreaseTextSize",
+        "title": "Decrease Text Size",
+        "category": "Folio"
+      },
+      {
+        "command": "folio.resetTextSize",
+        "title": "Reset Text Size",
+        "category": "Folio"
+      },
+      {
         "command": "folio.syncPreview",
         "title": "Sync Preview to Cursor",
         "category": "Folio"
@@ -385,7 +400,7 @@
         "folio.reading.keyboard": {
           "type": "boolean",
           "default": true,
-          "markdownDescription": "Keys to move through the document: `j`/`k` next/previous paragraph, `J`/`K` next/previous heading, `g`/`G` top/bottom, `t` table of contents, `Alt+←` back after following a link."
+          "markdownDescription": "Keys to move through the document: `j`/`k` next/previous paragraph, `J`/`K` next/previous heading, `g`/`G` top/bottom, `t` table of contents, `+`/`-`/`0` text size (larger, smaller, default), `Alt+←` back after following a link."
         },
         "folio.reading.progress": {
           "type": "boolean",

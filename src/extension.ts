@@ -5,7 +5,7 @@
  * Illinois/NCSA License). See LICENSE.md and UPSTREAM.md.
  */
 import * as vscode from 'vscode';
-import { SECTION } from './config';
+import { FONT_SIZE, SECTION, clampFontSize } from './config';
 import { exportDocument } from './export/exportCommands';
 import { migrateLegacyModels, migrateLegacySettings } from './legacy';
 import { NotesController } from './notes/notesController';
@@ -81,6 +81,25 @@ export function activate(context: vscode.ExtensionContext): ExtensionApi {
       void vscode.window.showInformationMessage('Open the Folio preview first.');
     }
   });
+
+  // One pixel at a time, within the setting's range; reset goes back to the default.
+  const changeTextSize = async (change: 1 | -1 | 0) => {
+    const config = vscode.workspace.getConfiguration(SECTION);
+    const current = clampFontSize(config.get<number>('reading.fontSize', FONT_SIZE.default));
+    const size = change === 0 ? undefined : clampFontSize(current + change);
+    if (size === current) {
+      void vscode.window.setStatusBarMessage(`Text size ${size} px — the ${change > 0 ? 'largest' : 'smallest'}`, 2000);
+      return;
+    }
+    await config.update('reading.fontSize', size, vscode.ConfigurationTarget.Global);
+    // The preview says it itself.
+    if (!preview.webviewPanel) {
+      void vscode.window.setStatusBarMessage(`Text size ${size ?? FONT_SIZE.default} px`, 2000);
+    }
+  };
+  command('increaseTextSize', () => changeTextSize(1));
+  command('decreaseTextSize', () => changeTextSize(-1));
+  command('resetTextSize', () => changeTextSize(0));
 
   // The reader tab and the text editor of the same file, one or the other.
   command('openInReader', (uri?: vscode.Uri) => {

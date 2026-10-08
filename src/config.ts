@@ -117,11 +117,17 @@ function oneOf<T extends string>(value: unknown, choices: readonly T[], fallback
   return choices.includes(value as T) ? (value as T) : fallback;
 }
 
+/** folio.reading.fontSize: default and range, in pixels. */
+export const FONT_SIZE = { default: 16, min: 13, max: 24 } as const;
+
+export function clampFontSize(size: number): number {
+  return Number.isFinite(size) ? Math.min(FONT_SIZE.max, Math.max(FONT_SIZE.min, Math.round(size))) : FONT_SIZE.default;
+}
+
 export function getReadingConfig(): ReadingConfig {
   const c = vscode.workspace.getConfiguration(SECTION);
-  const size = c.get<number>('reading.fontSize', 16);
   return {
-    fontSize: Number.isFinite(size) ? Math.min(24, Math.max(13, Math.round(size))) : 16,
+    fontSize: clampFontSize(c.get<number>('reading.fontSize', FONT_SIZE.default)),
     lineHeight: oneOf(c.get('reading.lineHeight'), ['compact', 'comfortable', 'airy'] as const, 'comfortable'),
     width: oneOf(c.get('reading.width'), ['narrow', 'medium', 'wide', 'full'] as const, 'medium'),
     font: oneOf(c.get('reading.font'), ['theme', 'sans', 'serif', 'hyperlegible', 'dyslexic'] as const, 'theme'),

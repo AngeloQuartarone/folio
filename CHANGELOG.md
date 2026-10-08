@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Text size from the keyboard: `+`/`-` in the preview make the text one
+  pixel larger or smaller and `0` resets it, with *Folio: Increase / Decrease
+  / Reset Text Size* for shortcuts of your own. The size changes in place,
+  keeping your place in the document.
+
 ## 0.1.0 (2026-09-24)
 
 - **Folio**: the extension's new name and identity, a calm Markdown reader

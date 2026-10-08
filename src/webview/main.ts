@@ -129,7 +129,37 @@ if (reading.keyboard) {
     toggleOutline: () => outline?.toggle(),
     // In focus mode (moving by steps), j/k move the focus.
     step: (direction) => (focus.stepping() ? (focus.step(direction), true) : false),
+    textSize: changeTextSize,
   });
+}
+
+/**
+ * The text size keys change the setting; the host answers with "textSize"
+ * (as for the commands and the settings panel), which applies it.
+ */
+let textSize = reading.fontSize;
+function changeTextSize(change: 1 | -1 | 0): void {
+  if (change === 0) {
+    post({ type: 'resetSetting', key: 'reading.fontSize' });
+    return;
+  }
+  const item = settings.sections.flatMap((section) => section.items).find((entry) => entry.key === 'reading.fontSize');
+  const [min, max] = item?.kind === 'number' ? [item.min, item.max] : [13, 24];
+  const size = Math.min(max, Math.max(min, textSize + change));
+  if (size === textSize) {
+    toast(`Text size ${size} px — the ${change > 0 ? 'largest' : 'smallest'}`);
+    return;
+  }
+  post({ type: 'setSetting', key: 'reading.fontSize', value: size });
+}
+
+function applyTextSize(size: number): void {
+  if (size === textSize) {
+    return;
+  }
+  textSize = size;
+  keepReadingPosition(() => document.body.style.setProperty('--folio-font-size', `${size}px`));
+  toast(`Text size ${size} px`);
 }
 
 const tooltip = new TranslationTooltip(preview, post, settings.translationEnabled, notes);
@@ -574,6 +604,9 @@ window.addEventListener('message', (event: MessageEvent<HostMessage>) => {
       break;
     case 'documentTranslation':
       documentTranslation.onReply(message);
+      break;
+    case 'textSize':
+      applyTextSize(message.size);
       break;
     case 'toggleFocusMode':
       toggleFocus();

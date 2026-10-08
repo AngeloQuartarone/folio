@@ -11,6 +11,7 @@ import * as vscode from 'vscode';
 import {
   PREVIEW_SETTINGS,
   PreviewConfig,
+  ReadingConfig,
   SECTION,
   editorColorScheme,
   getPreviewConfig,
@@ -45,6 +46,8 @@ export class PreviewManager implements vscode.Disposable {
   private panel: vscode.WebviewPanel | undefined;
   private sourceUri: vscode.Uri | undefined;
   private config: PreviewConfig = getPreviewConfig();
+  /** The reading settings the preview was last built with. */
+  private reading: ReadingConfig = getReadingConfig();
   private renderer = createRenderer(this.config);
   private systemColorScheme: 'light' | 'dark' = 'light';
   private updateTimer: ReturnType<typeof setTimeout> | undefined;
@@ -104,7 +107,14 @@ export class PreviewManager implements vscode.Disposable {
         if (event.affectsConfiguration(`${SECTION}.customCss`)) {
           this.watchUserCss();
         }
-        if (PREVIEW_SETTINGS.some((key) => event.affectsConfiguration(key))) {
+        const reading = getReadingConfig();
+        const textSizeOnly = onlyTextSizeChanged(event, this.reading, reading);
+        this.reading = reading;
+        if (textSizeOnly) {
+          // Applied in place: rebuilding the page would flash at every step.
+          this.post({ type: 'textSize', size: reading.fontSize });
+          this.post({ type: 'settings', sections: previewSettingsSections() });
+        } else if (PREVIEW_SETTINGS.some((key) => event.affectsConfiguration(key))) {
           this.renderer = createRenderer(this.config);
           this.reload();
         } else {
@@ -256,7 +266,7 @@ export class PreviewManager implements vscode.Disposable {
         mermaidTheme: colorScheme === 'dark' ? 'dark' : 'default',
         translationEnabled: translation.enabled,
         sections: previewSettingsSections(),
-        reading: getReadingConfig(),
+        reading: this.reading,
       },
       customCss: readUserCss(this.config.customCss),
     });
@@ -726,4 +736,17 @@ function bottomVisibleLine(editor: vscode.TextEditor): number | undefined {
 function previewSettingsSections() {
   const config = vscode.workspace.getConfiguration(SECTION);
   return settingsSections((key) => config.get(key));
+}
+
+/** Whether the change is folio.reading.fontSize and nothing else the page is built from. */
+function onlyTextSizeChanged(
+  event: vscode.ConfigurationChangeEvent,
+  before: ReadingConfig,
+  after: ReadingConfig,
+): boolean {
+  return (
+    before.fontSize !== after.fontSize &&
+    JSON.stringify({ ...before, fontSize: 0 }) === JSON.stringify({ ...after, fontSize: 0 }) &&
+    !PREVIEW_SETTINGS.some((key) => key !== `${SECTION}.reading` && event.affectsConfiguration(key))
+  );
 }

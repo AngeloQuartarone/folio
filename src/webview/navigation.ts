@@ -109,11 +109,14 @@ export interface KeyActions {
   toggleOutline(): void;
   /** j/k in focus mode: move the focus instead; true when it did. */
   step?(direction: 1 | -1): boolean;
+  /** +/-: one pixel larger or smaller; 0: back to the default size. */
+  textSize(change: 1 | -1 | 0): void;
 }
 
 /**
  * j/k: next/previous paragraph, J/K: next/previous heading, g/G: top and
- * bottom, t: table of contents, Alt+←: back. Not while typing.
+ * bottom, t: table of contents, +/-/0: text size, Alt+←: back. Not while
+ * typing.
  */
 export function enableKeyboard(root: HTMLElement, actions: KeyActions): void {
   document.addEventListener('keydown', (event) => {
@@ -160,6 +163,16 @@ export function enableKeyboard(root: HTMLElement, actions: KeyActions): void {
         break;
       case 't':
         actions.toggleOutline();
+        break;
+      case '+':
+      case '=':
+        actions.textSize(1);
+        break;
+      case '-':
+        actions.textSize(-1);
+        break;
+      case '0':
+        actions.textSize(0);
         break;
       default:
         return;
