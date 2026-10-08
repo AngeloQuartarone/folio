@@ -1,6 +1,8 @@
 # Changelog
 
-## 0.1.0 (unreleased)
+## Unreleased
+
+## 0.1.0 (2026-09-24)
 
 - **Folio**: the extension's new name and identity, a calm Markdown reader
   (formerly Markdown Translate Preview). Settings are now `folio.*` and

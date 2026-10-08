@@ -645,7 +645,8 @@
     "test:unit": "node scripts/build.mjs --tests && mocha \"out/test/unit/**/*.test.js\"",
     "test:integration": "npm run build && node scripts/build.mjs --tests && node scripts/run-integration-tests.mjs",
     "vscode:prepublish": "npm run build",
-    "package": "vsce package --no-dependencies"
+    "package": "vsce package --no-dependencies",
+    "release": "node scripts/release.mjs"
   },
   "dependencies": {
     "@vscode/markdown-it-katex": "^1.1.2",
