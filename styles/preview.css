@@ -1779,6 +1779,51 @@ body.mtp-settings-open {
   list-style: none;
 }
 
+.folio-peek-path {
+  margin: -2px 0 8px;
+  overflow: hidden;
+  color: var(--mtp-muted);
+  font-family: var(--vscode-editor-font-family, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: 11px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* Lines of a source file: wider, and cut on the right rather than wrapped. */
+.mtp-tooltip.folio-peek:has(.folio-peek-body > pre:only-child) {
+  width: min(560px, calc(100vw - 16px));
+}
+
+.folio-peek-body:has(> pre:only-child) {
+  max-height: 320px;
+}
+
+.folio-peek-body > pre:only-child {
+  margin: 0;
+  padding: 8px 10px;
+  overflow: hidden;
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre;
+}
+
+.folio-peek-body img.folio-peek-image {
+  display: block;
+  max-height: 220px;
+  margin: 0 auto;
+}
+
+.folio-peek-list {
+  margin: 0;
+  padding-left: 1.2em;
+  font-size: 12.5px;
+}
+
+.folio-peek-more,
+.folio-peek-missing {
+  color: var(--mtp-muted);
+}
+
 /* "Translate document": each translation right below its original, quieter. */
 .markdown-preview .folio-translation {
   margin: 0 0 1em;

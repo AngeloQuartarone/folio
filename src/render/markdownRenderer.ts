@@ -125,15 +125,7 @@ export class MarkdownRenderer {
         return fallback(tokens, idx, options, env, self);
       }
 
-      const grammarName = language && Prism.languages[language] ? language : '';
-      const cssLanguage = grammarName || 'text';
-      const code = grammarName
-        ? this.highlight(token.content, grammarName)
-        : escapeHtml(token.content);
-      return (
-        `<pre${line} class="language-${cssLanguage}">` +
-        `<code class="language-${cssLanguage}">${code}</code></pre>\n`
-      );
+      return this.renderCode(token.content, language, line);
     };
 
     this.md.renderer.rules.code_block = (tokens, idx) => {
@@ -156,6 +148,17 @@ export class MarkdownRenderer {
       }
       return defaultImage(tokens, idx, options, env, self);
     };
+  }
+
+  /** A code block, highlighted when Prism knows `language` (else plain text). */
+  renderCode(content: string, language: string, attributes = ''): string {
+    const grammarName = language && Prism.languages[language] ? language : '';
+    const cssLanguage = grammarName || 'text';
+    const code = grammarName ? this.highlight(content, grammarName) : escapeHtml(content);
+    return (
+      `<pre${attributes} class="language-${cssLanguage}">` +
+      `<code class="language-${cssLanguage}">${code}</code></pre>\n`
+    );
   }
 
   private highlight(code: string, language: string): string {

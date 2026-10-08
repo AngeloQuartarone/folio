@@ -286,7 +286,8 @@ export class TranslationTooltip {
     style.maxWidth = `${Math.min(420, window.innerWidth - 2 * EDGE)}px`;
     style.left = '0px';
     style.top = '0px';
-    const { width, height } = this.element.getBoundingClientRect();
+    // Layout size: the opening animation scales the tooltip down a little.
+    const { offsetWidth: width, offsetHeight: height } = this.element;
 
     const viewLeft = window.scrollX + EDGE;
     const viewRight = window.scrollX + window.innerWidth - EDGE;

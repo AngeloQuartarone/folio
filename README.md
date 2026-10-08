@@ -48,8 +48,12 @@ It is an independent project derived from
 - **Fold sections**: the arrow left of a heading folds its section; what is
   folded is remembered for each document.
 - **Previews on hover**: rest the pointer on a footnote to read it, on a
-  link to a heading to see the start of that section, on a link to another
-  Markdown file to see the start of that file.
+  link to a heading to see the start of that section, and on a link to a
+  file to see what is there, with its path in the workspace: the start of
+  a Markdown file; the lines of a source file, highlighted (the ones a
+  GitHub-style `#L10-L25` points to, else the first ones); an image; the
+  contents of a folder; or that the file does not exist. A click opens it,
+  at those lines.
 - **Back**: after following a link (to a heading or to another Markdown
   file), the mouse's back button, `Alt+←` or the **Back** button next to the
   table of contents button takes you back to where you were.

@@ -19,9 +19,10 @@ import {
   getTranslationConfig,
 } from '../config';
 import { HostMessage, WebviewMessage } from '../messages';
+import { codeExcerpt, codeLanguage, formatSize, looksLikeText, parseLineFragment } from '../render/codeExcerpt';
 import { markdownExcerpt } from '../render/excerpt';
 import { documentLanguage } from '../render/language';
-import { MarkdownRenderer } from '../render/markdownRenderer';
+import { MarkdownRenderer, escapeHtml } from '../render/markdownRenderer';
 import { SlugRegistry } from '../render/slugify';
 import {
   colorSchemeOfTheme,
@@ -602,8 +603,26 @@ export class PreviewManager implements vscode.Disposable {
       if (!link) {
         throw new Error('not found');
       }
+      const lines = parseLineFragment(link.fragment);
       if (isMarkdownPath(link.target)) {
-        await this.openMarkdown(link.target, (text) => (link.fragment ? findHeadingLine(text, link.fragment) : 0));
+        await this.openMarkdown(link.target, (text) =>
+          lines ? lines.start - 1 : link.fragment ? findHeadingLine(text, link.fragment) : 0,
+        );
+      } else if ((await vscode.workspace.fs.stat(link.target)).type & vscode.FileType.Directory) {
+        await vscode.commands.executeCommand('revealInExplorer', link.target);
+      } else if (lines) {
+        // src/app.ts#L10-L25: the file at those lines, selected.
+        const document = await vscode.workspace.openTextDocument(link.target);
+        const last = document.lineCount - 1;
+        await vscode.window.showTextDocument(document, {
+          viewColumn: this.sourceEditor()?.viewColumn ?? vscode.ViewColumn.One,
+          selection: new vscode.Range(
+            Math.min(lines.start - 1, last),
+            0,
+            Math.min(lines.end - 1, last),
+            document.lineAt(Math.min(lines.end - 1, last)).text.length,
+          ),
+        });
       } else {
         await vscode.commands.executeCommand('vscode.open', link.target);
       }
@@ -637,37 +656,80 @@ export class PreviewManager implements vscode.Disposable {
   }
 
   /**
-   * The start of the Markdown file (or of the section) a link points to,
-   * rendered, for the preview shown on hover.
+   * What a link to a file points to, for the preview shown on hover: the
+   * start of a Markdown file (or of the section), the linked lines of a
+   * source file, an image, the contents of a folder, or that it is missing.
    */
   private async linkPreview(id: number, href: string): Promise<void> {
     if (!this.panel || typeof href !== 'string' || !Number.isInteger(id)) {
       return;
     }
+    const reply = (title: string, html: string, target?: vscode.Uri) =>
+      this.post({ type: 'linkPreview', id, title, html, path: target && displayPath(target) });
     try {
       const link = await this.findLink(href);
-      if (!link || !isMarkdownPath(link.target)) {
+      if (!link) {
+        const missing = this.resolveLink(href);
+        if (missing) {
+          reply('Not found', '<p class="folio-peek-missing">There is no file at this path.</p>', missing.target);
+        }
         return;
       }
-      const document = await vscode.workspace.openTextDocument(link.target);
-      const text = document.getText();
-      const snippet = markdownExcerpt(text, link.fragment ? findHeadingLine(text, link.fragment) : 0);
-      const webview = this.panel.webview;
-      const folder = vscode.Uri.joinPath(link.target, '..');
-      const result = this.renderer.render(snippet, {
-        // Relative images are relative to that file, not to the one previewed.
-        resolveImageSrc: (src) =>
-          /^[a-z][a-z0-9+.-]*:|^\/\/|^#/i.test(src) || src.startsWith('/')
-            ? src
-            : webview.asWebviewUri(vscode.Uri.joinPath(folder, decodeURIComponent(src))).toString(),
-      });
-      const heading = link.fragment ? /^#{1,6}\s+(.*?)\s*#*\s*$/.exec(text.split(/\r?\n/)[findHeadingLine(text, link.fragment)] ?? '') : null;
-      const title = [path.basename(link.target.fsPath), heading?.[1]].filter(Boolean).join(' › ');
-      this.post({ type: 'linkPreview', id, html: result.html, title });
+      const { target, fragment } = link;
+      const name = path.basename(target.fsPath);
+      const stat = await vscode.workspace.fs.stat(target);
+      if (stat.type & vscode.FileType.Directory) {
+        const entries = (await vscode.workspace.fs.readDirectory(target))
+          .sort(([a, aType], [b, bType]) => Number(!(aType & vscode.FileType.Directory)) - Number(!(bType & vscode.FileType.Directory)) || a.localeCompare(b));
+        const shown = entries.slice(0, FOLDER_ENTRIES).map(([entry, type]) =>
+          `<li>${escapeHtml(entry)}${type & vscode.FileType.Directory ? '/' : ''}</li>`);
+        const more = entries.length > FOLDER_ENTRIES ? `<li class="folio-peek-more">… ${entries.length - FOLDER_ENTRIES} more</li>` : '';
+        const count = entries.length === 1 ? '1 item' : `${entries.length} items`;
+        reply(`${name}/ · folder · ${count}`, entries.length ? `<ul class="folio-peek-list">${shown.join('')}${more}</ul>` : '<p>Empty folder.</p>', target);
+      } else if (isMarkdownPath(target)) {
+        const text = (await vscode.workspace.openTextDocument(target)).getText();
+        const snippet = markdownExcerpt(text, fragment ? findHeadingLine(text, fragment) : 0);
+        const webview = this.panel.webview;
+        const folder = vscode.Uri.joinPath(target, '..');
+        const result = this.renderer.render(snippet, {
+          // Relative images are relative to that file, not to the one previewed.
+          resolveImageSrc: (src) =>
+            /^[a-z][a-z0-9+.-]*:|^\/\/|^#/i.test(src) || src.startsWith('/')
+              ? src
+              : webview.asWebviewUri(vscode.Uri.joinPath(folder, decodeURIComponent(src))).toString(),
+        });
+        const heading = fragment ? /^#{1,6}\s+(.*?)\s*#*\s*$/.exec(text.split(/\r?\n/)[findHeadingLine(text, fragment)] ?? '') : null;
+        reply([name, heading?.[1]].filter(Boolean).join(' › '), result.html, target);
+      } else if (IMAGE_PATH.test(target.path)) {
+        const src = this.panel.webview.asWebviewUri(target).toString();
+        reply(`${name} · ${formatSize(stat.size)}`, `<img class="folio-peek-image" src="${escapeHtml(src)}" alt="">`, target);
+      } else {
+        const bytes = stat.size <= MAX_CODE_BYTES ? await vscode.workspace.fs.readFile(target) : undefined;
+        if (!bytes || !looksLikeText(bytes)) {
+          reply(`${name} · ${formatSize(stat.size)}`, `<p>${bytes ? 'Binary file' : 'Large file'}, no preview.</p>`, target);
+          return;
+        }
+        const excerpt = codeExcerpt(new TextDecoder().decode(bytes), parseLineFragment(fragment));
+        const lines = excerpt.start === excerpt.end ? `line ${excerpt.start}` : `lines ${excerpt.start}–${excerpt.end}`;
+        const whole = excerpt.start === 1 && excerpt.end === excerpt.total;
+        const which = parseLineFragment(fragment) ? lines : whole ? `${excerpt.total} lines` : `${lines} of ${excerpt.total}`;
+        reply(`${name} · ${which}`, this.renderer.renderCode(excerpt.code, codeLanguage(name)), target);
+      }
     } catch {
-      // A missing file has no preview.
+      // Unreadable: no preview.
     }
   }
+}
+
+/** Entries of a folder listed in its preview. */
+const FOLDER_ENTRIES = 12;
+/** Larger files are not read for a preview. */
+const MAX_CODE_BYTES = 2 * 1024 * 1024;
+const IMAGE_PATH = /\.(png|jpe?g|gif|webp|avif|bmp|ico|svg)$/i;
+
+/** A path as the workspace shows it ("docs/guide.md"), or the full path outside it. */
+function displayPath(uri: vscode.Uri): string {
+  return vscode.workspace.asRelativePath(uri);
 }
 
 export function isMarkdownPath(uri: vscode.Uri): boolean {

@@ -323,7 +323,7 @@ function defineTests(): void {
       }
     });
 
-    it('previews another Markdown file on hover, and goes back to a place in another document', async () => {
+    it('previews linked files on hover (Markdown, code, folders, images, missing), and goes back to a place in another document', async () => {
       const api = await activate();
       const uri = fixture('sample.md');
       const ready = waitForMessage(api, (message) => message.type === 'ready');
@@ -345,6 +345,43 @@ function defineTests(): void {
         assert.equal(preview.title, 'other.md › Second');
         assert.match(preview.html, /<h2 id="second"/);
         assert.doesNotMatch(preview.html, /<h1/, 'only the section the link points to');
+
+        const reply = async (id: number, href: string) => {
+          (api.preview as any).onMessage({ type: 'linkPreview', id, sourceUri: uri.toString(), href });
+          await until(() => sent.some((message) => message.type === 'linkPreview' && message.id === id), `a preview of ${href}`);
+          const message = sent.find((candidate) => candidate.type === 'linkPreview' && candidate.id === id);
+          assert.ok(message?.type === 'linkPreview');
+          return message;
+        };
+        assert.equal(preview.path, 'other.md', 'the path in the workspace');
+
+        const code = await reply(10, 'code/greet.py#L4-L7');
+        assert.equal(code.title, 'greet.py · lines 4–7');
+        assert.equal(code.path, 'code/greet.py');
+        assert.match(code.html, /<pre class="language-py">/);
+        assert.match(code.html, /<span class="token keyword">def<\/span> <span class="token function">greet<\/span>/);
+        assert.doesNotMatch(code.html, /class Greeter/, 'only the linked lines');
+
+        const head = await reply(11, './code/greet.py');
+        assert.equal(head.title, 'greet.py · 15 lines');
+
+        const folder = await reply(12, 'code');
+        assert.equal(folder.title, 'code/ · folder · 1 item');
+        assert.match(folder.html, /<li>greet\.py<\/li>/);
+
+        const image = await reply(13, 'image.svg');
+        assert.match(image.title, /^image\.svg · \d+ B$/);
+        assert.match(image.html, /<img class="folio-peek-image" src="[^"]*image\.svg"/);
+
+        const missing = await reply(14, 'nowhere/gone.ts');
+        assert.equal(missing.title, 'Not found');
+        assert.equal(missing.path, 'nowhere/gone.ts');
+
+        (api.preview as any).onMessage({ type: 'openLink', sourceUri: uri.toString(), href: 'code/greet.py#L4-L5' });
+        await until(() => vscode.window.activeTextEditor?.document.uri.path.endsWith('/code/greet.py') === true, 'greet.py opens');
+        const selection = vscode.window.activeTextEditor!.selection;
+        assert.deepEqual([selection.start.line, selection.start.character, selection.end.line], [3, 0, 4]);
+        await vscode.commands.executeCommand('workbench.action.closeActiveEditor');
 
         (api.preview as any).onMessage({ type: 'linkPreview', id: 8, sourceUri: uri.toString(), href: 'https://example.com/a.md' });
         await new Promise((resolve) => setTimeout(resolve, 300));

@@ -12,6 +12,14 @@
 - Notes on hover: resting the pointer on a note's text or its pin shows the
   note and its replies; the card stays while the pointer is on it, and stays
   open once used (`folio.notes.hoverPreview`, on by default).
+- Previews on hover, for every file a link points to, with its path in the
+  workspace: the lines of a source file, highlighted (`#L10-L25` as on
+  GitHub, else the first lines); an image; a folder's contents; a missing
+  file. Clicking a link with `#L10-L25` opens the file with those lines
+  selected; a link to a folder shows it in the Explorer.
+- Fixed: hover previews, notes and the translation tooltip were placed as
+  if they were a little narrower, and could stick out of the window's right
+  edge.
 - Image zoom, closer: in the large view of an image, pinch the trackpad (or
   Ctrl/Cmd + wheel, double-click, `+`/`-`/`0`) to zoom up to 8× at the
   pointer, and move the image with two fingers or by dragging.

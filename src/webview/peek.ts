@@ -1,7 +1,9 @@
 /*
  * Previews on hover: resting the pointer on a footnote reference shows the
  * footnote; on a link to a heading, the start of that section; on a link to
- * another Markdown file, the start of that file (rendered by the host).
+ * a file, what the host found there: the start of a Markdown file, the
+ * linked lines of a source file, an image, a folder's contents, or that
+ * nothing is there. The file's path is shown above it.
  * Copyright (c) 2026 Angelo Quartarone.
  */
 import type { HostMessage, WebviewMessage } from '../messages';
@@ -12,7 +14,8 @@ const GAP = 8;
 const EDGE = 8;
 /** Blocks of a section shown after its heading. */
 const SECTION_BLOCKS = 3;
-const MARKDOWN_LINK = /^(?![a-z][a-z0-9+.-]*:|\/\/)[^?#]*\.(md|markdown|mdown|mkd|mkdn)(#.*)?$/i;
+/** A link to a file: relative, root-relative or file:, not to a place in this document. */
+const FILE_LINK = /^(?:file:|(?![a-z][a-z0-9+.-]*:|\/\/|#))./i;
 
 type Reply = Extract<HostMessage, { type: 'linkPreview' }>;
 
@@ -54,7 +57,7 @@ export class LinkPreviews {
   /** The host rendered the start of another file. */
   onReply(message: Reply): void {
     if (message.id === this.requestId && this.link && message.html) {
-      this.open(this.link, this.sanitize(message.html), message.title);
+      this.open(this.link, this.sanitize(message.html), message.title, message.path);
     }
   }
 
@@ -65,7 +68,7 @@ export class LinkPreviews {
       if (content) {
         this.open(link, content);
       }
-    } else if (MARKDOWN_LINK.test(href)) {
+    } else if (FILE_LINK.test(href)) {
       this.post({ type: 'linkPreview', id: ++this.requestId, sourceUri: this.sourceUri(), href });
     }
   }
@@ -104,7 +107,7 @@ export class LinkPreviews {
     return holder.innerHTML;
   }
 
-  private open(link: HTMLAnchorElement, html: string, title?: string): void {
+  private open(link: HTMLAnchorElement, html: string, title?: string, path?: string): void {
     if (!link.isConnected) {
       return;
     }
@@ -114,6 +117,12 @@ export class LinkPreviews {
       heading.className = 'folio-peek-title';
       heading.textContent = title;
       this.card.append(heading);
+    }
+    if (path) {
+      const where = document.createElement('div');
+      where.className = 'folio-peek-path';
+      where.textContent = path;
+      this.card.append(where);
     }
     const body = document.createElement('div');
     body.className = 'folio-peek-body';
@@ -126,7 +135,8 @@ export class LinkPreviews {
     const style = this.card.style;
     style.left = '0px';
     style.top = '0px';
-    const { width, height } = this.card.getBoundingClientRect();
+    // Layout size: the opening animation scales the card down a little.
+    const { offsetWidth: width, offsetHeight: height } = this.card;
     const left = Math.max(EDGE, Math.min(rect.left, window.innerWidth - width - EDGE));
     let top = rect.bottom + GAP;
     if (top + height > window.innerHeight - EDGE && rect.top - GAP - height >= EDGE) {

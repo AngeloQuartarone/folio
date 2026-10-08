@@ -93,8 +93,8 @@ export type HostMessage =
   | { type: 'languages'; languages: LanguageStatus[] }
   /** Current values of every setting, after one changed. */
   | { type: 'settings'; sections: SettingSection[] }
-  /** The start of another Markdown file a link points to (see linkPreview below). */
-  | { type: 'linkPreview'; id: number; html: string; title: string }
+  /** What a link to a file points to (see linkPreview below); `path` as the workspace shows it. */
+  | { type: 'linkPreview'; id: number; html: string; title: string; path?: string }
   /** Progress of "Translate document": each block as it is done, then the end (or an error). */
   | {
       type: 'documentTranslation';
@@ -133,7 +133,7 @@ export type WebviewMessage =
    */
   | { type: 'selectSource'; sourceUri: string; line: number; endLine: number; text: string; occurrence: number }
   | { type: 'openLink'; sourceUri: string; href: string }
-  /** Hovering a link to another Markdown file: render the start of it. */
+  /** Hovering a link to a file: what it points to. */
   | { type: 'linkPreview'; id: number; sourceUri: string; href: string }
   /** Translate these blocks of the document (HTML), in this order; replaces any earlier request. */
   | { type: 'translateDocument'; sourceUri: string; requestId: number; blocks: Array<{ id: number; html: string }> }

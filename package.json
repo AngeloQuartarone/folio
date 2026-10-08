@@ -400,7 +400,7 @@
         "folio.reading.hoverPreviews": {
           "type": "boolean",
           "default": true,
-          "markdownDescription": "Show footnotes, and the section a link points to (in this document or another Markdown file), when the pointer rests on them."
+          "markdownDescription": "Show footnotes, and what a link points to (a section of this document, another Markdown file, the lines of a source file, an image, a folder), when the pointer rests on them."
         },
         "folio.reading.keyboard": {
           "type": "boolean",
