@@ -586,8 +586,8 @@
       },
       {
         "command": "folio.addNote",
-        "key": "ctrl+alt+n",
-        "mac": "cmd+alt+n",
+        "key": "ctrl+shift+n",
+        "mac": "cmd+shift+n",
         "when": "activeWebviewPanelId == folio.preview || activeCustomEditorId == folio.reader"
       }
     ],

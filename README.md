@@ -95,7 +95,7 @@ It is an independent project derived from
 ### Working with the document
 
 - **Notes in the margin**: select text, choose **Add note** (or press `n`,
-  `Cmd+Alt+N` / `Ctrl+Alt+N`, or right-click › **Add Note to Selection**),
+  `Cmd+Shift+N` / `Ctrl+Shift+N`, or right-click › **Add Note to Selection**),
   write. The text is highlighted with a pin in the margin; rest the pointer
   on the text or the pin to read the note and its replies
   (`folio.notes.hoverPreview`), click it to reply, resolve, edit or delete
@@ -160,7 +160,7 @@ And a few things GitHub does not:
 | Folio: Increase Text Size | `+` in the preview |
 | Folio: Decrease Text Size | `-` in the preview |
 | Folio: Reset Text Size | `0` in the preview |
-| Folio: Add Note to Selection | `n` in the preview; `Ctrl+Alt+N` / `Cmd+Alt+N` |
+| Folio: Add Note to Selection | `n` in the preview; `Ctrl+Shift+N` / `Cmd+Shift+N` |
 | Folio: Copy Notes for AI | |
 | Folio: Select Preview Theme | |
 | Folio: Select Code Block Theme | |
