@@ -150,7 +150,16 @@ async function publishOpenVsx({ publisher, name, version, vsix }) {
   if (!(await fetch(`https://open-vsx.org/api/${publisher}`)).ok) {
     run('npx', ['--yes', OVSX, 'create-namespace', publisher], { env });
   }
-  run('npx', ['--yes', OVSX, 'publish', vsix], { env });
+  console.log(`$ npx ${OVSX} publish ${vsix}`);
+  const result = spawnSync('npx', ['--yes', OVSX, 'publish', vsix], { cwd: root, env, encoding: 'utf8' });
+  const said = `${result.stdout}${result.stderr}`.split('\n').filter((line) => !line.startsWith('npm warn')).join('\n');
+  console.log(said.trim());
+  // Open VSX scans new uploads before showing them: the API says "not found" until then.
+  if (result.status !== 0 && /already published, but currently isn't active/.test(said)) {
+    console.log(`Open VSX has ${version} and is still checking it; it appears once the check is done.`);
+  } else if (result.status !== 0) {
+    throw new Error('ovsx publish failed');
+  }
 }
 
 async function publishMarketplace({ publisher, name, version, vsix }) {
