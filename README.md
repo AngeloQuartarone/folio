@@ -90,10 +90,12 @@ It is an independent project derived from
 
 ### Working with the document
 
-- **Notes in the margin**: select text, choose **Add note**, write. The text
-  is highlighted with a pin in the margin; click it to read the note and its
-  replies, reply, resolve, edit or delete it. All notes are listed in the
-  table of contents, and follow their text when the document changes.
+- **Notes in the margin**: select text, choose **Add note** (or press `n`,
+  `Cmd+Alt+N` / `Ctrl+Alt+N`, or right-click › **Add Note to Selection**),
+  write. The text is highlighted with a pin in the margin; click it to read
+  the note and its replies, reply, resolve, edit or delete it. All notes are
+  listed in the table of contents, and follow their text when the document
+  changes.
 - **Notes that travel with the document, and that your AI reads**: notes are
   kept in one HTML comment at the end of the Markdown file. GitHub, VS Code's
   own preview, Obsidian and Pandoc do not show it, so the document looks the
@@ -149,6 +151,7 @@ And a few things GitHub does not:
 | Folio: Increase Text Size | `+` in the preview |
 | Folio: Decrease Text Size | `-` in the preview |
 | Folio: Reset Text Size | `0` in the preview |
+| Folio: Add Note to Selection | `n` in the preview; `Ctrl+Alt+N` / `Cmd+Alt+N` |
 | Folio: Copy Notes for AI | |
 | Folio: Select Preview Theme | |
 | Folio: Select Code Block Theme | |
@@ -242,7 +245,7 @@ selection. If the text is already in the target language a small
 | `folio.reading.outlineAutoClose` | `true` | Close the table of contents with a click on the text when it floats over it. |
 | `folio.reading.collapsible` | `true` | Fold a section with the arrow next to its heading. |
 | `folio.reading.hoverPreviews` | `true` | Footnotes and link targets on hover. |
-| `folio.reading.keyboard` | `true` | `j`/`k`, `J`/`K`, `g`/`G`, `t` and `Alt+←` move through the document; `+`/`-`/`0` change the text size. |
+| `folio.reading.keyboard` | `true` | `j`/`k`, `J`/`K`, `g`/`G`, `t` and `Alt+←` move through the document; `+`/`-`/`0` change the text size; `n` adds a note to the selection. |
 | `folio.reading.progress` | `true` | Reading time and progress bar. |
 | `folio.reading.focusMode` | `false` | Dim everything but the paragraph being read. |
 | `folio.reading.focusScope` | `section` | What focus mode keeps clear: `section` (a heading with its paragraphs), `paragraph` or `sentence`. |

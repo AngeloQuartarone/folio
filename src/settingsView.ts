@@ -174,7 +174,7 @@ const SECTIONS: SectionDefinition[] = [
       {
         key: 'reading.keyboard',
         label: 'Keyboard navigation',
-        description: 'j/k paragraphs, J/K headings, g/G top and bottom, t contents, +/-/0 text size, Alt+← back.',
+        description: 'j/k paragraphs, J/K headings, g/G top and bottom, t contents, +/-/0 text size, n note, Alt+← back.',
         kind: 'toggle',
         default: true,
       },

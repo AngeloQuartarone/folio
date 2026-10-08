@@ -138,6 +138,11 @@
         "category": "Folio"
       },
       {
+        "command": "folio.addNote",
+        "title": "Add Note to Selection",
+        "category": "Folio"
+      },
+      {
         "command": "folio.copyNotesForAI",
         "title": "Copy Notes for AI",
         "category": "Folio"
@@ -400,7 +405,7 @@
         "folio.reading.keyboard": {
           "type": "boolean",
           "default": true,
-          "markdownDescription": "Keys to move through the document: `j`/`k` next/previous paragraph, `J`/`K` next/previous heading, `g`/`G` top/bottom, `t` table of contents, `+`/`-`/`0` text size (larger, smaller, default), `Alt+←` back after following a link."
+          "markdownDescription": "Keys to move through the document: `j`/`k` next/previous paragraph, `J`/`K` next/previous heading, `g`/`G` top/bottom, `t` table of contents, `+`/`-`/`0` text size (larger, smaller, default), `n` note on the selected text, `Alt+←` back after following a link."
         },
         "folio.reading.progress": {
           "type": "boolean",
@@ -573,6 +578,12 @@
         "key": "ctrl+shift+v",
         "mac": "cmd+shift+v",
         "when": "editorLangId == markdown"
+      },
+      {
+        "command": "folio.addNote",
+        "key": "ctrl+alt+n",
+        "mac": "cmd+alt+n",
+        "when": "activeWebviewPanelId == folio.preview || activeCustomEditorId == folio.reader"
       }
     ],
     "menus": {
@@ -633,6 +644,16 @@
         {
           "command": "folio.openSource",
           "when": "activeCustomEditorId == folio.reader"
+        },
+        {
+          "command": "folio.addNote",
+          "when": "activeWebviewPanelId == folio.preview || activeCustomEditorId == folio.reader"
+        }
+      ],
+      "webview/context": [
+        {
+          "command": "folio.addNote",
+          "when": "webviewId == folio.preview || webviewId == folio.reader"
         }
       ]
     },

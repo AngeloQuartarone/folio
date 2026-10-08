@@ -111,12 +111,14 @@ export interface KeyActions {
   step?(direction: 1 | -1): boolean;
   /** +/-: one pixel larger or smaller; 0: back to the default size. */
   textSize(change: 1 | -1 | 0): void;
+  /** n: a note on the selected text. */
+  addNote(): void;
 }
 
 /**
  * j/k: next/previous paragraph, J/K: next/previous heading, g/G: top and
- * bottom, t: table of contents, +/-/0: text size, Alt+←: back. Not while
- * typing.
+ * bottom, t: table of contents, +/-/0: text size, n: note on the selection,
+ * Alt+←: back. Not while typing.
  */
 export function enableKeyboard(root: HTMLElement, actions: KeyActions): void {
   document.addEventListener('keydown', (event) => {
@@ -173,6 +175,9 @@ export function enableKeyboard(root: HTMLElement, actions: KeyActions): void {
         break;
       case '0':
         actions.textSize(0);
+        break;
+      case 'n':
+        actions.addNote();
         break;
       default:
         return;

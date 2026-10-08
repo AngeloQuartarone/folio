@@ -454,6 +454,48 @@ function defineTests(): void {
       }
     });
 
+    it('changes the text size in place from the commands', async () => {
+      const api = await activate();
+      const config = () => vscode.workspace.getConfiguration('folio');
+      const html = api.preview.webviewPanel!.webview.html;
+      const preview = api.preview as any;
+      const original = preview.post.bind(preview);
+      const sent: HostMessage[] = [];
+      preview.post = (message: HostMessage) => {
+        sent.push(message);
+        original(message);
+      };
+      try {
+        await vscode.commands.executeCommand('folio.increaseTextSize');
+        await until(() => sent.some((message) => message.type === 'textSize'), 'textSize message');
+        assert.deepEqual(sent.find((message) => message.type === 'textSize'), { type: 'textSize', size: 17 });
+        assert.equal(config().get('reading.fontSize'), 17);
+        assert.equal(api.preview.webviewPanel!.webview.html, html, 'the preview is not rebuilt');
+        await vscode.commands.executeCommand('folio.resetTextSize');
+        await until(() => config().inspect('reading.fontSize')?.globalValue === undefined, 'reset');
+        await until(() => sent.some((message) => message.type === 'textSize' && message.size === 16), 'back to 16');
+      } finally {
+        preview.post = original;
+        await config().update('reading.fontSize', undefined, vscode.ConfigurationTarget.Global);
+      }
+    });
+
+    it('asks the preview for a note on the selection from the command', async () => {
+      const api = await activate();
+      const sent: HostMessage[] = [];
+      const original = api.preview.postMessage.bind(api.preview);
+      api.preview.postMessage = (message: HostMessage) => {
+        sent.push(message);
+        original(message);
+      };
+      try {
+        await vscode.commands.executeCommand('folio.addNote');
+        assert.ok(sent.some((message) => message.type === 'addNote'));
+      } finally {
+        api.preview.postMessage = original;
+      }
+    });
+
     it('remembers where the user stopped reading', async () => {
       const api = await activate();
       const uri = fixture('sample.md');

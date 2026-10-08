@@ -113,6 +113,8 @@ export type HostMessage =
     }
   /** folio.reading.fontSize changed (keys, commands or settings): applied without a reload. */
   | { type: 'textSize'; size: number }
+  /** "Folio: Add Note to Selection". */
+  | { type: 'addNote' }
   /** "Folio: Toggle Focus Mode". */
   | { type: 'toggleFocusMode' }
   /** "Folio: Translate Document" from the command palette. */
@@ -207,7 +209,7 @@ export interface ReadingSettings {
   collapsible: boolean;
   /** Footnotes and link targets shown when the pointer rests on them. */
   hoverPreviews: boolean;
-  /** j/k, J/K, g/G, t and Alt+← move through the document; +/-/0 change the text size. */
+  /** j/k, J/K, g/G, t and Alt+← move through the document; +/-/0 change the text size; n adds a note. */
   keyboard: boolean;
   progress: boolean;
   focusMode: boolean;

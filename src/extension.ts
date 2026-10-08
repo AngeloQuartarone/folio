@@ -82,6 +82,14 @@ export function activate(context: vscode.ExtensionContext): ExtensionApi {
     }
   });
 
+  command('addNote', () => {
+    if (preview.webviewPanel) {
+      preview.postMessage({ type: 'addNote' });
+    } else {
+      void vscode.window.showInformationMessage('Open the Folio preview first.');
+    }
+  });
+
   // One pixel at a time, within the setting's range; reset goes back to the default.
   const changeTextSize = async (change: 1 | -1 | 0) => {
     const config = vscode.workspace.getConfiguration(SECTION);

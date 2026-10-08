@@ -130,6 +130,7 @@ if (reading.keyboard) {
     // In focus mode (moving by steps), j/k move the focus.
     step: (direction) => (focus.stepping() ? (focus.step(direction), true) : false),
     textSize: changeTextSize,
+    addNote: () => addNoteToSelection(),
   });
 }
 
@@ -175,6 +176,22 @@ const quickSettings = new QuickSettings(
   () => documentTranslation.toggle(),
 );
 enableImageZoom(preview);
+
+/** "n", "Folio: Add Note to Selection" and the context menu: a note on the selected text. */
+function addNoteToSelection(): void {
+  if (!notes) {
+    toast('Notes are turned off (folio.notes.enabled)');
+    return;
+  }
+  const selection = window.getSelection();
+  const range = selection && !selection.isCollapsed && selection.rangeCount ? selection.getRangeAt(0) : undefined;
+  if (!range || !preview.contains(range.commonAncestorContainer) || !notes.canAnnotate(range)) {
+    toast('Select some text to add a note');
+    return;
+  }
+  tooltip.hide();
+  notes.compose(range);
+}
 
 // ---------------------------------------------------------------- rendering
 
@@ -610,6 +627,9 @@ window.addEventListener('message', (event: MessageEvent<HostMessage>) => {
       break;
     case 'toggleFocusMode':
       toggleFocus();
+      break;
+    case 'addNote':
+      addNoteToSelection();
       break;
     case 'toggleDocumentTranslation':
       documentTranslation.toggle();
