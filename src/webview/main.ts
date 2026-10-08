@@ -8,8 +8,9 @@
  */
 import DOMPurify from 'dompurify';
 import type { HostMessage, WebviewMessage, WebviewSettings } from '../messages';
-import { addCodeCopyButtons, copyFormatted, enableImageZoom, toast } from './documentTools';
+import { addCodeCopyButtons, copyFormatted, toast } from './documentTools';
 import { DocumentTranslation } from './documentTranslation';
+import { enableImageZoom } from './lightbox';
 import { History, enableKeyboard } from './navigation';
 import { Notes } from './notes';
 import { LinkPreviews } from './peek';

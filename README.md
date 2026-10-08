@@ -113,7 +113,11 @@ It is an independent project derived from
 - **Selection sync**: text selected in the preview is selected and
   highlighted in the source, when the file is open in an editor next to it
   (the file is never opened for this).
-- **Copy buttons** on code blocks, **image zoom** on click.
+- **Copy buttons** on code blocks.
+- **Image zoom**: click an image to see it large, then pinch the trackpad
+  (or `Ctrl`/`Cmd` + wheel, a double-click, `+`/`-`/`0`) to zoom where you
+  point, and move it with two fingers or by dragging. A click or `Esc`
+  closes it.
 - **Copy as formatted text**: the whole document, ready to paste into an
   email, Word or Google Docs.
 - **Export PDF** (with your installed Chrome/Edge/Chromium/Brave) and

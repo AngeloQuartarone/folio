@@ -2021,6 +2021,25 @@ body[data-focus-mode] #preview > .folio-within > .folio-current {
   box-shadow: var(--mtp-shadow);
   object-fit: contain;
   animation: mtp-pop 220ms var(--mtp-ease);
+  user-select: none;
+}
+
+/* Zoomed: the image moves with the trackpad or a drag (src/webview/lightbox.ts). */
+.folio-lightbox {
+  overflow: hidden;
+  touch-action: none;
+}
+
+.folio-lightbox.folio-zoomed {
+  cursor: grab;
+}
+
+.folio-lightbox.folio-dragging {
+  cursor: grabbing;
+}
+
+.folio-lightbox img.folio-animate {
+  transition: transform 200ms var(--mtp-ease);
 }
 
 .folio-lightbox.folio-closing {

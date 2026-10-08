@@ -1,6 +1,6 @@
 /*
- * Document tools: copy buttons on code blocks, image zoom, and copying the
- * whole document as formatted text (for email, Word, Google Docs…).
+ * Document tools: copy buttons on code blocks, and copying the whole
+ * document as formatted text (for email, Word, Google Docs…).
  * Copyright (c) 2026 Angelo Quartarone.
  */
 
@@ -127,40 +127,6 @@ function copyIcon(): SVGSVGElement {
   path.setAttribute('stroke-linejoin', 'round');
   svg.append(path);
   return svg;
-}
-
-// ------------------------------------------------------------ image zoom
-
-/** Clicking an image (not a linked one) shows it large; click or Esc closes. */
-export function enableImageZoom(root: HTMLElement): void {
-  root.addEventListener('click', (event) => {
-    const image = (event.target as Element | null)?.closest?.('img');
-    if (!image || image.closest('a') || !window.getSelection()?.isCollapsed) {
-      return;
-    }
-    const overlay = document.createElement('div');
-    overlay.className = 'mtp-ui folio-lightbox';
-    overlay.setAttribute('role', 'dialog');
-    overlay.setAttribute('aria-label', image.alt || 'Image');
-    const large = document.createElement('img');
-    large.src = image.currentSrc || image.src;
-    large.alt = image.alt;
-    overlay.append(large);
-    const close = () => {
-      overlay.classList.add('folio-closing');
-      document.removeEventListener('keydown', onKey, true);
-      setTimeout(() => overlay.remove(), 160);
-    };
-    const onKey = (key: KeyboardEvent) => {
-      if (key.key === 'Escape') {
-        key.stopPropagation();
-        close();
-      }
-    };
-    overlay.addEventListener('click', close);
-    document.addEventListener('keydown', onKey, true);
-    document.body.append(overlay);
-  });
 }
 
 // ------------------------------------------------------- formatted text

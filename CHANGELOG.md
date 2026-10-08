@@ -12,6 +12,9 @@
 - Notes on hover: resting the pointer on a note's text or its pin shows the
   note and its replies; the card stays while the pointer is on it, and stays
   open once used (`folio.notes.hoverPreview`, on by default).
+- Image zoom, closer: in the large view of an image, pinch the trackpad (or
+  Ctrl/Cmd + wheel, double-click, `+`/`-`/`0`) to zoom up to 8× at the
+  pointer, and move the image with two fingers or by dragging.
 
 ## 0.1.0 (2026-09-24)
 
