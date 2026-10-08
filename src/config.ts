@@ -27,6 +27,7 @@ export const PREVIEW_SETTINGS = [
   'customCss',
   'reading',
   'notes.enabled',
+  'notes.hoverPreview',
 ].map((key) => `${SECTION}.${key}`);
 
 export interface TranslationConfig {
@@ -111,6 +112,7 @@ export interface ReadingConfig {
   focusKey: string;
   resume: boolean;
   notes: boolean;
+  notesHover: boolean;
 }
 
 function oneOf<T extends string>(value: unknown, choices: readonly T[], fallback: T): T {
@@ -145,6 +147,7 @@ export function getReadingConfig(): ReadingConfig {
     focusKey: (c.get<string>('reading.focusKey', 'f') ?? '').trim().slice(0, 1),
     resume: c.get<boolean>('reading.resume', true),
     notes: c.get<boolean>('notes.enabled', true),
+    notesHover: c.get<boolean>('notes.hoverPreview', true),
   };
 }
 

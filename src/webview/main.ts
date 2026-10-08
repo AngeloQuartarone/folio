@@ -65,7 +65,14 @@ const sections = reading.collapsible
     })
   : undefined;
 const notes = reading.notes
-  ? new Notes(preview, post, () => sourceUri, (entries) => outline?.setNotes(entries), (element) => sections?.reveal(element))
+  ? new Notes(
+      preview,
+      post,
+      () => sourceUri,
+      (entries) => outline?.setNotes(entries),
+      (element) => sections?.reveal(element),
+      reading.notesHover,
+    )
   : undefined;
 const outline = reading.outline
   ? new Outline(preview, reading, state, post, {

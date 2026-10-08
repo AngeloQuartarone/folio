@@ -9,6 +9,9 @@
 - Notes, quicker: `n` in the preview, `Cmd+Alt+N` / `Ctrl+Alt+N`, *Folio: Add
   Note to Selection* or the preview's context menu add a note to the selected
   text, without going through the translation tooltip.
+- Notes on hover: resting the pointer on a note's text or its pin shows the
+  note and its replies; the card stays while the pointer is on it, and stays
+  open once used (`folio.notes.hoverPreview`, on by default).
 
 ## 0.1.0 (2026-09-24)
 

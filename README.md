@@ -92,10 +92,11 @@ It is an independent project derived from
 
 - **Notes in the margin**: select text, choose **Add note** (or press `n`,
   `Cmd+Alt+N` / `Ctrl+Alt+N`, or right-click › **Add Note to Selection**),
-  write. The text is highlighted with a pin in the margin; click it to read
-  the note and its replies, reply, resolve, edit or delete it. All notes are
-  listed in the table of contents, and follow their text when the document
-  changes.
+  write. The text is highlighted with a pin in the margin; rest the pointer
+  on the text or the pin to read the note and its replies
+  (`folio.notes.hoverPreview`), click it to reply, resolve, edit or delete
+  it. All notes are listed in the table of contents, and follow their text
+  when the document changes.
 - **Notes that travel with the document, and that your AI reads**: notes are
   kept in one HTML comment at the end of the Markdown file. GitHub, VS Code's
   own preview, Obsidian and Pandoc do not show it, so the document looks the
@@ -254,6 +255,7 @@ selection. If the text is already in the target language a small
 | `folio.reading.focusKey` | `f` | Key that toggles focus mode with the pointer on the preview (empty: none). |
 | `folio.reading.resume` | `true` | Reopen documents where you stopped reading. |
 | `folio.notes.enabled` | `true` | Notes on selected text. |
+| `folio.notes.hoverPreview` | `true` | Show a note when the pointer rests on its text or its pin. |
 | `folio.notes.storage` | `document` | Where notes are kept: `document` (a comment at the end of the Markdown file) or `sidecar` (`<file>.folio.json`). |
 | `folio.notes.author` | *(empty)* | Your name on notes and replies; empty uses your Git `user.name`, else your system user name. |
 | `folio.translation.enabled` | `true` | Show the translation tooltip on selection. |

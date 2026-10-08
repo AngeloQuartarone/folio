@@ -17,6 +17,10 @@ const CONTEXT = 32;
 const SKIP = `${FOLIO_UI}, .katex-mathml, script, style`;
 const GAP = 8;
 const EDGE = 8;
+/** Resting the pointer this long on a note's text or pin shows the note. */
+const HOVER_MS = 350;
+/** A note shown on hover closes this long after the pointer left it and its card. */
+const LEAVE_MS = 250;
 
 // ------------------------------------------------------------ text index
 
@@ -85,6 +89,10 @@ export class Notes {
   private readonly layer: HTMLElement;
   private readonly card: HTMLElement;
   private cardFor: string | undefined;
+  /** The card was opened by hovering (not clicked or used yet): it closes when the pointer leaves. */
+  private peeking = false;
+  private hoverTimer: ReturnType<typeof setTimeout> | undefined;
+  private leaveTimer: ReturnType<typeof setTimeout> | undefined;
 
   constructor(
     private readonly root: HTMLElement,
@@ -93,6 +101,8 @@ export class Notes {
     private readonly onChange: (entries: NoteEntry[]) => void,
     /** Unfold the section a note is in, before showing it. */
     private readonly reveal: (element: Element) => void = () => undefined,
+    /** Show a note when the pointer rests on its text or its pin (folio.notes.hoverPreview). */
+    private readonly hover = false,
   ) {
     this.layer = document.createElement('div');
     this.layer.className = 'mtp-ui folio-note-layer';
@@ -109,10 +119,18 @@ export class Notes {
     });
     document.addEventListener('mousedown', (event) => {
       const target = event.target as Node;
-      if (!this.card.hidden && !this.card.contains(target) && !this.layer.contains(target)) {
+      clearTimeout(this.hoverTimer);
+      if (this.card.contains(target)) {
+        // Used: the card stays open like a clicked one.
+        this.peeking = false;
+      } else if (!this.card.hidden && !this.layer.contains(target)) {
         this.closeCard();
       }
     });
+    if (hover) {
+      document.addEventListener('mouseover', (event) => this.onHover(event));
+      document.documentElement.addEventListener('mouseleave', () => this.leave());
+    }
     document.addEventListener('keydown', (event) => {
       if (event.key === 'Escape' && !this.card.hidden) {
         this.closeCard();
@@ -201,8 +219,45 @@ export class Notes {
     });
   }
 
+  /** The pointer moved onto something: a note's text or pin, the card, or elsewhere. */
+  private onHover(event: MouseEvent): void {
+    const target = event.target as Element | null;
+    if (target && this.card.contains(target)) {
+      clearTimeout(this.leaveTimer);
+      return;
+    }
+    // A link inside a note's text shows the link's preview instead.
+    const note = target?.closest?.('a[href]') ? null : target?.closest?.<HTMLElement>('mark.folio-note, .folio-note-pin');
+    const id = note?.dataset['note'];
+    clearTimeout(this.hoverTimer);
+    if (!id) {
+      this.leave();
+      return;
+    }
+    clearTimeout(this.leaveTimer);
+    const busy = !this.card.hidden && (!this.peeking || this.cardFor === id);
+    const selecting = event.buttons !== 0 || !window.getSelection()?.isCollapsed;
+    if (busy || selecting) {
+      return;
+    }
+    this.hoverTimer = setTimeout(() => {
+      this.open(id, true);
+      this.peeking = true;
+    }, HOVER_MS);
+  }
+
+  private leave(): void {
+    clearTimeout(this.hoverTimer);
+    if (this.peeking && !this.card.hidden) {
+      clearTimeout(this.leaveTimer);
+      this.leaveTimer = setTimeout(() => this.peeking && this.closeCard(), LEAVE_MS);
+    }
+  }
+
   /** Show a note's card next to its text: the note, its replies, and what can be done. */
   open(id: string, scrolled = false): void {
+    this.peeking = false;
+    clearTimeout(this.leaveTimer);
     const note = this.notes.find((candidate) => candidate.id === id);
     const mark = this.root.querySelector<HTMLElement>(`mark.folio-note[data-note="${CSS.escape(id)}"]`);
     if (!note || !mark) {
@@ -252,6 +307,9 @@ export class Notes {
   }
 
   private edit(value: string, placeholder: string, rect: DOMRect, save: (text: string) => void): void {
+    // Writing: the card stays open wherever the pointer goes.
+    this.peeking = false;
+    clearTimeout(this.leaveTimer);
     this.card.dataset['state'] = 'edit';
     const input = document.createElement('textarea');
     input.className = 'folio-note-input';
@@ -366,8 +424,12 @@ export class Notes {
       pin.type = 'button';
       const note = this.notes.find((candidate) => candidate.id === id);
       pin.className = note?.status === 'resolved' ? 'folio-note-pin folio-resolved' : 'folio-note-pin';
-      pin.title = note?.text || 'Note';
-      pin.setAttribute('aria-label', `Note: ${pin.title}`);
+      pin.dataset['note'] = id;
+      // On hover the card itself shows the note.
+      if (!this.hover) {
+        pin.title = note?.text || 'Note';
+      }
+      pin.setAttribute('aria-label', `Note: ${note?.text || 'Note'}`);
       const top = rect.top + window.scrollY + rect.height / 2;
       // Notes on the same line: pins side by side, not on top of each other.
       shift = Math.abs(top - previousTop) < 14 ? shift + 18 : 0;
@@ -399,6 +461,8 @@ export class Notes {
   private closeCard(): void {
     this.card.hidden = true;
     this.cardFor = undefined;
+    this.peeking = false;
+    clearTimeout(this.leaveTimer);
   }
 }
 

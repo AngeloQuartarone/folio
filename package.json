@@ -481,6 +481,11 @@
           "default": true,
           "markdownDescription": "Add notes to text selected in the preview."
         },
+        "folio.notes.hoverPreview": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Show a note when the pointer rests on its highlighted text or its pin, without clicking."
+        },
         "folio.notes.storage": {
           "type": "string",
           "enum": [

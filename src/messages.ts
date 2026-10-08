@@ -222,4 +222,6 @@ export interface ReadingSettings {
   focusKey: string;
   resume: boolean;
   notes: boolean;
+  /** A note shows when the pointer rests on its text or its pin. */
+  notesHover: boolean;
 }

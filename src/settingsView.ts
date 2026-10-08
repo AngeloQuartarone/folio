@@ -354,6 +354,13 @@ const SECTIONS: SectionDefinition[] = [
         default: true,
       },
       {
+        key: 'notes.hoverPreview',
+        label: 'Notes on hover',
+        description: 'Show a note when the pointer rests on its text or its pin.',
+        kind: 'toggle',
+        default: true,
+      },
+      {
         key: 'notes.storage',
         label: 'Keep notes',
         description: 'In the document, notes travel with the file and an AI reading it sees them; other Markdown viewers hide them.',
