@@ -7,11 +7,15 @@ quiet themes in the colors of paper, your editor or the night; a table of
 contents that follows you; focus mode; notes in the margin; and **offline
 translation** of whatever you select — no account, no API key, no cloud.
 
+![Folio in VS Code: the table of contents, a word translated offline, focus mode and a note in the margin](docs/images/demo.gif)
+
 It is an independent project derived from
 [Markdown Preview Enhanced](https://github.com/shd101wyy/vscode-markdown-preview-enhanced)
 (see [Credits](#credits)).
 
 ## Features
+
+![The Folio preview beside the Markdown source, in the Sepia theme, with the table of contents open](docs/images/overview.png)
 
 ### Reading
 
@@ -66,6 +70,8 @@ It is an independent project derived from
 - **Resume reading**: each document reopens where you stopped (when the
   preview is not following an editor).
 
+![Focus mode: the section being read stays clear, the rest fades](docs/images/focus.png)
+
 ### Understanding
 
 - **Translate a selection, offline**: select words in the preview and their
@@ -83,6 +89,8 @@ It is an independent project derived from
   appears as soon as it is ready. Start it from the settings panel
   (**Translate document**) or with *Folio: Translate Document*; the small
   pill at the top shows the progress, and its × shows the original only.
+
+![A selected word translated offline, with its other meanings from the dictionary](docs/images/translate.png)
 
 ### Reader tab
 
@@ -125,6 +133,8 @@ It is an independent project derived from
   email, Word or Google Docs.
 - **Export PDF** (with your installed Chrome/Edge/Chromium/Brave) and
   **Export HTML** (one self-contained file), always in the Light theme.
+
+![A note in the margin, shown when the pointer rests on its text](docs/images/notes.png)
 
 ### Everything GitHub renders
 
