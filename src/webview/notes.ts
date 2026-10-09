@@ -445,12 +445,17 @@ export class Notes {
   private show(rect: DOMRect): void {
     this.card.hidden = false;
     const style = this.card.style;
-    style.maxWidth = `${Math.min(360, window.innerWidth - 2 * EDGE)}px`;
+    // The page's width without its scrollbar: the room the card really has.
+    const view = document.documentElement.clientWidth;
+    style.maxWidth = `${Math.min(360, view - 2 * EDGE)}px`;
+    style.width = '';
     style.left = '0px';
     style.top = '0px';
     // Layout size: the opening animation scales the card down a little.
     const { offsetWidth: width, offsetHeight: height } = this.card;
-    const left = Math.max(EDGE, Math.min(rect.left + rect.width / 2 - width / 2, window.innerWidth - width - EDGE));
+    // Kept: moved near the right edge, the card would otherwise shrink and wrap its buttons.
+    style.width = `${width}px`;
+    const left = Math.max(EDGE, Math.min(rect.left + rect.width / 2 - width / 2, view - width - EDGE));
     let top = rect.bottom + GAP;
     if (top + height > window.innerHeight - EDGE && rect.top - GAP - height >= EDGE) {
       top = rect.top - GAP - height;

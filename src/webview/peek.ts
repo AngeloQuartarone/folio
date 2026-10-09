@@ -137,7 +137,7 @@ export class LinkPreviews {
     style.top = '0px';
     // Layout size: the opening animation scales the card down a little.
     const { offsetWidth: width, offsetHeight: height } = this.card;
-    const left = Math.max(EDGE, Math.min(rect.left, window.innerWidth - width - EDGE));
+    const left = Math.max(EDGE, Math.min(rect.left, document.documentElement.clientWidth - width - EDGE));
     let top = rect.bottom + GAP;
     if (top + height > window.innerHeight - EDGE && rect.top - GAP - height >= EDGE) {
       top = rect.top - GAP - height;

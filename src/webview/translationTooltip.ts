@@ -283,14 +283,19 @@ export class TranslationTooltip {
       return;
     }
     const style = this.element.style;
-    style.maxWidth = `${Math.min(420, window.innerWidth - 2 * EDGE)}px`;
+    // The page's width without its scrollbar: the room the tooltip really has.
+    const view = document.documentElement.clientWidth;
+    style.maxWidth = `${Math.min(420, view - 2 * EDGE)}px`;
+    style.width = '';
     style.left = '0px';
     style.top = '0px';
     // Layout size: the opening animation scales the tooltip down a little.
     const { offsetWidth: width, offsetHeight: height } = this.element;
+    // Kept: moved near the right edge, the tooltip would otherwise shrink and wrap.
+    style.width = `${width}px`;
 
     const viewLeft = window.scrollX + EDGE;
-    const viewRight = window.scrollX + window.innerWidth - EDGE;
+    const viewRight = window.scrollX + view - EDGE;
     const center = (this.anchor.left + this.anchor.right) / 2;
     const left = Math.max(viewLeft, Math.min(center - width / 2, viewRight - width));
 

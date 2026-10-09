@@ -19,7 +19,8 @@
   selected; a link to a folder shows it in the Explorer.
 - Fixed: hover previews, notes and the translation tooltip were placed as
   if they were a little narrower, and could stick out of the window's right
-  edge.
+  edge; near that edge, a note's card could shrink and break its buttons
+  mid-word.
 - Image zoom, closer: in the large view of an image, pinch the trackpad (or
   Ctrl/Cmd + wheel, double-click, `+`/`-`/`0`) to zoom up to 8× at the
   pointer, and move the image with two fingers or by dragging.
