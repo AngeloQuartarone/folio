@@ -94,13 +94,12 @@ It is an independent project derived from
 
 ### Working with the document
 
-- **Notes in the margin**: select text, choose **Add note** (or press `n`,
-  `Cmd+Shift+N` / `Ctrl+Shift+N`, or right-click › **Add Note to Selection**),
-  write. The text is highlighted with a pin in the margin; rest the pointer
-  on the text or the pin to read the note and its replies
-  (`folio.notes.hoverPreview`), click it to reply, resolve, edit or delete
-  it. All notes are listed in the table of contents, and follow their text
-  when the document changes.
+- **Notes in the margin**: select text, press `n` (or choose **Add note**,
+  or right-click › **Add Note to Selection**), write. The text is
+  highlighted with a pin in the margin; rest the pointer on the text or the
+  pin to read the note and its replies (`folio.notes.hoverPreview`), click
+  it to reply, resolve, edit or delete it. All notes are listed in the
+  table of contents, and follow their text when the document changes.
 - **Notes that travel with the document, and that your AI reads**: notes are
   kept in one HTML comment at the end of the Markdown file. GitHub, VS Code's
   own preview, Obsidian and Pandoc do not show it, so the document looks the
@@ -160,7 +159,7 @@ And a few things GitHub does not:
 | Folio: Increase Text Size | `+` in the preview |
 | Folio: Decrease Text Size | `-` in the preview |
 | Folio: Reset Text Size | `0` in the preview |
-| Folio: Add Note to Selection | `n` in the preview; `Ctrl+Shift+N` / `Cmd+Shift+N` |
+| Folio: Add Note to Selection | `n` in the preview |
 | Folio: Copy Notes for AI | |
 | Folio: Select Preview Theme | |
 | Folio: Select Code Block Theme | |

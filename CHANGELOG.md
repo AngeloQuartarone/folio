@@ -6,9 +6,9 @@
   pixel larger or smaller and `0` resets it, with *Folio: Increase / Decrease
   / Reset Text Size* for shortcuts of your own. The size changes in place,
   keeping your place in the document.
-- Notes, quicker: `n` in the preview, `Cmd+Shift+N` / `Ctrl+Shift+N`, *Folio: Add
-  Note to Selection* or the preview's context menu add a note to the selected
-  text, without going through the translation tooltip.
+- Notes, quicker: with text selected in the preview, `n` (or *Folio: Add
+  Note to Selection*, or the preview's context menu) adds a note to it,
+  without going through the translation tooltip.
 - Notes on hover: resting the pointer on a note's text or its pin shows the
   note and its replies; the card stays while the pointer is on it, and stays
   open once used (`folio.notes.hoverPreview`, on by default).
