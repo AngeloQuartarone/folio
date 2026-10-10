@@ -410,7 +410,7 @@
         "folio.reading.keyboard": {
           "type": "boolean",
           "default": true,
-          "markdownDescription": "Keys to move through the document: `j`/`k` next/previous paragraph, `J`/`K` next/previous heading, `g`/`G` top/bottom, `t` table of contents, `+`/`-`/`0` text size (larger, smaller, default), `n` note on the selected text, `Alt+←` back after following a link."
+          "markdownDescription": "Keys to move through the document: `j`/`k` next/previous paragraph, `J`/`K` next/previous heading, `g`/`G` top/bottom, `t` table of contents, `+`/`-`/`0` text size (larger, smaller, default), `n` note on the selected text, `c`/`C` next/previous change, `Alt+←` back after following a link."
         },
         "folio.reading.progress": {
           "type": "boolean",
@@ -503,6 +503,21 @@
           ],
           "default": "document",
           "markdownDescription": "Where notes are kept."
+        },
+        "folio.changes.baseline": {
+          "type": "string",
+          "default": "lastRead",
+          "enum": [
+            "lastRead",
+            "git",
+            "off"
+          ],
+          "enumDescriptions": [
+            "Mark what changed since you last read the document in Folio (it is read when you switch to another document, close the preview, or choose Mark as read).",
+            "Mark what changed since the last Git commit.",
+            "Mark no changes."
+          ],
+          "markdownDescription": "Mark in the preview what changed in a document — added and changed paragraphs, removed text, new words — since the last version you read in Folio, or since the last Git commit. Useful when an AI assistant edits your Markdown."
         },
         "folio.notes.author": {
           "type": "string",

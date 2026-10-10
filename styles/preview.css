@@ -1937,6 +1937,131 @@ body.mtp-settings-open {
   color: var(--mtp-fg);
 }
 
+/* Changes since the document was last read (src/webview/changes.ts). */
+body {
+  --folio-change-added: #2da44e;
+  --folio-change-changed: #d4a72c;
+  --folio-change-removed: #cf222e;
+}
+
+.folio-change-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 5;
+  width: 0;
+  height: 0;
+}
+
+.folio-change-bar {
+  position: absolute;
+  width: 3px;
+  border-radius: 2px;
+  background: var(--folio-change-changed);
+  opacity: 0.85;
+}
+
+.folio-change-bar.folio-added {
+  background: var(--folio-change-added);
+}
+
+.folio-change-tick {
+  position: absolute;
+  width: 11px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--folio-change-removed);
+  opacity: 0.85;
+}
+
+.folio-change-bar:hover,
+.folio-change-tick:hover {
+  opacity: 1;
+}
+
+.markdown-preview mark.folio-change-word {
+  padding: 0 1px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--folio-change-added) 22%, transparent);
+  color: inherit;
+}
+
+.folio-change-card {
+  white-space: normal;
+}
+
+.folio-change-before {
+  max-height: 220px;
+  overflow: hidden;
+  color: var(--mtp-muted);
+  font-size: 13px;
+  white-space: pre-wrap;
+  text-decoration: line-through;
+  text-decoration-color: color-mix(in srgb, var(--folio-change-removed) 60%, transparent);
+}
+
+.folio-changes-pill {
+  position: fixed;
+  top: 10px;
+  left: 50%;
+  z-index: 1001;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: calc(100vw - 150px);
+  height: 30px;
+  padding: 0 6px 0 12px;
+  border-radius: 15px;
+  background: var(--mtp-surface);
+  -webkit-backdrop-filter: blur(24px) saturate(1.6);
+  backdrop-filter: blur(24px) saturate(1.6);
+  box-shadow: var(--mtp-shadow-small);
+  color: var(--mtp-fg);
+  font-family: var(--mtp-font);
+  font-size: 12.5px;
+  white-space: nowrap;
+  transform: translateX(-50%);
+}
+
+.folio-changes-pill[hidden] {
+  display: none;
+}
+
+.folio-changes-pill > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.folio-changes-pill > span::before {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 7px;
+  border-radius: 50%;
+  background: var(--folio-change-changed);
+  content: '';
+  vertical-align: 1px;
+}
+
+.folio-changes-action {
+  padding: 3px 9px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--mtp-fill);
+  color: var(--mtp-fg);
+  font: inherit;
+  cursor: pointer;
+}
+
+.folio-changes-action:hover {
+  background: var(--mtp-fill-strong);
+}
+
+.folio-changes-action.folio-primary {
+  background: var(--mtp-accent);
+  color: var(--mtp-accent-fg);
+}
+
 /* Progress bar at the very top. */
 .folio-progress {
   position: fixed;

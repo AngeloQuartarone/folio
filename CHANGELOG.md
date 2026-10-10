@@ -17,6 +17,13 @@
   GitHub, else the first lines); an image; a folder's contents; a missing
   file. Clicking a link with `#L10-L25` opens the file with those lines
   selected; a link to a folder shows it in the Explorer.
+- What changed since you last read it: edits made to a document since you
+  last read it in Folio (by an AI assistant, for one) are marked — new and
+  changed paragraphs with a bar in the margin and their new words
+  highlighted, removed text with a tick that shows it on hover — with a
+  count at the top, Next (`c`/`C`) and Mark as read. Or compared with the
+  last Git commit (`folio.changes.baseline`). One compressed copy per
+  document is kept, for the 200 read last.
 - File names as links: names of existing files written in the text as
   inline code (`docs/setup.md`, `src/app.ts:42`) get a dotted underline, the
   link preview on hover, and open on click, at that line

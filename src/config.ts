@@ -153,6 +153,13 @@ export function getReadingConfig(): ReadingConfig {
   };
 }
 
+/** What changes are shown against: the version last read in Folio, the last Git commit, or none. */
+export type ChangesBaseline = 'lastRead' | 'git' | 'off';
+
+export function getChangesBaseline(): ChangesBaseline {
+  return oneOf(vscode.workspace.getConfiguration(SECTION).get('changes.baseline'), ['lastRead', 'git', 'off'] as const, 'lastRead');
+}
+
 export type OutlineFit = 'once' | 'always' | 'never';
 
 /** Whether the preview is widened to fit the table of contents (see src/preview/outlineFit.ts). */

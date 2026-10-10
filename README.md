@@ -68,7 +68,8 @@ It is an independent project derived from
   file), the mouse's back button, `Alt+←` or the **Back** button next to the
   table of contents button takes you back to where you were.
 - **Keyboard**: `j`/`k` next/previous paragraph, `J`/`K` next/previous
-  heading, `g`/`G` top/bottom, `t` table of contents.
+  heading, `g`/`G` top/bottom, `t` table of contents, `c`/`C` next/previous
+  change.
 - **Text size from the keyboard**: `+` and `-` make the text one pixel
   larger or smaller, `0` brings it back to the default, without opening the
   settings (also *Folio: Increase / Decrease / Reset Text Size*, to give
@@ -114,6 +115,17 @@ It is an independent project derived from
   pin to read the note and its replies (`folio.notes.hoverPreview`), click
   it to reply, resolve, edit or delete it. All notes are listed in the
   table of contents, and follow their text when the document changes.
+- **What changed since you last read it**: when a document was edited —
+  by an AI assistant, a colleague or yourself — since you last read it in
+  Folio, the preview marks it: a green bar beside new paragraphs, an amber
+  one beside changed ones with the new words highlighted, and a red tick
+  where text was removed. Rest the pointer on a bar or a tick to see what
+  was there before. A pill at the top counts the changes, **Next** (or `c`)
+  goes to the next one, and **Mark as read** clears them. A document counts
+  as read when you switch to another one or close the preview. Set
+  `folio.changes.baseline` to `git` to compare with the last commit
+  instead, or `off`. Folio keeps one compressed copy per document, on disk,
+  for the 200 documents read last (90 days at most).
 - **Notes that travel with the document, and that your AI reads**: notes are
   kept in one HTML comment at the end of the Markdown file. GitHub, VS Code's
   own preview, Obsidian and Pandoc do not show it, so the document looks the
@@ -270,7 +282,7 @@ selection. If the text is already in the target language a small
 | `folio.reading.collapsible` | `true` | Fold a section with the arrow next to its heading. |
 | `folio.reading.hoverPreviews` | `true` | Footnotes and link targets on hover. |
 | `folio.reading.fileReferences` | `true` | File names written in the text (`docs/setup.md`, `src/app.ts:42`) work like links to the file. |
-| `folio.reading.keyboard` | `true` | `j`/`k`, `J`/`K`, `g`/`G`, `t` and `Alt+←` move through the document; `+`/`-`/`0` change the text size; `n` adds a note to the selection. |
+| `folio.reading.keyboard` | `true` | `j`/`k`, `J`/`K`, `g`/`G`, `t` and `Alt+←` move through the document; `+`/`-`/`0` change the text size; `n` adds a note to the selection; `c`/`C` go to the next/previous change. |
 | `folio.reading.progress` | `true` | Reading time and progress bar. |
 | `folio.reading.focusMode` | `false` | Dim everything but the paragraph being read. |
 | `folio.reading.focusScope` | `section` | What focus mode keeps clear: `section` (a heading with its paragraphs), `paragraph` or `sentence`. |
@@ -281,6 +293,7 @@ selection. If the text is already in the target language a small
 | `folio.notes.enabled` | `true` | Notes on selected text. |
 | `folio.notes.hoverPreview` | `true` | Show a note when the pointer rests on its text or its pin. |
 | `folio.notes.storage` | `document` | Where notes are kept: `document` (a comment at the end of the Markdown file) or `sidecar` (`<file>.folio.json`). |
+| `folio.changes.baseline` | `lastRead` | Mark what changed since you last read a document in Folio (`lastRead`), since the last Git commit (`git`), or nothing (`off`). |
 | `folio.notes.author` | *(empty)* | Your name on notes and replies; empty uses your Git `user.name`, else your system user name. |
 | `folio.translation.enabled` | `true` | Show the translation tooltip on selection. |
 | `folio.translation.targetLanguage` | `it` | Language to translate into (one of the 11 above). |

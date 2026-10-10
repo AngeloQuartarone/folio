@@ -6,6 +6,7 @@
  * src/extension-common.ts and src/utils.ts (University of Illinois/NCSA
  * License, Copyright (c) 2017 Yiyi Wang).
  */
+import { execFile } from 'node:child_process';
 import * as path from 'node:path';
 import * as vscode from 'vscode';
 import {
@@ -14,11 +15,14 @@ import {
   ReadingConfig,
   SECTION,
   editorColorScheme,
+  getChangesBaseline,
   getPreviewConfig,
   getReadingConfig,
   getTranslationConfig,
 } from '../config';
+import type { SnapshotStore } from '../changes/snapshots';
 import { HostMessage, WebviewMessage } from '../messages';
+import { documentChanges } from '../render/changes';
 import { codeExcerpt, codeLanguage, formatSize, looksLikeText, parseLineFragment } from '../render/codeExcerpt';
 import { markdownExcerpt } from '../render/excerpt';
 import { documentLanguage } from '../render/language';
@@ -80,6 +84,8 @@ export class PreviewManager implements vscode.Disposable {
     private readonly extensionUri: vscode.Uri,
     /** Where the user stopped reading each document (folio.reading.resume). */
     private readonly positions?: vscode.Memento,
+    /** The last version of each document read, to show what changed since (folio.changes.baseline). */
+    private readonly snapshots?: SnapshotStore,
   ) {
     this.disposables.push(
       this.sourceHighlight,
@@ -122,6 +128,9 @@ export class PreviewManager implements vscode.Disposable {
           this.reload();
         } else {
           this.post({ type: 'settings', sections: previewSettingsSections() });
+          if (event.affectsConfiguration(`${SECTION}.changes`) && this.sourceUri) {
+            void this.sendChanges(this.sourceUri);
+          }
         }
       }),
       { dispose: () => this.cssWatcher?.dispose() },
@@ -173,6 +182,7 @@ export class PreviewManager implements vscode.Disposable {
     column: vscode.ViewColumn = vscode.ViewColumn.Beside,
     preserveFocus = true,
   ): void {
+    this.leave(uri);
     this.sourceUri = uri;
     if (!this.panel) {
       this.attach(
@@ -234,6 +244,7 @@ export class PreviewManager implements vscode.Disposable {
     if (!this.panel) {
       return;
     }
+    this.leave(uri);
     this.sourceUri = uri;
     this.panel.webview.options = {
       ...this.panel.webview.options,
@@ -292,6 +303,9 @@ export class PreviewManager implements vscode.Disposable {
   }
 
   private onPanelDisposed(): void {
+    if (this.sourceUri) {
+      void this.markRead(this.sourceUri);
+    }
     this.clearSourceHighlight();
     this.panel = undefined;
     this.sourceUri = undefined;
@@ -368,6 +382,62 @@ export class PreviewManager implements vscode.Disposable {
       line,
       lang: getReadingConfig().justify ? documentLanguage(document.getText()) : undefined,
     });
+    await this.sendChanges(uri, document.getText());
+  }
+
+  /** The preview moves from its document to `next`: the one left behind was read. */
+  private leave(next: vscode.Uri): void {
+    if (this.sourceUri && this.sourceUri.toString() !== next.toString()) {
+      void this.markRead(this.sourceUri);
+    }
+  }
+
+  /** The current version of `uri` becomes the one its changes are shown against. */
+  private async markRead(uri: vscode.Uri): Promise<void> {
+    if (!this.snapshots || getChangesBaseline() !== 'lastRead') {
+      return;
+    }
+    try {
+      const document = vscode.workspace.textDocuments.find((open) => open.uri.toString() === uri.toString())
+        ?? (await vscode.workspace.openTextDocument(uri));
+      await this.snapshots.set(uri.toString(), document.getText());
+    } catch {
+      // A document that is gone has nothing to remember.
+    }
+  }
+
+  /**
+   * What changed in the document since the version it is compared with. The
+   * first time a document is read there is none: the version read is kept.
+   */
+  private async sendChanges(uri: vscode.Uri, text?: string): Promise<void> {
+    const baseline = getChangesBaseline();
+    try {
+      const current = text ?? (await vscode.workspace.openTextDocument(uri)).getText();
+      let before: { text: string; at?: string } | undefined;
+      if (baseline === 'lastRead' && this.snapshots) {
+        before = await this.snapshots.get(uri.toString());
+        if (!before) {
+          await this.snapshots.set(uri.toString(), current);
+        }
+      } else if (baseline === 'git') {
+        before = await committedVersion(uri);
+      }
+      if (!this.isSource(uri)) {
+        return;
+      }
+      const hunks = before ? documentChanges(before.text, current) : [];
+      this.post({
+        type: 'changes',
+        sourceUri: uri.toString(),
+        baseline,
+        since: before?.at,
+        hunks: hunks ?? [],
+        tooMany: !hunks,
+      });
+    } catch {
+      // No changes to show.
+    }
   }
 
   private readingPosition(uri: vscode.Uri): number | undefined {
@@ -418,6 +488,12 @@ export class PreviewManager implements vscode.Disposable {
       case 'linkPreview':
         if (message.sourceUri === this.sourceUri?.toString()) {
           void this.linkPreview(message.id, message.href);
+        }
+        break;
+      case 'markAsRead':
+        if (message.sourceUri === this.sourceUri?.toString()) {
+          const uri = this.sourceUri;
+          void this.markRead(uri).then(() => this.sendChanges(uri));
         }
         break;
       case 'fileReferences':
@@ -770,6 +846,35 @@ const FOLDER_ENTRIES = 12;
 /** Larger files are not read for a preview. */
 const MAX_CODE_BYTES = 2 * 1024 * 1024;
 const IMAGE_PATH = /\.(png|jpe?g|gif|webp|avif|bmp|ico|svg)$/i;
+
+/**
+ * The version of `uri` in the last commit (`git show HEAD:./file` next to
+ * it): an empty text for a file not committed yet, undefined outside a
+ * repository or without Git.
+ */
+async function committedVersion(uri: vscode.Uri): Promise<{ text: string; at?: string } | undefined> {
+  if (uri.scheme !== 'file') {
+    return undefined;
+  }
+  const cwd = path.dirname(uri.fsPath);
+  const git = (...args: string[]) =>
+    new Promise<string>((resolve, reject) =>
+      execFile('git', args, { cwd, timeout: 5000, maxBuffer: 16 * 1024 * 1024 }, (error, stdout) =>
+        error ? reject(error) : resolve(stdout),
+      ),
+    );
+  let at: string | undefined;
+  try {
+    at = (await git('log', '-1', '--format=%cI')).trim() || undefined;
+  } catch {
+    return undefined; // not in a repository, or no Git
+  }
+  try {
+    return { text: await git('show', `HEAD:./${path.basename(uri.fsPath)}`), at };
+  } catch {
+    return { text: '', at }; // not committed yet: all of it is new
+  }
+}
 
 /** A path as the workspace shows it ("docs/guide.md"), or the full path outside it. */
 function displayPath(uri: vscode.Uri): string {

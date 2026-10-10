@@ -10,6 +10,7 @@ import DOMPurify from 'dompurify';
 import type { HostMessage, WebviewMessage, WebviewSettings } from '../messages';
 import { addCodeCopyButtons, copyFormatted, toast } from './documentTools';
 import { DocumentTranslation } from './documentTranslation';
+import { Changes } from './changes';
 import { FILE_REFERENCE, FileReferences } from './fileReferences';
 import { enableImageZoom } from './lightbox';
 import { History, enableKeyboard } from './navigation';
@@ -59,10 +60,12 @@ const state = {
   },
 };
 
+const changes = new Changes(preview, post, () => sourceUri, (element) => sections?.reveal(element));
 const sections = reading.collapsible
   ? new Sections(preview, state, () => {
       scrollMap = null;
       notes?.layout();
+      changes.layout();
       focus.reset();
     })
   : undefined;
@@ -130,6 +133,7 @@ const history = new History(
 const documentTranslation = new DocumentTranslation(preview, post, () => sourceUri, sanitize, state, () => {
   scrollMap = null;
   notes?.layout();
+  changes.layout();
 });
 const linkPreviews = reading.hoverPreviews ? new LinkPreviews(preview, post, () => sourceUri, sanitize) : undefined;
 const fileReferences = reading.fileReferences ? new FileReferences(preview, post, () => sourceUri) : undefined;
@@ -141,6 +145,7 @@ if (reading.keyboard) {
     step: (direction) => (focus.stepping() ? (focus.step(direction), true) : false),
     textSize: changeTextSize,
     addNote: () => addNoteToSelection(),
+    change: (direction) => void changes.step(direction),
   });
 }
 
@@ -242,6 +247,7 @@ function update(message: Extract<HostMessage, { type: 'update' }>): void {
 function afterRender(): void {
   addCodeCopyButtons(preview);
   fileReferences?.refresh();
+  changes.refresh();
   progress?.refresh();
   sections?.refresh(sourceUri);
   notes?.render();
@@ -508,6 +514,7 @@ function keepReadingPosition(change: () => void): void {
     }
   }
   notes?.layout();
+  changes.layout();
 }
 
 /** The source line at the top of the preview. */
@@ -633,6 +640,11 @@ window.addEventListener('message', (event: MessageEvent<HostMessage>) => {
       break;
     case 'fileReferences':
       fileReferences?.onReply(message);
+      break;
+    case 'changes':
+      if (message.sourceUri === sourceUri) {
+        changes.set(message);
+      }
       break;
     case 'documentTranslation':
       documentTranslation.onReply(message);

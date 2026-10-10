@@ -5,6 +5,7 @@
  * Illinois/NCSA License). See LICENSE.md and UPSTREAM.md.
  */
 import * as vscode from 'vscode';
+import { SnapshotStore } from './changes/snapshots';
 import { FONT_SIZE, SECTION, clampFontSize } from './config';
 import { exportDocument } from './export/exportCommands';
 import { migrateLegacyModels, migrateLegacySettings } from './legacy';
@@ -28,7 +29,11 @@ export interface ExtensionApi {
 export function activate(context: vscode.ExtensionContext): ExtensionApi {
   migrateLegacyModels(context);
   void migrateLegacySettings(context);
-  const preview = new PreviewManager(context.extensionUri, context.workspaceState);
+  const preview = new PreviewManager(
+    context.extensionUri,
+    context.workspaceState,
+    new SnapshotStore(vscode.Uri.joinPath(context.globalStorageUri, 'snapshots').fsPath),
+  );
   const translation = new TranslationController(context, preview);
   const notes = new NotesController(preview);
   new OutlineFit(preview);

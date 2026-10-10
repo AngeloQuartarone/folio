@@ -181,7 +181,7 @@ const SECTIONS: SectionDefinition[] = [
       {
         key: 'reading.keyboard',
         label: 'Keyboard navigation',
-        description: 'j/k paragraphs, J/K headings, g/G top and bottom, t contents, +/-/0 text size, n note, Alt+← back.',
+        description: 'j/k paragraphs, J/K headings, g/G top and bottom, t contents, +/-/0 text size, n note, c/C changes, Alt+← back.',
         kind: 'toggle',
         default: true,
       },
@@ -376,6 +376,18 @@ const SECTIONS: SectionDefinition[] = [
         options: [
           { value: 'document', label: 'In the document' },
           { value: 'sidecar', label: 'In a file next to it' },
+        ],
+      },
+      {
+        key: 'changes.baseline',
+        label: 'Show changes',
+        description: 'Mark what changed in a document (e.g. edits by an AI) since you last read it, or since the last commit.',
+        kind: 'select',
+        default: 'lastRead',
+        options: [
+          { value: 'lastRead', label: 'Since I last read it' },
+          { value: 'git', label: 'Since the last commit' },
+          { value: 'off', label: 'Off' },
         ],
       },
       {

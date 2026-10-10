@@ -426,6 +426,90 @@ function defineTests(): void {
       }
     });
 
+    it('marks what changed since the document was last read, until it is marked as read', async () => {
+      const api = await activate();
+      const uri = fixture('changes-tmp.md');
+      writeFileSync(uri.fsPath, '# Changes\n\nThe first paragraph.\n\nThe last one.\n');
+      const preview = api.preview as any;
+      const original = preview.post.bind(preview);
+      const sent: HostMessage[] = [];
+      preview.post = (message: HostMessage) => {
+        sent.push(message);
+        original(message);
+      };
+      const nextChanges = async (what: string) => {
+        const from = sent.length;
+        let found: HostMessage | undefined;
+        await until(() => !!(found = sent.slice(from).find((message) => message.type === 'changes')), what);
+        assert.ok(found?.type === 'changes');
+        return found;
+      };
+      try {
+        const first = nextChanges('changes on first read');
+        await vscode.window.showTextDocument(uri, { viewColumn: vscode.ViewColumn.One });
+        api.preview.show(uri, vscode.ViewColumn.Beside);
+        const none = await first;
+        assert.equal(none.baseline, 'lastRead');
+        assert.deepEqual(none.hunks, [], 'nothing to show the first time');
+
+        const edited = nextChanges('changes after an edit');
+        const edit = new vscode.WorkspaceEdit();
+        edit.insert(uri, new vscode.Position(4, 0), 'A new paragraph.\n\n');
+        await vscode.workspace.applyEdit(edit);
+        const changes = await edited;
+        assert.deepEqual(changes.hunks, [{ start: 5, end: 5, removed: '', words: [] }]);
+        assert.ok(changes.since, 'when it was read');
+
+        const read = nextChanges('changes after Mark as read');
+        preview.onMessage({ type: 'markAsRead', sourceUri: uri.toString() });
+        assert.deepEqual((await read).hunks, []);
+      } finally {
+        preview.post = original;
+        await vscode.commands.executeCommand('workbench.action.revertAndCloseActiveEditor');
+        rmSync(uri.fsPath, { force: true });
+      }
+    });
+
+    it('marks what changed since the last commit with the git baseline', async () => {
+      const api = await activate();
+      const config = () => vscode.workspace.getConfiguration('folio');
+      const uri = fixture('other.md');
+      const preview = api.preview as any;
+      const original = preview.post.bind(preview);
+      const sent: HostMessage[] = [];
+      preview.post = (message: HostMessage) => {
+        sent.push(message);
+        original(message);
+      };
+      const nextChanges = async (what: string) => {
+        const from = sent.length;
+        let found: HostMessage | undefined;
+        await until(() => !!(found = sent.slice(from).find((message) => message.type === 'changes')), what, 20_000);
+        assert.ok(found?.type === 'changes');
+        return found;
+      };
+      try {
+        await config().update('changes.baseline', 'git', vscode.ConfigurationTarget.Global);
+        const first = nextChanges('changes against the last commit');
+        await vscode.window.showTextDocument(uri, { viewColumn: vscode.ViewColumn.One });
+        api.preview.show(uri, vscode.ViewColumn.Beside);
+        const clean = await first;
+        assert.equal(clean.baseline, 'git');
+        assert.deepEqual(clean.hunks, [], 'the committed file is unchanged');
+        assert.ok(clean.since, 'the date of the last commit');
+
+        const edited = nextChanges('changes after an edit');
+        const edit = new vscode.WorkspaceEdit();
+        edit.insert(uri, new vscode.Position(0, 0), 'Not committed.\n\n');
+        await vscode.workspace.applyEdit(edit);
+        assert.deepEqual((await edited).hunks, [{ start: 1, end: 1, removed: '', words: [] }]);
+      } finally {
+        preview.post = original;
+        await vscode.commands.executeCommand('workbench.action.revertAndCloseActiveEditor');
+        await config().update('changes.baseline', undefined, vscode.ConfigurationTarget.Global);
+      }
+    });
+
     it('finds wiki link pages anywhere in the workspace, and applies the user stylesheet', async () => {
       const api = await activate();
       const uri = fixture('sample.md');

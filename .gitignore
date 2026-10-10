@@ -7,3 +7,4 @@ out/
 test/fixtures/*.pdf
 test/fixtures/*.html
 test/fixtures/*.folio.json
+test/fixtures/*-tmp.md

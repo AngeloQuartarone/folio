@@ -2,6 +2,7 @@
  * Messages exchanged between the extension host and the preview webview.
  * Copyright (c) 2026 Angelo Quartarone.
  */
+import type { ChangeHunk } from './render/changes';
 
 /** Commands the webview may ask the host to run (nothing else is accepted). */
 export type WebviewCommand =
@@ -111,6 +112,19 @@ export type HostMessage =
       message?: string;
       action?: { label: string; command: WebviewCommand };
     }
+  /**
+   * What changed in the previewed document since the version it is compared
+   * with (sent after each update): `since` is when that version was read or
+   * committed; `tooMany` when the two were too different to compare.
+   */
+  | {
+      type: 'changes';
+      sourceUri: string;
+      baseline: 'lastRead' | 'git' | 'off';
+      since?: string;
+      hunks: ChangeHunk[];
+      tooMany: boolean;
+    }
   /** Which of the file names asked about (fileReferences below) are files or folders that exist. */
   | { type: 'fileReferences'; id: number; found: string[] }
   /** folio.reading.fontSize changed (keys, commands or settings): applied without a reload. */
@@ -135,6 +149,8 @@ export type WebviewMessage =
    */
   | { type: 'selectSource'; sourceUri: string; line: number; endLine: number; text: string; occurrence: number }
   | { type: 'openLink'; sourceUri: string; href: string }
+  /** "Mark as read": the current version becomes the one changes are shown against. */
+  | { type: 'markAsRead'; sourceUri: string }
   /** File names written in the text (as hrefs, lines as #L10-L25): which ones exist? */
   | { type: 'fileReferences'; id: number; sourceUri: string; hrefs: string[] }
   /** Hovering a link to a file: what it points to. */
@@ -215,7 +231,7 @@ export interface ReadingSettings {
   hoverPreviews: boolean;
   /** File names written in the text (`docs/setup.md`) work like links to them. */
   fileReferences: boolean;
-  /** j/k, J/K, g/G, t and Alt+← move through the document; +/-/0 change the text size; n adds a note. */
+  /** j/k, J/K, g/G, t and Alt+← move through the document; +/-/0 change the text size; n adds a note; c/C go to changes. */
   keyboard: boolean;
   progress: boolean;
   focusMode: boolean;
