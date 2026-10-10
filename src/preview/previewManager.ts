@@ -47,6 +47,8 @@ export class PreviewManager implements vscode.Disposable {
   private panel: vscode.WebviewPanel | undefined;
   private sourceUri: vscode.Uri | undefined;
   private config: PreviewConfig = getPreviewConfig();
+  /** Whether file names written in documents exist (see fileReferences). */
+  private readonly referenceCache = new Map<string, { exists: boolean; at: number }>();
   /** The reading settings the preview was last built with. */
   private reading: ReadingConfig = getReadingConfig();
   private renderer = createRenderer(this.config);
@@ -418,6 +420,11 @@ export class PreviewManager implements vscode.Disposable {
           void this.linkPreview(message.id, message.href);
         }
         break;
+      case 'fileReferences':
+        if (message.sourceUri === this.sourceUri?.toString()) {
+          void this.fileReferences(message.id, message.hrefs);
+        }
+        break;
     }
     for (const listener of this.messageListeners) {
       if (this.panel) {
@@ -656,6 +663,40 @@ export class PreviewManager implements vscode.Disposable {
   }
 
   /**
+   * Which file names written in the document are files or folders that
+   * exist (next to it, from the workspace root, or found by name in the
+   * workspace). Answers are cached for a little while: a document is
+   * rendered again at every edit.
+   */
+  private async fileReferences(id: number, hrefs: unknown): Promise<void> {
+    if (!this.panel || !Number.isInteger(id) || !Array.isArray(hrefs)) {
+      return;
+    }
+    const source = this.sourceUri?.toString() ?? '';
+    const now = Date.now();
+    const found: string[] = [];
+    // One at a time: a name not next to the document is looked for in the whole workspace.
+    for (const href of hrefs.slice(0, MAX_FILE_REFERENCES)) {
+      if (typeof href !== 'string' || /^[a-z][a-z0-9+.-]*:/i.test(href)) {
+        continue;
+      }
+      const key = `${source}\u0000${href}`;
+      let known = this.referenceCache.get(key);
+      if (!known || now - known.at > REFERENCE_CACHE_MS) {
+        known = { exists: !!(await this.findLink(href).catch(() => undefined)), at: now };
+        this.referenceCache.set(key, known);
+      }
+      if (known.exists) {
+        found.push(href);
+      }
+    }
+    if (this.referenceCache.size > 2000) {
+      this.referenceCache.clear();
+    }
+    this.post({ type: 'fileReferences', id, found });
+  }
+
+  /**
    * What a link to a file points to, for the preview shown on hover: the
    * start of a Markdown file (or of the section), the linked lines of a
    * source file, an image, the contents of a folder, or that it is missing.
@@ -721,6 +762,9 @@ export class PreviewManager implements vscode.Disposable {
   }
 }
 
+/** File names checked at most per document, and for how long an answer holds. */
+const MAX_FILE_REFERENCES = 300;
+const REFERENCE_CACHE_MS = 20_000;
 /** Entries of a folder listed in its preview. */
 const FOLDER_ENTRIES = 12;
 /** Larger files are not read for a preview. */

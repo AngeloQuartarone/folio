@@ -402,6 +402,30 @@ function defineTests(): void {
       }
     });
 
+    it('tells which file names written in the text exist', async () => {
+      const api = await activate();
+      const uri = fixture('sample.md');
+      await vscode.window.showTextDocument(uri, { viewColumn: vscode.ViewColumn.One });
+      api.preview.show(uri, vscode.ViewColumn.Beside);
+      await until(() => api.preview.activeSourceUri?.toString() === uri.toString(), 'sample.md previewed');
+      const preview = api.preview as any;
+      const original = preview.post.bind(preview);
+      const sent: HostMessage[] = [];
+      preview.post = (message: HostMessage) => {
+        sent.push(message);
+        original(message);
+      };
+      try {
+        const hrefs = ['other.md', 'code/greet.py#L4-L5', 'greet.py', 'code', 'nowhere.md', 'folio.reading.fontSize', 'command:x.md'];
+        preview.onMessage({ type: 'fileReferences', id: 3, sourceUri: uri.toString(), hrefs });
+        await until(() => sent.some((message) => message.type === 'fileReferences'), 'an answer');
+        const answer = sent.find((message) => message.type === 'fileReferences');
+        assert.deepEqual(answer, { type: 'fileReferences', id: 3, found: ['other.md', 'code/greet.py#L4-L5', 'greet.py', 'code'] });
+      } finally {
+        preview.post = original;
+      }
+    });
+
     it('finds wiki link pages anywhere in the workspace, and applies the user stylesheet', async () => {
       const api = await activate();
       const uri = fixture('sample.md');

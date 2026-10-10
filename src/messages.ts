@@ -111,6 +111,8 @@ export type HostMessage =
       message?: string;
       action?: { label: string; command: WebviewCommand };
     }
+  /** Which of the file names asked about (fileReferences below) are files or folders that exist. */
+  | { type: 'fileReferences'; id: number; found: string[] }
   /** folio.reading.fontSize changed (keys, commands or settings): applied without a reload. */
   | { type: 'textSize'; size: number }
   /** "Folio: Add Note to Selection". */
@@ -133,6 +135,8 @@ export type WebviewMessage =
    */
   | { type: 'selectSource'; sourceUri: string; line: number; endLine: number; text: string; occurrence: number }
   | { type: 'openLink'; sourceUri: string; href: string }
+  /** File names written in the text (as hrefs, lines as #L10-L25): which ones exist? */
+  | { type: 'fileReferences'; id: number; sourceUri: string; hrefs: string[] }
   /** Hovering a link to a file: what it points to. */
   | { type: 'linkPreview'; id: number; sourceUri: string; href: string }
   /** Translate these blocks of the document (HTML), in this order; replaces any earlier request. */
@@ -209,6 +213,8 @@ export interface ReadingSettings {
   collapsible: boolean;
   /** Footnotes and link targets shown when the pointer rests on them. */
   hoverPreviews: boolean;
+  /** File names written in the text (`docs/setup.md`) work like links to them. */
+  fileReferences: boolean;
   /** j/k, J/K, g/G, t and Alt+← move through the document; +/-/0 change the text size; n adds a note. */
   keyboard: boolean;
   progress: boolean;

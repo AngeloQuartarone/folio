@@ -8,6 +8,7 @@
  */
 import type { HostMessage, WebviewMessage } from '../messages';
 import { FOLIO_UI } from './documentTools';
+import { FILE_REFERENCE } from './fileReferences';
 
 const DELAY_MS = 400;
 const GAP = 8;
@@ -22,7 +23,8 @@ type Reply = Extract<HostMessage, { type: 'linkPreview' }>;
 export class LinkPreviews {
   private readonly card: HTMLElement;
   private timer: ReturnType<typeof setTimeout> | undefined;
-  private link: HTMLAnchorElement | undefined;
+  /** A link, or a file name written in the text (see fileReferences.ts). */
+  private link: HTMLElement | undefined;
   private requestId = 0;
 
   constructor(
@@ -37,7 +39,7 @@ export class LinkPreviews {
     document.body.append(this.card);
 
     root.addEventListener('mouseover', (event) => {
-      const link = (event.target as Element | null)?.closest?.<HTMLAnchorElement>('a[href]');
+      const link = (event.target as Element | null)?.closest?.<HTMLElement>(`a[href], ${FILE_REFERENCE}`);
       if (!link || link === this.link || !root.contains(link)) {
         return;
       }
@@ -61,8 +63,8 @@ export class LinkPreviews {
     }
   }
 
-  private show(link: HTMLAnchorElement): void {
-    const href = link.getAttribute('href') ?? '';
+  private show(link: HTMLElement): void {
+    const href = link.getAttribute('href') ?? link.dataset['href'] ?? '';
     if (href.startsWith('#')) {
       const content = this.local(decodeURIComponent(href.slice(1)));
       if (content) {
@@ -107,7 +109,7 @@ export class LinkPreviews {
     return holder.innerHTML;
   }
 
-  private open(link: HTMLAnchorElement, html: string, title?: string, path?: string): void {
+  private open(link: HTMLElement, html: string, title?: string, path?: string): void {
     if (!link.isConnected) {
       return;
     }

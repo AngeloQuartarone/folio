@@ -103,6 +103,7 @@ export interface ReadingConfig {
   outlineAutoClose: boolean;
   collapsible: boolean;
   hoverPreviews: boolean;
+  fileReferences: boolean;
   keyboard: boolean;
   progress: boolean;
   focusMode: boolean;
@@ -138,6 +139,7 @@ export function getReadingConfig(): ReadingConfig {
     outlineAutoClose: c.get<boolean>('reading.outlineAutoClose', true),
     collapsible: c.get<boolean>('reading.collapsible', true),
     hoverPreviews: c.get<boolean>('reading.hoverPreviews', true),
+    fileReferences: c.get<boolean>('reading.fileReferences', true),
     keyboard: c.get<boolean>('reading.keyboard', true),
     progress: c.get<boolean>('reading.progress', true),
     focusMode: c.get<boolean>('reading.focusMode', false),

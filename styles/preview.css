@@ -1779,6 +1779,18 @@ body.mtp-settings-open {
   list-style: none;
 }
 
+/* A file name written in the text that leads to the file (src/webview/fileReferences.ts). */
+.markdown-preview code.folio-file-ref {
+  cursor: pointer;
+  text-decoration: underline dotted;
+  text-decoration-color: color-mix(in srgb, currentColor 45%, transparent);
+  text-underline-offset: 3px;
+}
+
+.markdown-preview code.folio-file-ref:hover {
+  text-decoration-color: currentColor;
+}
+
 .folio-peek-path {
   margin: -2px 0 8px;
   overflow: hidden;

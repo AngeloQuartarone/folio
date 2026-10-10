@@ -172,6 +172,13 @@ const SECTIONS: SectionDefinition[] = [
         default: true,
       },
       {
+        key: 'reading.fileReferences',
+        label: 'File names as links',
+        description: 'File names written in the text (docs/setup.md, src/app.ts:42) preview and open the file.',
+        kind: 'toggle',
+        default: true,
+      },
+      {
         key: 'reading.keyboard',
         label: 'Keyboard navigation',
         description: 'j/k paragraphs, J/K headings, g/G top and bottom, t contents, +/-/0 text size, n note, Alt+← back.',

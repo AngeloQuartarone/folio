@@ -402,6 +402,11 @@
           "default": true,
           "markdownDescription": "Show footnotes, and what a link points to (a section of this document, another Markdown file, the lines of a source file, an image, a folder), when the pointer rests on them."
         },
+        "folio.reading.fileReferences": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "File names written in the text, such as `` `docs/setup.md` `` or `` `src/app.ts:42` ``, work like links when the file exists: a preview on hover, and a click opens it (at that line)."
+        },
         "folio.reading.keyboard": {
           "type": "boolean",
           "default": true,

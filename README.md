@@ -58,6 +58,12 @@ It is an independent project derived from
   GitHub-style `#L10-L25` points to, else the first ones); an image; the
   contents of a folder; or that the file does not exist. A click opens it,
   at those lines.
+- **File names as links**: names of files written in the text, as inline
+  code — `` `docs/setup.md` ``, `` `package.json` ``, `` `src/app.ts:42` ``
+  — get a dotted underline when the file exists (next to the document,
+  from the workspace root, or anywhere in the workspace), and work like a
+  link to it: the same preview on hover, and a click opens it, at that
+  line (`folio.reading.fileReferences`).
 - **Back**: after following a link (to a heading or to another Markdown
   file), the mouse's back button, `Alt+←` or the **Back** button next to the
   table of contents button takes you back to where you were.
@@ -263,6 +269,7 @@ selection. If the text is already in the target language a small
 | `folio.reading.outlineAutoClose` | `true` | Close the table of contents with a click on the text when it floats over it. |
 | `folio.reading.collapsible` | `true` | Fold a section with the arrow next to its heading. |
 | `folio.reading.hoverPreviews` | `true` | Footnotes and link targets on hover. |
+| `folio.reading.fileReferences` | `true` | File names written in the text (`docs/setup.md`, `src/app.ts:42`) work like links to the file. |
 | `folio.reading.keyboard` | `true` | `j`/`k`, `J`/`K`, `g`/`G`, `t` and `Alt+←` move through the document; `+`/`-`/`0` change the text size; `n` adds a note to the selection. |
 | `folio.reading.progress` | `true` | Reading time and progress bar. |
 | `folio.reading.focusMode` | `false` | Dim everything but the paragraph being read. |

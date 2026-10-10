@@ -17,6 +17,10 @@
   GitHub, else the first lines); an image; a folder's contents; a missing
   file. Clicking a link with `#L10-L25` opens the file with those lines
   selected; a link to a folder shows it in the Explorer.
+- File names as links: names of existing files written in the text as
+  inline code (`docs/setup.md`, `src/app.ts:42`) get a dotted underline, the
+  link preview on hover, and open on click, at that line
+  (`folio.reading.fileReferences`).
 - Fixed: hover previews, notes and the translation tooltip were placed as
   if they were a little narrower, and could stick out of the window's right
   edge; near that edge, a note's card could shrink and break its buttons

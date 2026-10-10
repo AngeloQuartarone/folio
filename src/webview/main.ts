@@ -10,6 +10,7 @@ import DOMPurify from 'dompurify';
 import type { HostMessage, WebviewMessage, WebviewSettings } from '../messages';
 import { addCodeCopyButtons, copyFormatted, toast } from './documentTools';
 import { DocumentTranslation } from './documentTranslation';
+import { FILE_REFERENCE, FileReferences } from './fileReferences';
 import { enableImageZoom } from './lightbox';
 import { History, enableKeyboard } from './navigation';
 import { Notes } from './notes';
@@ -131,6 +132,7 @@ const documentTranslation = new DocumentTranslation(preview, post, () => sourceU
   notes?.layout();
 });
 const linkPreviews = reading.hoverPreviews ? new LinkPreviews(preview, post, () => sourceUri, sanitize) : undefined;
+const fileReferences = reading.fileReferences ? new FileReferences(preview, post, () => sourceUri) : undefined;
 if (reading.keyboard) {
   enableKeyboard(preview, {
     back: () => history.back(),
@@ -239,6 +241,7 @@ function update(message: Extract<HostMessage, { type: 'update' }>): void {
 /** Folio's additions to a freshly rendered document. */
 function afterRender(): void {
   addCodeCopyButtons(preview);
+  fileReferences?.refresh();
   progress?.refresh();
   sections?.refresh(sourceUri);
   notes?.render();
@@ -527,9 +530,10 @@ function topSourceLine(): number | undefined {
 // after us) and opens their resolved URL — for a relative link a
 // https://file+.vscode-resource… address — in the browser. Links are handled
 // here only: caught before it, in the capture phase, and stopped.
-function linkOf(event: MouseEvent): HTMLAnchorElement | null {
+/** A link, or a file name written in the text that works as one (see fileReferences.ts). */
+function linkOf(event: MouseEvent): HTMLElement | null {
   const target = event.target as Element | null;
-  return target?.closest?.('a[href]') ?? null;
+  return target?.closest?.<HTMLElement>(`a[href], ${FILE_REFERENCE}`) ?? null;
 }
 
 window.addEventListener(
@@ -548,7 +552,7 @@ window.addEventListener('click', (event) => {
   if (!anchor || !preview.contains(anchor)) {
     return;
   }
-  const href = anchor.getAttribute('href');
+  const href = anchor.getAttribute('href') ?? anchor.dataset['href'];
   if (!href) {
     return;
   }
@@ -626,6 +630,9 @@ window.addEventListener('message', (event: MessageEvent<HostMessage>) => {
       break;
     case 'linkPreview':
       linkPreviews?.onReply(message);
+      break;
+    case 'fileReferences':
+      fileReferences?.onReply(message);
       break;
     case 'documentTranslation':
       documentTranslation.onReply(message);
