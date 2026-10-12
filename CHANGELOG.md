@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.2.0 (2026-10-12)
 
 - Text size from the keyboard: `+`/`-` in the preview make the text one
   pixel larger or smaller and `0` resets it, with *Folio: Increase / Decrease
