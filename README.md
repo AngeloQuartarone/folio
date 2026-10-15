@@ -89,6 +89,10 @@ It is an independent project derived from
   translations.
 - **Other meanings** of a single word, one click away, from an offline
   Wiktionary dictionary.
+- **Search the web**: under the text you select, **Search the web** (or
+  `w`) searches it in your default browser, opening it if needed. Google by
+  default; any engine with `folio.webSearch.url`, also in the settings
+  window (**Web search**).
 - **Translate the whole document**, offline: every paragraph, heading, list
   item and table cell gets its translation right below it, in a quieter
   colour, with its bold, italics and links; code and math stay as they are.
@@ -207,7 +211,7 @@ table of contents (top left) and the settings (top right). The settings
 panel holds the everyday settings — theme, target language, translation and
 scroll sync — with export and copy. **All settings…** opens a settings
 window with every option in sections: Appearance, Reading, Translation,
-Offline languages, Preview and Export.
+Offline languages, Web search, Preview and Export.
 
 ## Translation
 
@@ -282,7 +286,7 @@ selection. If the text is already in the target language a small
 | `folio.reading.collapsible` | `true` | Fold a section with the arrow next to its heading. |
 | `folio.reading.hoverPreviews` | `true` | Footnotes and link targets on hover. |
 | `folio.reading.fileReferences` | `true` | File names written in the text (`docs/setup.md`, `src/app.ts:42`) work like links to the file. |
-| `folio.reading.keyboard` | `true` | `j`/`k`, `J`/`K`, `g`/`G`, `t` and `Alt+←` move through the document; `+`/`-`/`0` change the text size; `n` adds a note to the selection; `c`/`C` go to the next/previous change. |
+| `folio.reading.keyboard` | `true` | `j`/`k`, `J`/`K`, `g`/`G`, `t` and `Alt+←` move through the document; `+`/`-`/`0` change the text size; `n` adds a note to the selection; `w` searches the web for it; `c`/`C` go to the next/previous change. |
 | `folio.reading.progress` | `true` | Reading time and progress bar. |
 | `folio.reading.focusMode` | `false` | Dim everything but the paragraph being read. |
 | `folio.reading.focusScope` | `section` | What focus mode keeps clear: `section` (a heading with its paragraphs), `paragraph` or `sentence`. |
@@ -299,6 +303,8 @@ selection. If the text is already in the target language a small
 | `folio.translation.targetLanguage` | `it` | Language to translate into (one of the 11 above). |
 | `folio.translation.sourceLanguage` | `auto` | Language of your documents, or `auto` to detect it. |
 | `folio.translation.modelsPath` | `""` | Folder with the models and dictionaries; empty = extension storage. |
+| `folio.webSearch.enabled` | `true` | **Search the web** under the selected text, and the `w` key. |
+| `folio.webSearch.url` | *(empty)* | Search engine: the address of a search with `%s` for the text, e.g. `https://duckduckgo.com/?q=%s`; empty = Google. |
 | `folio.scrollSync` | `true` | Synchronize editor and preview scrolling. |
 | `folio.liveUpdateDebounceMs` | `300` | Delay before the preview updates after an edit. |
 | `folio.breakOnSingleNewLine` | `false` | Render single line breaks as `<br>`. |

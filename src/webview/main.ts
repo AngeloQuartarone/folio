@@ -145,6 +145,7 @@ if (reading.keyboard) {
     step: (direction) => (focus.stepping() ? (focus.step(direction), true) : false),
     textSize: changeTextSize,
     addNote: () => addNoteToSelection(),
+    webSearch: () => searchSelection(),
     change: (direction) => void changes.step(direction),
   });
 }
@@ -178,7 +179,7 @@ function applyTextSize(size: number): void {
   toast(`Text size ${size} px`);
 }
 
-const tooltip = new TranslationTooltip(preview, post, settings.translationEnabled, notes);
+const tooltip = new TranslationTooltip(preview, post, settings.translationEnabled, notes, reading.webSearch);
 const settingsPanel = new SettingsPanel(post, settings.sections, {
   get: () => state.get<string>('settingsSection'),
   set: (section) => state.set('settingsSection', section),
@@ -206,6 +207,23 @@ function addNoteToSelection(): void {
   }
   tooltip.hide();
   notes.compose(range);
+}
+
+/** "w": search the web for the selected text (the host opens the browser). */
+function searchSelection(): void {
+  if (!reading.webSearch) {
+    toast('Web search is turned off (folio.webSearch.enabled)');
+    return;
+  }
+  const selection = window.getSelection();
+  const range = selection && !selection.isCollapsed && selection.rangeCount ? selection.getRangeAt(0) : undefined;
+  const text = range && preview.contains(range.commonAncestorContainer) ? range.toString().replace(/\s+/g, ' ').trim() : '';
+  if (!text) {
+    toast('Select some text to search the web');
+    return;
+  }
+  tooltip.hide();
+  post({ type: 'webSearch', text });
 }
 
 // ---------------------------------------------------------------- rendering

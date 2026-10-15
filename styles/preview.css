@@ -1086,6 +1086,7 @@ body.mtp-settings-open {
 .mtp-settings-icon[data-section='reading'] { background: #d4827a; }
 .mtp-settings-icon[data-section='translation'] { background: #5b9bd5; }
 .mtp-settings-icon[data-section='languages'] { background: #5fae8a; }
+.mtp-settings-icon[data-section='webSearch'] { background: #4fa3b8; }
 .mtp-settings-icon[data-section='preview'] { background: #e3a063; }
 .mtp-settings-icon[data-section='export'] { background: #9a9a9e; }
 
@@ -2438,12 +2439,23 @@ body[data-color-scheme='dark'] {
   color: var(--mtp-error);
 }
 
-/* "Add note" in the selection tooltip. */
-.mtp-tooltip-note {
+/* "Add note" and "Search the web" in the selection tooltip. */
+.mtp-tooltip-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  margin: 8px 0 0 -6px;
+}
+
+.mtp-tooltip-tools[hidden] {
+  display: none;
+}
+
+.mtp-tooltip-note,
+.mtp-tooltip-search {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  margin: 8px 0 0 -6px;
   padding: 2px 6px;
   border: 0;
   border-radius: 6px;
@@ -2464,26 +2476,55 @@ body[data-color-scheme='dark'] {
   transform: rotate(-45deg);
 }
 
-.mtp-tooltip-note:hover {
+/* A magnifying glass: the lens, and its handle drawn with ::after. */
+.mtp-tooltip-search {
+  position: relative;
+}
+
+.mtp-tooltip-search::before {
+  content: '';
+  box-sizing: border-box;
+  width: 9px;
+  height: 9px;
+  margin: -2px 1px 0 -1px;
+  border: 1.5px solid var(--mtp-accent);
+  border-radius: 50%;
+}
+
+.mtp-tooltip-search::after {
+  content: '';
+  position: absolute;
+  left: 11.5px;
+  top: calc(50% + 2px);
+  width: 4px;
+  height: 1.5px;
+  border-radius: 1px;
+  background: var(--mtp-accent);
+  transform: rotate(45deg);
+}
+
+.mtp-tooltip-note:hover,
+.mtp-tooltip-search:hover {
   background: var(--mtp-fill);
   color: var(--mtp-fg);
 }
 
-.mtp-tooltip-note[hidden] {
+.mtp-tooltip-note[hidden],
+.mtp-tooltip-search[hidden] {
   display: none;
 }
 
-.mtp-tooltip[data-state='note'] {
+.mtp-tooltip[data-state='tools'] {
   min-width: 0;
   padding: 4px 8px;
 }
 
-.mtp-tooltip[data-state='note'] .mtp-tooltip-label,
-.mtp-tooltip[data-state='note'] .mtp-tooltip-text {
+.mtp-tooltip[data-state='tools'] .mtp-tooltip-label,
+.mtp-tooltip[data-state='tools'] .mtp-tooltip-text {
   display: none;
 }
 
-.mtp-tooltip[data-state='note'] .mtp-tooltip-note {
+.mtp-tooltip[data-state='tools'] .mtp-tooltip-tools {
   margin: 0;
 }
 

@@ -19,6 +19,7 @@ import {
   getPreviewConfig,
   getReadingConfig,
   getTranslationConfig,
+  getWebSearchUrl,
 } from '../config';
 import type { SnapshotStore } from '../changes/snapshots';
 import { HostMessage, WebviewMessage } from '../messages';
@@ -35,6 +36,7 @@ import {
 } from '../themes';
 import { settingsSections } from '../settingsView';
 import { readUserCss, resolveUserPath } from '../userStyles';
+import { webSearchUrl } from '../webSearch';
 import { buildPreviewPage } from './page';
 import { findRenderedText } from './sourceMatch';
 
@@ -501,6 +503,9 @@ export class PreviewManager implements vscode.Disposable {
           void this.fileReferences(message.id, message.hrefs);
         }
         break;
+      case 'webSearch':
+        void this.webSearch(message.text);
+        break;
     }
     for (const listener of this.messageListeners) {
       if (this.panel) {
@@ -667,6 +672,16 @@ export class PreviewManager implements vscode.Disposable {
       }
       const [found] = await vscode.workspace.findFiles(`**/${name}`, '**/node_modules/**', 1);
       return found ? { target: found, fragment: link.fragment } : undefined;
+    }
+  }
+
+  /** "Search the web": the selected text in the default browser, opened if needed. */
+  private async webSearch(text: unknown): Promise<void> {
+    const url = this.reading.webSearch && typeof text === 'string' ? webSearchUrl(getWebSearchUrl(), text) : undefined;
+    if (url) {
+      // As a string: given a Uri, VS Code decodes the query before handing
+      // it to the browser, and "AT&T" or "C++" would be searched wrong.
+      await vscode.env.openExternal(url as unknown as vscode.Uri);
     }
   }
 

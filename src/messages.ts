@@ -161,6 +161,8 @@ export type WebviewMessage =
   /** Back to a place in another Markdown document (after following a link). */
   | { type: 'navigate'; uri: string; line: number }
   | { type: 'translate'; id: number; text: string; context: string }
+  /** Search the web for text selected in the preview, in the default browser. */
+  | { type: 'webSearch'; text: string }
   | { type: 'command'; command: WebviewCommand }
   | { type: 'languageModels'; action: 'download' | 'remove'; language: string }
   /** The first source line visible in the preview, to resume reading there. */
@@ -231,7 +233,7 @@ export interface ReadingSettings {
   hoverPreviews: boolean;
   /** File names written in the text (`docs/setup.md`) work like links to them. */
   fileReferences: boolean;
-  /** j/k, J/K, g/G, t and Alt+← move through the document; +/-/0 change the text size; n adds a note; c/C go to changes. */
+  /** j/k, J/K, g/G, t and Alt+← move through the document; +/-/0 change the text size; n adds a note; w searches the web; c/C go to changes. */
   keyboard: boolean;
   progress: boolean;
   focusMode: boolean;
@@ -246,4 +248,6 @@ export interface ReadingSettings {
   notes: boolean;
   /** A note shows when the pointer rests on its text or its pin. */
   notesHover: boolean;
+  /** "Search the web" in the selection tooltip (and the w key). */
+  webSearch: boolean;
 }

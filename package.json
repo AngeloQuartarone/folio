@@ -410,7 +410,7 @@
         "folio.reading.keyboard": {
           "type": "boolean",
           "default": true,
-          "markdownDescription": "Keys to move through the document: `j`/`k` next/previous paragraph, `J`/`K` next/previous heading, `g`/`G` top/bottom, `t` table of contents, `+`/`-`/`0` text size (larger, smaller, default), `n` note on the selected text, `c`/`C` next/previous change, `Alt+←` back after following a link."
+          "markdownDescription": "Keys to move through the document: `j`/`k` next/previous paragraph, `J`/`K` next/previous heading, `g`/`G` top/bottom, `t` table of contents, `+`/`-`/`0` text size (larger, smaller, default), `n` note on the selected text, `w` web search for the selected text, `c`/`C` next/previous change, `Alt+←` back after following a link."
         },
         "folio.reading.progress": {
           "type": "boolean",
@@ -523,6 +523,17 @@
           "type": "string",
           "default": "",
           "markdownDescription": "Your name on new notes and replies. Empty: your Git `user.name`, else your system user name."
+        },
+        "folio.webSearch.enabled": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Show **Search the web** under the text you select in the preview: it searches the selection in your default browser (opening it if needed). The `w` key does the same."
+        },
+        "folio.webSearch.url": {
+          "type": "string",
+          "default": "",
+          "maxLength": 300,
+          "markdownDescription": "The search engine for **Search the web**: the address of a search, with `%s` where the selected text goes, e.g. `https://duckduckgo.com/?q=%s` or `https://www.bing.com/search?q=%s`. Empty: Google."
         },
         "folio.scrollSync": {
           "type": "boolean",

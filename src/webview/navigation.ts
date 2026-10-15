@@ -113,6 +113,8 @@ export interface KeyActions {
   textSize(change: 1 | -1 | 0): void;
   /** n: a note on the selected text. */
   addNote(): void;
+  /** w: search the web for the selected text. */
+  webSearch(): void;
   /** c/C: the next/previous change since the document was last read. */
   change?(direction: 1 | -1): void;
 }
@@ -120,7 +122,8 @@ export interface KeyActions {
 /**
  * j/k: next/previous paragraph, J/K: next/previous heading, g/G: top and
  * bottom, t: table of contents, +/-/0: text size, n: note on the selection,
- * c/C: next/previous change, Alt+←: back. Not while typing.
+ * w: web search for the selection, c/C: next/previous change, Alt+←: back.
+ * Not while typing.
  */
 export function enableKeyboard(root: HTMLElement, actions: KeyActions): void {
   document.addEventListener('keydown', (event) => {
@@ -180,6 +183,9 @@ export function enableKeyboard(root: HTMLElement, actions: KeyActions): void {
         break;
       case 'n':
         actions.addNote();
+        break;
+      case 'w':
+        actions.webSearch();
         break;
       case 'c':
         actions.change?.(1);

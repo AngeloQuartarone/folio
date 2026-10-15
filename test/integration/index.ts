@@ -641,6 +641,35 @@ function defineTests(): void {
       }
     });
 
+    it('searches the web for the selection in the default browser, with the chosen engine', async () => {
+      const api = await activate();
+      const config = () => vscode.workspace.getConfiguration('folio');
+      const env = vscode.env as { openExternal: (target: unknown) => Thenable<boolean> };
+      const original = env.openExternal;
+      const opened: unknown[] = [];
+      env.openExternal = async (target) => (opened.push(target), true);
+      const send = (text: unknown) => (api.preview as any).onMessage({ type: 'webSearch', text });
+      try {
+        send('AT&T  and C++');
+        await until(() => opened.length === 1, 'a search');
+        // A string, not a Uri: VS Code would decode the query of a Uri.
+        assert.equal(opened[0], 'https://www.google.com/search?q=AT%26T%20and%20C%2B%2B');
+
+        await config().update('webSearch.url', 'https://duckduckgo.com/?q=%s', vscode.ConfigurationTarget.Global);
+        send('città');
+        await until(() => opened.length === 2, 'a search with DuckDuckGo');
+        assert.equal(opened[1], 'https://duckduckgo.com/?q=citt%C3%A0');
+
+        send('   ');
+        send(42);
+        await new Promise((resolve) => setTimeout(resolve, 300));
+        assert.equal(opened.length, 2, 'nothing to search');
+      } finally {
+        env.openExternal = original;
+        await config().update('webSearch.url', undefined, vscode.ConfigurationTarget.Global);
+      }
+    });
+
     it('remembers where the user stopped reading', async () => {
       const api = await activate();
       const uri = fixture('sample.md');

@@ -35,10 +35,15 @@ export class TranslationTooltip {
   private readonly body: HTMLDivElement;
   private readonly meanings: HTMLDivElement;
   private readonly action: HTMLButtonElement;
+  /** "Add note" and "Search the web", under the rest. */
+  private readonly tools: HTMLDivElement;
   private readonly noteButton: HTMLButtonElement;
+  private readonly searchButton: HTMLButtonElement;
   private anchor: Anchor | undefined;
   /** The selection the tooltip is about, for "Add note". */
   private range: Range | undefined;
+  /** Its text, for "Search the web". */
+  private text = '';
   private requestId = 0;
   private pendingAction: WebviewMessage | undefined;
   /** Open the other meanings as soon as they arrive (after a dictionary download). */
@@ -49,6 +54,8 @@ export class TranslationTooltip {
     private readonly post: (message: WebviewMessage) => void,
     private enabled: boolean,
     private readonly notes?: NoteComposer,
+    /** Offer "Search the web" (the host opens the browser). */
+    private readonly webSearch = false,
   ) {
     this.element = document.createElement('div');
     this.element.className = 'mtp-tooltip';
@@ -90,7 +97,21 @@ export class TranslationTooltip {
         this.notes?.compose(range);
       }
     });
-    this.element.append(this.label, this.body, this.meanings, this.action, this.noteButton);
+    this.searchButton = document.createElement('button');
+    this.searchButton.type = 'button';
+    this.searchButton.className = 'mtp-tooltip-search';
+    this.searchButton.textContent = 'Search the web';
+    this.searchButton.title = 'Search the web (w)';
+    this.searchButton.hidden = true;
+    this.searchButton.addEventListener('click', () => {
+      const text = this.text;
+      this.hide();
+      this.post({ type: 'webSearch', text });
+    });
+    this.tools = document.createElement('div');
+    this.tools.className = 'mtp-tooltip-tools';
+    this.tools.append(this.noteButton, this.searchButton);
+    this.element.append(this.label, this.body, this.meanings, this.action, this.tools);
     document.body.appendChild(this.element);
 
     document.addEventListener('mousedown', (event) => {
@@ -140,7 +161,7 @@ export class TranslationTooltip {
   }
 
   private onMouseUp(event: MouseEvent): void {
-    if ((!this.enabled && !this.notes) || event.button !== 0 || this.element.contains(event.target as Node)) {
+    if ((!this.enabled && !this.notes && !this.webSearch) || event.button !== 0 || this.element.contains(event.target as Node)) {
       return;
     }
     // Let the browser finish updating the selection (a click inside an
@@ -164,6 +185,7 @@ export class TranslationTooltip {
     }
 
     this.range = range.cloneRange();
+    this.text = text;
     const rect = range.getBoundingClientRect();
     this.anchor = {
       top: rect.top + window.scrollY,
@@ -174,9 +196,9 @@ export class TranslationTooltip {
     const id = ++this.requestId;
 
     if (!this.enabled) {
-      // Translation off: only the "Add note" button.
-      if (this.notes?.canAnnotate(range)) {
-        this.show('note', '', '');
+      // Translation off: only the buttons.
+      if (this.webSearch || this.notes?.canAnnotate(range)) {
+        this.show('tools', '', '');
       }
       return;
     }
@@ -207,7 +229,7 @@ export class TranslationTooltip {
   }
 
   private show(
-    state: 'loading' | 'ok' | 'same' | 'error' | 'note',
+    state: 'loading' | 'ok' | 'same' | 'error' | 'tools',
     label: string,
     text: string,
     action?: { label: string; message: WebviewMessage },
@@ -222,6 +244,8 @@ export class TranslationTooltip {
     this.action.hidden = !action;
     this.action.textContent = action?.label ?? '';
     this.noteButton.hidden = !(this.range && this.notes?.canAnnotate(this.range));
+    this.searchButton.hidden = !(this.webSearch && this.text);
+    this.tools.hidden = this.noteButton.hidden && this.searchButton.hidden;
     this.element.hidden = false;
     this.position();
   }

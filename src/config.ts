@@ -28,6 +28,7 @@ export const PREVIEW_SETTINGS = [
   'reading',
   'notes.enabled',
   'notes.hoverPreview',
+  'webSearch.enabled',
 ].map((key) => `${SECTION}.${key}`);
 
 export interface TranslationConfig {
@@ -114,6 +115,7 @@ export interface ReadingConfig {
   resume: boolean;
   notes: boolean;
   notesHover: boolean;
+  webSearch: boolean;
 }
 
 function oneOf<T extends string>(value: unknown, choices: readonly T[], fallback: T): T {
@@ -150,6 +152,7 @@ export function getReadingConfig(): ReadingConfig {
     resume: c.get<boolean>('reading.resume', true),
     notes: c.get<boolean>('notes.enabled', true),
     notesHover: c.get<boolean>('notes.hoverPreview', true),
+    webSearch: c.get<boolean>('webSearch.enabled', true),
   };
 }
 
@@ -182,6 +185,11 @@ export function getNotesConfig(): NotesConfig {
     storage: oneOf(c.get('notes.storage'), ['document', 'sidecar'] as const, 'document'),
     author: c.get<string>('notes.author', '').trim().slice(0, 100),
   };
+}
+
+/** folio.webSearch.url: the search address, with %s for the text (empty: Google, see src/webSearch.ts). */
+export function getWebSearchUrl(): string {
+  return vscode.workspace.getConfiguration(SECTION).get<string>('webSearch.url', '').trim();
 }
 
 export function editorColorScheme(): 'light' | 'dark' {

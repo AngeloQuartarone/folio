@@ -181,7 +181,7 @@ const SECTIONS: SectionDefinition[] = [
       {
         key: 'reading.keyboard',
         label: 'Keyboard navigation',
-        description: 'j/k paragraphs, J/K headings, g/G top and bottom, t contents, +/-/0 text size, n note, c/C changes, Alt+← back.',
+        description: 'j/k paragraphs, J/K headings, g/G top and bottom, t contents, +/-/0 text size, n note, w web search, c/C changes, Alt+← back.',
         kind: 'toggle',
         default: true,
       },
@@ -288,6 +288,28 @@ const SECTIONS: SectionDefinition[] = [
     title: 'Offline languages',
     items: [],
     languages: true,
+  },
+  {
+    id: 'webSearch',
+    title: 'Web search',
+    items: [
+      {
+        key: 'webSearch.enabled',
+        label: 'Search the web',
+        description: 'A button under the text you select (and the w key) searches it in your browser.',
+        kind: 'toggle',
+        default: true,
+      },
+      {
+        key: 'webSearch.url',
+        label: 'Search engine',
+        description: 'The address of a search, with %s where the text goes, e.g. https://duckduckgo.com/?q=%s.',
+        kind: 'text',
+        default: '',
+        placeholder: 'Google',
+        maxLength: 300,
+      },
+    ],
   },
   {
     id: 'preview',
