@@ -551,6 +551,7 @@ export class FocusMode {
     if (
       !this.stepping() ||
       event.ctrlKey ||
+      event.metaKey ||
       Math.abs(event.deltaX) > Math.abs(event.deltaY) ||
       target?.closest?.('.mtp-ui, .mtp-tooltip, .mtp-settings-window, .folio-lightbox')
     ) {

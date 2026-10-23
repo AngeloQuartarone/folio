@@ -2221,8 +2221,94 @@ body[data-focus-mode] #preview > .folio-within > .folio-current {
   cursor: grabbing;
 }
 
-.folio-lightbox img.folio-animate {
+.folio-lightbox img.folio-animate,
+.folio-lightbox .folio-lightbox-diagram.folio-animate {
   transition: transform 200ms var(--mtp-ease);
+}
+
+/* A Mermaid diagram in the lightbox: its own frame, since its SVG is transparent. */
+.folio-lightbox-diagram {
+  padding: 16px;
+  border-radius: 8px;
+  box-shadow: var(--mtp-shadow);
+  animation: mtp-pop 220ms var(--mtp-ease);
+  user-select: none;
+}
+
+.folio-lightbox-diagram > svg {
+  display: block;
+  max-width: none;
+}
+
+/* Mermaid diagrams in the page zoom and pan inside their box (src/webview/diagrams.ts). */
+.markdown-preview .folio-diagram {
+  position: relative;
+  overflow: hidden;
+  touch-action: pan-y;
+}
+
+.markdown-preview .folio-diagram > svg {
+  display: block;
+  margin: 0 auto;
+  transform-origin: center;
+}
+
+.markdown-preview .folio-diagram > svg.folio-animate {
+  transition: transform 200ms var(--mtp-ease);
+}
+
+.markdown-preview .folio-diagram.folio-zoomed {
+  cursor: grab;
+  user-select: none;
+}
+
+.markdown-preview .folio-diagram.folio-dragging {
+  cursor: grabbing;
+}
+
+.folio-diagram-tools {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 7px;
+  background: var(--mtp-surface);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  box-shadow: var(--mtp-shadow-small);
+  opacity: 0;
+  transition: opacity 150ms ease;
+}
+
+.folio-diagram:hover .folio-diagram-tools,
+.folio-diagram.folio-zoomed .folio-diagram-tools,
+.folio-diagram-tools:focus-within {
+  opacity: 1;
+}
+
+.folio-diagram-tools button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 5px;
+  background: none;
+  color: var(--mtp-muted);
+  cursor: pointer;
+}
+
+.folio-diagram-tools button:hover {
+  background: var(--mtp-fill-strong);
+  color: var(--mtp-fg);
+}
+
+.folio-diagram:not(.folio-zoomed) .folio-diagram-fit {
+  display: none;
 }
 
 .folio-lightbox.folio-closing {
@@ -2532,8 +2618,13 @@ body[data-color-scheme='dark'] {
   .folio-note-layer,
   .folio-progress,
   .folio-reading-time,
-  .folio-copy {
+  .folio-copy,
+  .folio-diagram-tools {
     display: none !important;
+  }
+
+  .markdown-preview .folio-diagram > svg {
+    transform: none !important;
   }
 
   .markdown-preview mark.folio-note {
@@ -2546,6 +2637,9 @@ body[data-color-scheme='dark'] {
   .folio-outline,
   .folio-lightbox,
   .folio-lightbox img,
+  .folio-lightbox-diagram,
+  .folio-lightbox-diagram.folio-animate,
+  .markdown-preview .folio-diagram > svg,
   .folio-toast,
   body[data-focus-mode] #preview > *,
   body[data-focus-mode] #preview > *:not(.folio-reading-time),

@@ -11,6 +11,7 @@ import type { HostMessage, WebviewMessage, WebviewSettings } from '../messages';
 import { addCodeCopyButtons, copyFormatted, toast } from './documentTools';
 import { DocumentTranslation } from './documentTranslation';
 import { Changes } from './changes';
+import { enableDiagramZoom } from './diagrams';
 import { FILE_REFERENCE, FileReferences } from './fileReferences';
 import { enableImageZoom } from './lightbox';
 import { History, enableKeyboard } from './navigation';
@@ -315,6 +316,7 @@ async function renderMermaid(): Promise<void> {
   for (const node of nodes) {
     try {
       await mermaid.run({ nodes: [node] });
+      enableDiagramZoom(node);
     } catch (error) {
       node.setAttribute('data-processed', 'true');
       node.classList.add('mermaid-error');

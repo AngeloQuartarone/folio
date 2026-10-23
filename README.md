@@ -151,6 +151,10 @@ It is an independent project derived from
   (or `Ctrl`/`Cmd` + wheel, a double-click, `+`/`-`/`0`) to zoom where you
   point, and move it with two fingers or by dragging. A click or `Esc`
   closes it.
+- **Diagram zoom**: over a Mermaid diagram, `Ctrl`/`Cmd` + wheel (or a
+  pinch) zooms where you point, dragging moves the zoomed diagram and a
+  double-click zooms in or back to fit. The buttons on hover zoom, fit and
+  open the diagram in the full window, where it zooms like an image.
 - **Copy as formatted text**: the whole document, ready to paste into an
   email, Word or Google Docs.
 - **Export PDF** (with your installed Chrome/Edge/Chromium/Brave) and
