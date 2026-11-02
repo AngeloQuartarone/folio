@@ -2,12 +2,6 @@
 
 ## Unreleased
 
-- Fixed: a document outside the folder open in VS Code, edited by another
-  program (an AI agent, say), now updates in the preview as it changes on
-  disk, instead of only after closing and reopening the preview.
-- Replying to a note keeps the note and its replies in view above the reply
-  box, instead of replacing them; a long thread scrolls on its own, showing
-  the latest reply.
 - Zoom and pan Mermaid diagrams: over a diagram, `Ctrl`/`Cmd` + wheel (or a
   pinch) zooms at the pointer, dragging moves the zoomed diagram and a
   double-click toggles the zoom; a plain wheel still scrolls the page. The
@@ -18,6 +12,12 @@
   opening it if needed. Google by default; another engine with
   `folio.webSearch.url` (`https://duckduckgo.com/?q=%s`), in the settings
   window's new **Web search** section, where it can also be turned off.
+- Replying to a note keeps the note and its replies in view above the reply
+  box, instead of replacing them; a long thread scrolls on its own, showing
+  the latest reply.
+- Fixed: a document outside the folder open in VS Code, edited by another
+  program (an AI agent, say), now updates in the preview as it changes on
+  disk, instead of only after closing and reopening the preview.
 
 ## 0.2.0 (2026-10-12)
 
