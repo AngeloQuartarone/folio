@@ -470,6 +470,40 @@ function defineTests(): void {
       }
     });
 
+    it('follows a document outside the workspace edited by another program', async () => {
+      const api = await activate();
+      const dir = mkdtempSync(path.join(tmpdir(), 'folio-outside-'));
+      const uri = vscode.Uri.file(path.join(dir, 'outside.md'));
+      writeFileSync(uri.fsPath, '# Outside\n\nThe first version.\n');
+      const preview = api.preview as any;
+      const original = preview.post.bind(preview);
+      const sent: HostMessage[] = [];
+      preview.post = (message: HostMessage) => {
+        sent.push(message);
+        original(message);
+      };
+      const shown = (text: string) =>
+        sent.some((message) => message.type === 'update' && message.sourceUri === uri.toString() && message.html.includes(text));
+      try {
+        // Only the preview is open, then the source editor too.
+        // Another Markdown editor left open would take the preview back.
+        await vscode.commands.executeCommand('workbench.action.closeAllEditors');
+        api.preview.show(uri);
+        await until(() => shown('first version'), 'the first version is shown');
+        // An AI agent rewrites the file.
+        writeFileSync(uri.fsPath, '# Outside\n\nThe second version.\n');
+        await until(() => shown('second version'), 'the second version is shown');
+
+        await vscode.window.showTextDocument(uri, { viewColumn: vscode.ViewColumn.One, preserveFocus: true });
+        writeFileSync(uri.fsPath, '# Outside\n\nThe third version.\n');
+        await until(() => shown('third version'), 'the third version is shown with the editor open');
+      } finally {
+        preview.post = original;
+        await vscode.commands.executeCommand('workbench.action.closeAllEditors');
+        rmSync(dir, { recursive: true, force: true });
+      }
+    });
+
     it('marks what changed since the last commit with the git baseline', async () => {
       const api = await activate();
       const config = () => vscode.workspace.getConfiguration('folio');

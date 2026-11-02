@@ -78,6 +78,8 @@ export class PreviewManager implements vscode.Disposable {
   private readonly panelDisposables: vscode.Disposable[] = [];
   /** Reloads the preview when the user's stylesheet is saved. */
   private cssWatcher: vscode.Disposable | undefined;
+  /** Watches a document outside the workspace, which VS Code doesn't. */
+  private sourceWatcher: vscode.Disposable | undefined;
   private readonly messageListeners: Array<
     (message: WebviewMessage, panel: vscode.WebviewPanel) => void
   > = [];
@@ -225,6 +227,7 @@ export class PreviewManager implements vscode.Disposable {
   private attach(panel: vscode.WebviewPanel, uri: vscode.Uri): void {
     this.sourceUri = uri;
     this.panel = panel;
+    this.watchSource(uri);
     panel.iconPath = vscode.Uri.joinPath(this.extensionUri, 'media', 'preview.svg');
     this.panelDisposables.push(
       panel.webview.onDidReceiveMessage((message: WebviewMessage) => this.onMessage(message)),
@@ -248,6 +251,7 @@ export class PreviewManager implements vscode.Disposable {
     }
     this.leave(uri);
     this.sourceUri = uri;
+    this.watchSource(uri);
     this.panel.webview.options = {
       ...this.panel.webview.options,
       localResourceRoots: this.localResourceRoots(uri),
@@ -309,6 +313,8 @@ export class PreviewManager implements vscode.Disposable {
       void this.markRead(this.sourceUri);
     }
     this.clearSourceHighlight();
+    this.sourceWatcher?.dispose();
+    this.sourceWatcher = undefined;
     this.panel = undefined;
     this.sourceUri = undefined;
     clearTimeout(this.updateTimer);
@@ -341,6 +347,49 @@ export class PreviewManager implements vscode.Disposable {
     return roots;
   }
 
+  /**
+   * VS Code only watches the workspace folders: a document outside them,
+   * edited by another program (an AI agent, say), would never update. Folio
+   * watches it itself.
+   */
+  private watchSource(uri: vscode.Uri): void {
+    this.sourceWatcher?.dispose();
+    this.sourceWatcher = undefined;
+    if (!isOutsideWorkspace(uri)) {
+      return;
+    }
+    const watcher = vscode.workspace.createFileSystemWatcher(
+      new vscode.RelativePattern(vscode.Uri.joinPath(uri, '..'), path.basename(uri.fsPath)),
+      false,
+      false,
+      true,
+    );
+    const changed = () => {
+      if (this.isSource(uri)) {
+        this.clearSourceHighlight();
+        this.scheduleUpdate();
+      }
+    };
+    this.sourceWatcher = vscode.Disposable.from(watcher, watcher.onDidChange(changed), watcher.onDidCreate(changed));
+  }
+
+  /**
+   * The text of the document. Outside the workspace, VS Code doesn't reload
+   * an open document changed on disk by another program, so unless it has
+   * unsaved edits it is read from the file.
+   */
+  private async sourceText(uri: vscode.Uri): Promise<string> {
+    const document = await vscode.workspace.openTextDocument(uri);
+    if (document.isDirty || !isOutsideWorkspace(uri)) {
+      return document.getText();
+    }
+    try {
+      return new TextDecoder().decode(await vscode.workspace.fs.readFile(uri));
+    } catch {
+      return document.getText();
+    }
+  }
+
   private scheduleUpdate(): void {
     clearTimeout(this.updateTimer);
     const delay = this.config.liveUpdateDebounceMs;
@@ -352,13 +401,13 @@ export class PreviewManager implements vscode.Disposable {
       return;
     }
     const uri = this.sourceUri;
-    const document = await vscode.workspace.openTextDocument(uri);
+    const text = await this.sourceText(uri);
     if (!this.isSource(uri)) {
       return; // retargeted while loading
     }
     const workspaceFolder = vscode.workspace.getWorkspaceFolder(uri);
     const webview = this.panel.webview;
-    const result = this.renderer.render(document.getText(), {
+    const result = this.renderer.render(text, {
       resolveImageSrc: (src) => {
         // `/img.png` means "from the workspace root", as on GitHub.
         if (workspaceFolder && src.startsWith('/') && !src.startsWith('//')) {
@@ -382,9 +431,9 @@ export class PreviewManager implements vscode.Disposable {
       sourceUri: uri.toString(),
       preserveScroll,
       line,
-      lang: getReadingConfig().justify ? documentLanguage(document.getText()) : undefined,
+      lang: getReadingConfig().justify ? documentLanguage(text) : undefined,
     });
-    await this.sendChanges(uri, document.getText());
+    await this.sendChanges(uri, text);
   }
 
   /** The preview moves from its document to `next`: the one left behind was read. */
@@ -400,9 +449,7 @@ export class PreviewManager implements vscode.Disposable {
       return;
     }
     try {
-      const document = vscode.workspace.textDocuments.find((open) => open.uri.toString() === uri.toString())
-        ?? (await vscode.workspace.openTextDocument(uri));
-      await this.snapshots.set(uri.toString(), document.getText());
+      await this.snapshots.set(uri.toString(), await this.sourceText(uri));
     } catch {
       // A document that is gone has nothing to remember.
     }
@@ -415,7 +462,7 @@ export class PreviewManager implements vscode.Disposable {
   private async sendChanges(uri: vscode.Uri, text?: string): Promise<void> {
     const baseline = getChangesBaseline();
     try {
-      const current = text ?? (await vscode.workspace.openTextDocument(uri)).getText();
+      const current = text ?? (await this.sourceText(uri));
       let before: { text: string; at?: string } | undefined;
       if (baseline === 'lastRead' && this.snapshots) {
         before = await this.snapshots.get(uri.toString());
@@ -889,6 +936,11 @@ async function committedVersion(uri: vscode.Uri): Promise<{ text: string; at?: s
   } catch {
     return { text: '', at }; // not committed yet: all of it is new
   }
+}
+
+/** A file on disk in none of the workspace folders: VS Code doesn't watch it. */
+function isOutsideWorkspace(uri: vscode.Uri): boolean {
+  return uri.scheme === 'file' && !vscode.workspace.getWorkspaceFolder(uri);
 }
 
 /** A path as the workspace shows it ("docs/guide.md"), or the full path outside it. */

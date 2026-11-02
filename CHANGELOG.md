@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Fixed: a document outside the folder open in VS Code, edited by another
+  program (an AI agent, say), now updates in the preview as it changes on
+  disk, instead of only after closing and reopening the preview.
 - Replying to a note keeps the note and its replies in view above the reply
   box, instead of replacing them; a long thread scrolls on its own, showing
   the latest reply.
