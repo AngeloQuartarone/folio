@@ -284,7 +284,9 @@ export class Notes {
     const spacer = document.createElement('span');
     spacer.className = 'folio-note-spacer';
     actions.append(
-      cardButton('Reply', () => this.edit('', 'Write a reply…', rect, (text) => text && this.send('reply', id, text))),
+      cardButton('Reply', () =>
+        this.edit('', 'Write a reply…', rect, (text) => text && this.send('reply', id, text), parts),
+      ),
       cardButton(resolved ? 'Reopen' : 'Resolve', () => {
         this.send(resolved ? 'reopen' : 'resolve', id);
         this.closeCard();
@@ -306,7 +308,14 @@ export class Notes {
     }
   }
 
-  private edit(value: string, placeholder: string, rect: DOMRect, save: (text: string) => void): void {
+  /** Write in the card; `thread` (a note and its replies) stays readable above the box. */
+  private edit(
+    value: string,
+    placeholder: string,
+    rect: DOMRect,
+    save: (text: string) => void,
+    thread: HTMLElement[] = [],
+  ): void {
     // Writing: the card stays open wherever the pointer goes.
     this.peeking = false;
     clearTimeout(this.leaveTimer);
@@ -332,8 +341,21 @@ export class Notes {
     hint.className = 'folio-note-hint';
     hint.textContent = navigator.platform.startsWith('Mac') ? '⌘↩ to save' : 'Ctrl+Enter to save';
     actions.append(hint, cardButton('Cancel', () => this.closeCard()), cardButton('Save', submit, 'folio-primary'));
-    this.card.replaceChildren(input, actions);
+    if (thread.length) {
+      // Long threads scroll on their own, so the box and its buttons stay in view.
+      const messages = document.createElement('div');
+      messages.className = 'folio-note-thread';
+      messages.append(...thread);
+      this.card.replaceChildren(messages, input, actions);
+    } else {
+      this.card.replaceChildren(input, actions);
+    }
     this.show(rect);
+    // The latest reply is the one being answered.
+    const messages = this.card.querySelector('.folio-note-thread');
+    if (messages) {
+      messages.scrollTop = messages.scrollHeight;
+    }
     input.focus();
     input.setSelectionRange(input.value.length, input.value.length);
   }

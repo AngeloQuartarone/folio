@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Replying to a note keeps the note and its replies in view above the reply
+  box, instead of replacing them; a long thread scrolls on its own, showing
+  the latest reply.
 - Zoom and pan Mermaid diagrams: over a diagram, `Ctrl`/`Cmd` + wheel (or a
   pinch) zooms at the pointer, dragging moves the zoomed diagram and a
   double-click toggles the zoom; a plain wheel still scrolls the page. The

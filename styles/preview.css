@@ -2435,6 +2435,14 @@ body[data-color-scheme='dark'] {
   font-size: 13.5px;
 }
 
+/* Replying: the thread above the box, scrolling when it runs long. */
+.folio-note-thread {
+  max-height: min(40vh, 280px);
+  margin-bottom: 10px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
 .folio-note-spacer {
   flex: 1;
 }

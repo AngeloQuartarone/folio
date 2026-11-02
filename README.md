@@ -117,7 +117,8 @@ It is an independent project derived from
   or right-click › **Add Note to Selection**), write. The text is
   highlighted with a pin in the margin; rest the pointer on the text or the
   pin to read the note and its replies (`folio.notes.hoverPreview`), click
-  it to reply, resolve, edit or delete it. All notes are listed in the
+  it to reply (the thread stays in view above the reply box), resolve,
+  edit or delete it. All notes are listed in the
   table of contents, and follow their text when the document changes.
 - **What changed since you last read it**: when a document was edited —
   by an AI assistant, a colleague or yourself — since you last read it in
