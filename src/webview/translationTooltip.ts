@@ -35,7 +35,7 @@ export class TranslationTooltip {
   private readonly body: HTMLDivElement;
   private readonly meanings: HTMLDivElement;
   private readonly action: HTMLButtonElement;
-  /** "Add note" and "Search the web", under the rest. */
+  /** "Add note" and "Web" (search the web), under the rest. */
   private readonly tools: HTMLDivElement;
   private readonly noteButton: HTMLButtonElement;
   private readonly searchButton: HTMLButtonElement;
@@ -100,8 +100,9 @@ export class TranslationTooltip {
     this.searchButton = document.createElement('button');
     this.searchButton.type = 'button';
     this.searchButton.className = 'mtp-tooltip-search';
-    this.searchButton.textContent = 'Search the web';
+    this.searchButton.append(globeIcon(), 'Web');
     this.searchButton.title = 'Search the web (w)';
+    this.searchButton.setAttribute('aria-label', 'Search the web');
     this.searchButton.hidden = true;
     this.searchButton.addEventListener('click', () => {
       const text = this.text;
@@ -314,7 +315,10 @@ export class TranslationTooltip {
     style.left = '0px';
     style.top = '0px';
     // Layout size: the opening animation scales the tooltip down a little.
-    const { offsetWidth: width, offsetHeight: height } = this.element;
+    const { offsetHeight: height } = this.element;
+    // Rounded up: offsetWidth rounds to the nearest pixel, and a width half a
+    // pixel short wraps the last button onto a line of its own.
+    const width = Math.ceil(parseFloat(getComputedStyle(this.element).width)) || this.element.offsetWidth;
     // Kept: moved near the right edge, the tooltip would otherwise shrink and wrap.
     style.width = `${width}px`;
 
@@ -334,4 +338,23 @@ export class TranslationTooltip {
     style.left = `${Math.round(left)}px`;
     style.top = `${Math.round(top)}px`;
   }
+}
+
+/** A small globe, for the web search button. */
+function globeIcon(): SVGSVGElement {
+  const ns = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(ns, 'svg');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('width', '12');
+  svg.setAttribute('height', '12');
+  svg.setAttribute('aria-hidden', 'true');
+  const path = document.createElementNS(ns, 'path');
+  // The outline, a meridian and the equator.
+  path.setAttribute('d', 'M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18M12 3a4 9 0 0 1 0 18a4 9 0 0 1 0-18M3 12h18');
+  path.setAttribute('fill', 'none');
+  path.setAttribute('stroke', 'currentColor');
+  path.setAttribute('stroke-width', '2');
+  path.setAttribute('stroke-linecap', 'round');
+  svg.appendChild(path);
+  return svg;
 }

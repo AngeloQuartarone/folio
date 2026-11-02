@@ -89,8 +89,8 @@ It is an independent project derived from
   translations.
 - **Other meanings** of a single word, one click away, from an offline
   Wiktionary dictionary.
-- **Search the web**: under the text you select, **Search the web** (or
-  `w`) searches it in your default browser, opening it if needed. Google by
+- **Search the web**: under the text you select, **Web** (or `w`)
+  searches it in your default browser, opening it if needed. Google by
   default; any engine with `folio.webSearch.url`, also in the settings
   window (**Web search**).
 - **Translate the whole document**, offline: every paragraph, heading, list
@@ -308,7 +308,7 @@ selection. If the text is already in the target language a small
 | `folio.translation.targetLanguage` | `it` | Language to translate into (one of the 11 above). |
 | `folio.translation.sourceLanguage` | `auto` | Language of your documents, or `auto` to detect it. |
 | `folio.translation.modelsPath` | `""` | Folder with the models and dictionaries; empty = extension storage. |
-| `folio.webSearch.enabled` | `true` | **Search the web** under the selected text, and the `w` key. |
+| `folio.webSearch.enabled` | `true` | **Web** (search the web) under the selected text, and the `w` key. |
 | `folio.webSearch.url` | *(empty)* | Search engine: the address of a search with `%s` for the text, e.g. `https://duckduckgo.com/?q=%s`; empty = Google. |
 | `folio.scrollSync` | `true` | Synchronize editor and preview scrolling. |
 | `folio.liveUpdateDebounceMs` | `300` | Delay before the preview updates after an edit. |

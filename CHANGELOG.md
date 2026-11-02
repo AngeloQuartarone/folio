@@ -13,11 +13,11 @@
   double-click toggles the zoom; a plain wheel still scrolls the page. The
   buttons on hover zoom in and out, fit, and open the diagram in the full
   window, with the same zoom as images.
-- Search the web: with text selected in the preview, **Search the web** in
-  the tooltip (or `w`) searches it in your default browser, opening it if
-  needed. Google by default; another engine with `folio.webSearch.url`
-  (`https://duckduckgo.com/?q=%s`), in the settings window's new **Web
-  search** section, where it can also be turned off.
+- Search the web: with text selected in the preview, **Web** (with a small
+  globe) in the tooltip (or `w`) searches it in your default browser,
+  opening it if needed. Google by default; another engine with
+  `folio.webSearch.url` (`https://duckduckgo.com/?q=%s`), in the settings
+  window's new **Web search** section, where it can also be turned off.
 
 ## 0.2.0 (2026-10-12)
 

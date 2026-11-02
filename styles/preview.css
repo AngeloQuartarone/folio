@@ -2533,7 +2533,7 @@ body[data-color-scheme='dark'] {
   color: var(--mtp-error);
 }
 
-/* "Add note" and "Search the web" in the selection tooltip. */
+/* "Add note" and "Web" (search the web) in the selection tooltip. */
 .mtp-tooltip-tools {
   display: flex;
   flex-wrap: wrap;
@@ -2570,31 +2570,10 @@ body[data-color-scheme='dark'] {
   transform: rotate(-45deg);
 }
 
-/* A magnifying glass: the lens, and its handle drawn with ::after. */
-.mtp-tooltip-search {
-  position: relative;
-}
-
-.mtp-tooltip-search::before {
-  content: '';
-  box-sizing: border-box;
-  width: 9px;
-  height: 9px;
-  margin: -2px 1px 0 -1px;
-  border: 1.5px solid var(--mtp-accent);
-  border-radius: 50%;
-}
-
-.mtp-tooltip-search::after {
-  content: '';
-  position: absolute;
-  left: 11.5px;
-  top: calc(50% + 2px);
-  width: 4px;
-  height: 1.5px;
-  border-radius: 1px;
-  background: var(--mtp-accent);
-  transform: rotate(45deg);
+/* The globe before "Web". */
+.mtp-tooltip-search svg {
+  flex: none;
+  color: var(--mtp-accent);
 }
 
 .mtp-tooltip-note:hover,
