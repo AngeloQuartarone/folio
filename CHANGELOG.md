@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.3.0 (2026-11-02)
 
 - Zoom and pan Mermaid diagrams: over a diagram, `Ctrl`/`Cmd` + wheel (or a
   pinch) zooms at the pointer, dragging moves the zoomed diagram and a
